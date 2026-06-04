@@ -466,7 +466,13 @@ the box.
   (`debug_traceBlockByNumber`) — exactly what Blockscout indexes. Optional ping.pub
   Cosmos config in `explorer/ping-pub`. (Running the Blockscout containers needs
   Docker.)*
-- **Phase 8 — Tickets & perks.** `Ticketing` ERC-1155, employee-bonus flows.
+- **Phase 8 — Tickets & perks.** `Ticketing` ERC-1155, employee-bonus flows. *Done:
+  `GembaTicketing` (events as ERC-1155: create/issue/buy/redeem, supply caps, GMB
+  sales) + `GembaPerks` (institution pays GMB bonuses + grants perk tickets) in
+  `contracts/src/tickets`. Security standards (CEI + nonReentrant on mint/value
+  paths, events, custom errors). 24 Foundry tests incl. reentrancy + invariant/fuzz
+  (minted ≤ maxSupply; no pool drain); Slither triaged. Live devnet demo
+  (`script/TicketingDemo.s.sol`): issue, paid buy, GMB bonus + perk ticket, redeem.*
 - **Phase 9 — Hardening.** Seeds/persistent peers, monitoring, pruning, backups,
   validator key management (KMS/Vault/`tmkms`), runbooks (halt recovery, coordinated
   upgrade), security review / audit before public launch.

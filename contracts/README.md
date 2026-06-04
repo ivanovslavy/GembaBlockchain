@@ -92,6 +92,12 @@ sale on a public/main network is **blocked until written MiCA sign-off** from a
 Bulgarian fintech lawyer (see the contract header + `docs/risks.md` ADR-009). Built
 and tested on devnet only. 8 Foundry tests; live demo `script/OnRampDemo.s.sol`.
 
-## Later phases
+## Phase 8 — DONE (tickets & perks)
 
-`Ticketing` (Phase 8).
+| Contract | File | Notes |
+|---|---|---|
+| `GembaTicketing` | `src/tickets/GembaTicketing.sol` | events as ERC-1155: create/issue/buy(GMB)/redeem; supply caps; organizer + scanner roles |
+| `GembaPerks` | `src/tickets/GembaPerks.sol` | institution pays GMB bonuses + grants perk tickets; per-bonus cap |
+
+24 Foundry tests incl. reentrancy + invariant/fuzz (minted ≤ maxSupply; perks pool
+never over-drained); Slither triaged. Live demo `script/TicketingDemo.s.sol`.

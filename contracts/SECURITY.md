@@ -77,6 +77,24 @@ findings from the pass).
 - The **MiCA gate** (`publicSaleEnabled`, default `false`) is enforced and tested
   (`test_PublicSaleDisabledByDefault`); enabling is `onlyOwner`.
 
+## Phase 8 (Ticketing + perks)
+
+- **`GembaTicketing.buy` / `GembaPerks.payBonus`** — re-entrancy is repelled
+  (`nonReentrant` + CEI): `buy` mints (ERC-1155 acceptance callback is the external
+  call) after bumping supply/proceeds; `payBonus` is role-gated. Both have
+  reentrancy-attack tests (`Phase8Reentrancy.t.sol`).
+- **"sends ETH to arbitrary user" / "low-level call"** on `withdrawProceeds`,
+  `GembaPerks._payBonus` / `withdraw` — intentional, access-controlled
+  (`onlyRole`), `nonReentrant`, capped (`maxBonus`); native sends require
+  `call{value:}` with checked success.
+- **"external call in a loop"** — `payBonusBatch` pays each employee in a loop.
+  Intentional batch payout: atomic (one failing recipient reverts the whole batch —
+  fail loud), `nonReentrant`, distributor-gated. Accepted; callers keep batches a
+  reasonable size.
+- Supply cap and pool-drain protection are fuzzed: `TicketingInvariant`
+  (minted ≤ maxSupply) and `PerksInvariant` (only authorized bonuses leave the
+  pool), 128k calls each.
+
 ## Out of scope
 
 - **`SeamProbe.sol`** — a **devnet-only** probe used to prove the Cosmos↔EVM seam
