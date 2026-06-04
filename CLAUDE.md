@@ -482,6 +482,12 @@ the box.
   validator-vs-archive, tmkms key mgmt, backups, halt recovery, coordinated
   upgrade). The **security audit (ADR-006)** and **MiCA sign-off (ADR-009)** are the
   founder's separate, non-code tracks and remain hard launch blockers (§16).*
+- **Public testnet (mainnet dress rehearsal).** `gemba-testnet-1` (distinct chain-id
+  + EVM chainId 821207, valueless tokens): `chain/testnet` (genesis generator,
+  verified locally as a 5-validator network producing blocks), `services/testnet-faucet`
+  (rate-limited drip of test GMB, verified live), and `docs/runbooks/testnet-deploy.md`
+  + `testnet-launch-checklist.md` for the 5 geo-separated Hetzner validators. Same
+  binary/economics as mainnet; run for weeks before planning the public launch.
 
 ---
 
