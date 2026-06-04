@@ -36,8 +36,31 @@ data. See root `.gitignore`.
   chainId 821206, ~2 s blocks, §4.1 allocation) mapped to its spec section.
   Verified: MetaMask-connect RPC calls, a GMB transfer, a Solidity deploy, and
   4-validator BFT liveness with 1 validator down (§5.3).
-- **Phase 2 — TODO (custom Go modules).** This is where we fork/extend `evmd`:
-  the `ValidatorRewardStreamer`, the **60/40 fee split**, and the post-reserve
-  **tail reward** (ADR-008 (b), recirculation-funded, never minted). Isolate them
-  so upstream bumps stay clean (CLAUDE.md §0.10). **Scope reserved here — do not
-  fake the tail reward with minting; zero inflation is an invariant (§3.1).**
+- **Phase 2 — modules DONE; node wiring pending.** Two isolated, EVM-independent
+  Cosmos SDK modules under [`x/`](./x/) (they depend only on cosmos-sdk, so an
+  upstream `cosmos/evm` bump can't break them — §16.6):
+  - [`x/rewardstreamer`](./x/rewardstreamer) — streams ~2,000,000 GMB/yr from the
+    pre-minted 20M validator reserve into the fee collector (→ distribution). Its
+    `BankKeeper` interface **omits mint/burn**, so it is *structurally incapable*
+    of changing supply: zero inflation (§3.1) is enforced at the type level.
+  - [`x/feesplit`](./x/feesplit) — routes 40% of collected fees to the faucet,
+    leaving 60% for validators/delegators (`CLAUDE.md` §5.4).
+
+  Tested with `go test ./...` (9 tests): per-module unit tests plus the marquee
+  **`TestSupplyInvariantOverBlocks`** — runs many blocks with rewards streaming and
+  fees splitting and asserts total supply is byte-for-byte constant every block (a
+  permanent machine guarantee that the streamer recirculates, never mints), with a
+  canary test proving the supply check actually detects minting, and a `TestDemo`
+  printing the block-by-block ledger. Begin-blocker order is
+  **feesplit → rewardstreamer → distribution** (so only fees are split, and the
+  reward lands before distribution pays out).
+
+  Remaining: wire the `AppModule`s into the evmd-derived `gembad` binary — see
+  [`x/WIRING.md`](./x/WIRING.md). The post-reserve **tail reward** (ADR-008 (b),
+  recirculation-funded, never minted) is still reserved scope; **do not fake it
+  with minting — zero inflation is an invariant (§3.1).**
+
+```bash
+cd chain && go test ./...        # run all module tests
+go test ./tests -run TestDemo -v # block-by-block live demonstration
+```
