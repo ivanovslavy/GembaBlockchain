@@ -1,0 +1,62 @@
+# === GembaBlockchain .gitignore ===
+# This repo is PUBLIC. Never commit secrets (CLAUDE.md §3, §14).
+# Public genesis ADDRESSES are fine; the private keys/mnemonics behind them are NOT.
+
+# --- Secrets & env ---
+.env
+.env.*
+!.env.example
+*.secret
+secrets/
+
+# --- Keys, mnemonics, keyrings (validator consensus keys, node keys, accounts) ---
+*.key
+*.pem
+*priv*key*
+*mnemonic*
+*.mnemonic
+keyring/
+keyring-*/
+node_key.json
+priv_validator_key.json
+priv_validator_state.json
+
+# --- Cosmos / chain node data ---
+.gembad/
+.gemba/
+data/
+*.db
+
+# --- Go ---
+/chain/bin/
+*.test
+*.out
+
+# --- Solidity / Foundry / Hardhat ---
+/contracts/out/
+/contracts/cache/
+/contracts/broadcast/
+/contracts/lib/
+artifacts/
+cache/
+typechain-types/
+
+# --- Node.js (services, frontend, explorer tooling) ---
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+dist/
+build/
+.next/
+coverage/
+
+# --- Explorer (Blockscout docker) volumes ---
+/explorer/blockscout-db-data/
+/explorer/logs/
+
+# --- Editor / OS ---
+.DS_Store
+.idea/
+.vscode/
+*.swp
