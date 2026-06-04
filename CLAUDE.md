@@ -457,6 +457,15 @@ the box.
   50 stablecoin → 500 GMB. Internal/closed formula grants to institutions go via the
   Faucet (Phase 3) and are not gated here.*
 - **Phase 7 — Explorer.** Blockscout / GembaScan + API keys; optional Cosmos explorer.
+  *Done: `explorer/` — pinned Blockscout docker-compose + `envs/backend.env`
+  (Etherscan-compatible API, self-issued API keys, contract verification via
+  `verify/*.standard.json`), **pointed at a dedicated ARCHIVE node** (pruning
+  nothing) — never a pruned validator (§11). Verified live against the gembad
+  archive node: historical blocks/receipts, historical account state
+  (`eth_getBalance` at old heights), and internal-tx traces
+  (`debug_traceBlockByNumber`) — exactly what Blockscout indexes. Optional ping.pub
+  Cosmos config in `explorer/ping-pub`. (Running the Blockscout containers needs
+  Docker.)*
 - **Phase 8 — Tickets & perks.** `Ticketing` ERC-1155, employee-bonus flows.
 - **Phase 9 — Hardening.** Seeds/persistent peers, monitoring, pruning, backups,
   validator key management (KMS/Vault/`tmkms`), runbooks (halt recovery, coordinated

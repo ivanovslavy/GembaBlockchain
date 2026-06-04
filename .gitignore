@@ -51,9 +51,10 @@ build/
 .next/
 coverage/
 
-# --- Explorer (Blockscout docker) volumes ---
+# --- Explorer (Blockscout docker) volumes + real env (template is committed) ---
 /explorer/blockscout-db-data/
 /explorer/logs/
+/explorer/envs/backend.env
 
 # --- Editor / OS ---
 .DS_Store

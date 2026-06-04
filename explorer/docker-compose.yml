@@ -1,0 +1,64 @@
+# =============================================================================
+# GembaScan — self-hosted Blockscout for the GembaBlockchain EVM side (Phase 7).
+# Etherscan-compatible API + REST v2 + GraphQL, Solidity contract verification,
+# and self-issued API keys.
+#
+# POINTS AT AN ARCHIVE NODE (CLAUDE.md §11): set ETHEREUM_JSONRPC_* in
+# envs/backend.env to a dedicated archive full node (pruning = "nothing") — never a
+# pruned validator. On Linux, `host.docker.internal` resolves to the host via the
+# extra_hosts mapping below, so the archive node on the host's :8545 is reachable.
+#
+#   docker compose up -d        # UI on http://localhost  (API at /api)
+#
+# Image tags are pinned; bump deliberately and re-test against the archive node.
+# =============================================================================
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: blockscout
+      POSTGRES_PASSWORD: blockscout
+      POSTGRES_DB: blockscout
+    volumes:
+      - blockscout-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U blockscout"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+
+  sc-verifier:
+    image: ghcr.io/blockscout/smart-contract-verifier:v1.9.0
+    environment:
+      SMART_CONTRACT_VERIFIER__SERVER__HTTP__ADDR: 0.0.0.0:8050
+
+  backend:
+    image: blockscout/blockscout:6.8.0
+    depends_on:
+      db:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # reach the archive node on the host
+    env_file:
+      - ./envs/backend.env
+    command: sh -c "bin/blockscout eval 'Elixir.Explorer.ReleaseTasks.create_and_migrate()' && bin/blockscout start"
+    ports:
+      - "4000:4000"
+
+  frontend:
+    image: ghcr.io/blockscout/frontend:v1.37.0
+    environment:
+      NEXT_PUBLIC_NETWORK_NAME: GembaBlockchain
+      NEXT_PUBLIC_NETWORK_ID: "821206"
+      NEXT_PUBLIC_NETWORK_CURRENCY_SYMBOL: GMB
+      NEXT_PUBLIC_API_HOST: localhost
+      NEXT_PUBLIC_API_PORT: "4000"
+      NEXT_PUBLIC_API_PROTOCOL: http
+    ports:
+      - "80:3000"
+
+volumes:
+  blockscout-db-data:

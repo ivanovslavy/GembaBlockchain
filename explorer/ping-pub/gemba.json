@@ -1,0 +1,23 @@
+{
+  "chain_name": "gemba",
+  "registry_name": "gemba",
+  "pretty_name": "GembaBlockchain",
+  "api": ["http://localhost:1317"],
+  "rpc": ["http://localhost:26657"],
+  "snapshot_provider": "",
+  "sdk_version": "0.54.3",
+  "coin_type": "60",
+  "min_tx_fee": "200000",
+  "addr_prefix": "cosmos",
+  "logo": "/logos/gemba.svg",
+  "theme_color": "#1f6feb",
+  "assets": [
+    {
+      "base": "agmb",
+      "symbol": "GMB",
+      "exponent": "18",
+      "coingecko_id": "",
+      "logo": "/logos/gemba.svg"
+    }
+  ]
+}
