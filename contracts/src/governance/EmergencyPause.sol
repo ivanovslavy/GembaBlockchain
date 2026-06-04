@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.24;
 
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
 interface IPausableTarget {
     function pause() external;
     function unpause() external;
@@ -13,7 +15,7 @@ interface IPausableTarget {
 /// funds (it only ever calls `pause()`/`unpause()`). This is bounded, revocable
 /// power: the guardian set and threshold are managed by governance (the Timelock),
 /// which can replace any guardian at any time.
-contract EmergencyPause {
+contract EmergencyPause is ReentrancyGuard {
     enum Op {
         Pause,
         Unpause
@@ -69,8 +71,11 @@ contract EmergencyPause {
 
     /// @notice A guardian confirms pausing/unpausing `target`. When confirmations
     /// reach the threshold, the action executes and the round advances.
-    function confirm(address target, Op op) external {
+    /// @dev CEI: the round is advanced BEFORE the external `pause()/unpause()` call
+    /// (no replay), and `nonReentrant` guards the external call.
+    function confirm(address target, Op op) external nonReentrant {
         if (!isGuardian[msg.sender]) revert OnlyGuardian();
+        if (target == address(0)) revert ZeroAddress();
         uint256 r = round[target][uint8(op)];
         bytes32 id = keccak256(abi.encode(target, op, r));
         if (confirmedBy[id][msg.sender]) revert AlreadyConfirmed();

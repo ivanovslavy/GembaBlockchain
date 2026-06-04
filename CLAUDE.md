@@ -40,6 +40,12 @@
 10. **This stack is in active development.** Cosmos EVM is production-used but its
     v1 release follows an audit — pin a known-good version, read upstream release
     notes, and isolate our custom modules so upstream upgrades stay clean.
+11. **Every Solidity contract MUST follow `docs/security-standards.md`** — secure by
+    default, fail loud: CEI + `nonReentrant` on external-call/value functions; an
+    event for every state change (indexed addresses/IDs); custom errors with
+    zero-address/zero-amount/bounds validation at the function start; explicit
+    access control on sensitive functions; checked, safe external calls. This is
+    mandatory for new contracts and enforced retroactively on existing ones.
 
 ---
 

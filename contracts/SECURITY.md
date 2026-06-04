@@ -6,6 +6,29 @@ Static analysis: `slither . --filter-paths "lib/|test/" --exclude-dependencies`
 holds tokens until tests + (for reserves) an audit are done. These contracts are
 **unfunded** and **not deployed to mainnet**.
 
+## Retroactive security pass (docs/security-standards.md)
+
+All Phase 3 & 4 contracts were reviewed against the standards. Changes:
+
+- **`GembaVotes`** — added `ZeroAmount` custom error; `depositFor` now validates
+  `to != 0` and `msg.value != 0`; `withdrawTo` now validates `amount != 0`. CEI
+  (burn before send) + `nonReentrant` documented.
+- **`BaseReserve`** (and `Faucet`/`FoundationTreasury`/`DAOReserve`/`LiquidityReserve`)
+  — added `ZeroAmount`; `_release` now validates `amount != 0` (single validated
+  exit, reached by `release` and `Faucet.grant`).
+- **`EmergencyPause`** — now `is ReentrancyGuard`; `confirm()` is `nonReentrant`
+  (it makes an external `pause()/unpause()` call) and validates `target != 0`. CEI
+  already advanced the round before the external call.
+- **Reentrancy-attack tests added** (`test/Reentrancy.t.sol`): a re-entrant caller
+  is repelled on `GembaVotes.withdrawTo`, `Faucet.grant`, and
+  `EmergencyPause.confirm`.
+- `GembaGovernor` / `GembaTimelock` / `GembaForwarder` / `WorkplaceCheckIn` — no
+  changes needed: thin subclasses of audited OZ (or no external call / no value),
+  with our added code already validated.
+
+Result: **44 Foundry tests pass**; Slither **13 results, all triaged** (no new
+findings from the pass).
+
 ## Resolved
 
 - **Missing zero-check, `GembaVotes` constructor `_governance`** → added

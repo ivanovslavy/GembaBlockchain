@@ -31,6 +31,7 @@ contract GembaVotes is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     error OnlyGovernance();
     error NativeSendFailed();
     error ZeroAddress();
+    error ZeroAmount();
 
     constructor(address _governance) ERC20("Gemba Vote", "vGMB") ERC20Permit("Gemba Vote") {
         if (_governance == address(0)) revert ZeroAddress();
@@ -38,15 +39,20 @@ contract GembaVotes is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     }
 
     /// @notice Wrap native GMB into vGMB voting power credited to `to`.
+    /// @dev No external call → CEI alone suffices; no `nonReentrant` needed.
     function depositFor(address to) external payable {
+        if (to == address(0)) revert ZeroAddress();
+        if (msg.value == 0) revert ZeroAmount();
         if (excluded[to]) revert Excluded();
         _mint(to, msg.value);
         emit Wrapped(to, msg.value);
     }
 
     /// @notice Burn vGMB and receive the underlying native GMB back.
+    /// @dev CEI (burn before send) + `nonReentrant` guard on the external call.
     function withdrawTo(address to, uint256 amount) external nonReentrant {
         if (to == address(0)) revert ZeroAddress();
+        if (amount == 0) revert ZeroAmount();
         _burn(msg.sender, amount);
         (bool ok, ) = payable(to).call{value: amount}("");
         if (!ok) revert NativeSendFailed();

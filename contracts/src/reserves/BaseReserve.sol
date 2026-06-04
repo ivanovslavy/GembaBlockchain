@@ -39,6 +39,7 @@ abstract contract BaseReserve is
     error InsufficientBalance();
     error NativeSendFailed();
     error ZeroAddress();
+    error ZeroAmount();
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -65,8 +66,12 @@ abstract contract BaseReserve is
         _release(to, amount);
     }
 
+    /// @dev Single validated exit for native value. Validates inputs first, then
+    /// the external call last (CEI). All callers (`release`, `Faucet.grant`) are
+    /// `nonReentrant`, so the post-call event is safe.
     function _release(address payable to, uint256 amount) internal {
         if (to == address(0)) revert ZeroAddress();
+        if (amount == 0) revert ZeroAmount();
         if (address(this).balance < amount) revert InsufficientBalance();
         (bool ok, ) = to.call{value: amount}("");
         if (!ok) revert NativeSendFailed();

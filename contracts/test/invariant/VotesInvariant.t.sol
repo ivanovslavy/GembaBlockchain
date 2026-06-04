@@ -22,7 +22,7 @@ contract VotesHandler is Test {
 
     function wrap(uint256 actorSeed, uint256 amount) public {
         address a = actors[actorSeed % actors.length];
-        amount = bound(amount, 0, 100 ether);
+        amount = bound(amount, 1, 100 ether); // >0: zero-amount deposits now revert
         vm.deal(a, a.balance + amount);
         vm.prank(a);
         votes.depositFor{value: amount}(a);
@@ -32,7 +32,7 @@ contract VotesHandler is Test {
         address a = actors[actorSeed % actors.length];
         uint256 bal = votes.balanceOf(a);
         if (bal == 0) return;
-        amount = bound(amount, 0, bal);
+        amount = bound(amount, 1, bal); // >0: zero-amount withdrawals now revert
         vm.prank(a);
         votes.withdrawTo(a, amount);
     }
