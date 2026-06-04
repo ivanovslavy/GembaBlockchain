@@ -54,11 +54,16 @@ app.FeeSplitKeeper       = feesplitkeeper.NewKeeper(keys[feesplittypes.StoreKey]
 ## 5. Module manager + BEGIN-BLOCKER ORDER (critical)
 
 Register the modules, then set the begin-blocker order so the split happens before
-the reward is added and both happen before distribution pays out:
+the rewards are added and all happen before distribution pays out:
 
 ```
-... -> feesplit -> rewardstreamer -> distribution -> ...
+... -> feesplit -> rewardstreamer -> tailreward -> distribution -> ...
 ```
+
+(`x/tailreward` — ADR-008b — streams the post-reserve recirculation tail; it sits
+with rewardstreamer, after feesplit and before distribution, and is disabled by
+default until governance activates and funds it. Its module account needs no
+mint/burn permission either.)
 
 - **feesplit before rewardstreamer**: so the 40% faucet skim applies only to fees,
   never to the streamed validator reward.

@@ -63,9 +63,16 @@ data. See root `.gitignore`.
   exactly 100,000,000 GMB across blocks while the reward streamed from the reserve
   (`gembad/demo-gembad.sh`). The original wiring spec is in [`x/WIRING.md`](./x/WIRING.md).
 
-  The post-reserve **tail reward** (ADR-008 (b), recirculation-funded, never
-  minted) is still reserved scope; **do not fake it with minting — zero inflation
-  is an invariant (§3.1).**
+- **Phase 9 — DONE (tail reward).** [`x/tailreward`](./x/tailreward) (ADR-008b): the
+  post-reserve recirculation tail. Streams a governance-sized slice from a buffer
+  (funded by recirculating fee-funded reserves into its module account) to the fee
+  collector → validators. Same structural no-mint guarantee (mint/burn-free
+  `BankKeeper`), disabled by default until governance activates it. Wired into
+  gembad (begin-blocker order feesplit → rewardstreamer → **tailreward** →
+  distribution). Verified by the same supply-invariant test as the reward streamer
+  (`tests/TestTailRewardSupplyInvariant`) and live on gembad (supply constant at
+  100M while the buffer drains). **Never minted — zero inflation is an invariant
+  (§3.1).**
 
 ```bash
 cd chain && go test ./...        # run all module tests
