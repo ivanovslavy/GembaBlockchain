@@ -32,6 +32,17 @@ holds tokens until tests + (for reserves) an audit are done. These contracts are
 - **Naming — `__BaseReserve_init`, `__gap`.** OpenZeppelin upgradeable conventions
   (initializer prefix, storage gap). Intentional.
 
+## Phase 4 (meta-tx sponsored gas)
+
+- **`GembaForwarder`** is a thin subclass of OpenZeppelin's audited
+  `ERC2771Forwarder` (EIP-2771); **`WorkplaceCheckIn`** uses OZ `ERC2771Context`.
+  Slither reports no reentrancy / arbitrary-send / unchecked findings on either —
+  only a benign **"different pragma directives"** note (our contracts pin
+  `^0.8.24`; the OZ files allow `^0.8.20`; they compile and run together fine).
+- The forwarder relays only **signature-verified** requests and cannot move funds
+  beyond the call the employee signed (ADR-011 "Paymaster constraints"); replay,
+  bad-signature and expired-deadline paths are tested in `MetaTx.t.sol`.
+
 ## Out of scope
 
 - **`SeamProbe.sol`** — a **devnet-only** probe used to prove the Cosmos↔EVM seam

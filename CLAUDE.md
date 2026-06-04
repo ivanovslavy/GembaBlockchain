@@ -428,7 +428,14 @@ the box.
   (`contracts/SECURITY.md`); seam proven on devnet (`SeamProbe`). All UNFUNDED.*
 - **Phase 4 — Fees & sponsored gas.** Tune EIP-1559 params for **low but non-zero
   cost that scales with usage** (cheap per-tx, real aggregate security budget — §16.8);
-  `Paymaster` (meta-tx relay first) so institutions sponsor employees' gas.
+  `Paymaster` (meta-tx relay first) so institutions sponsor employees' gas. *Done:
+  feemarket params (1 gwei floor, elasticity 2) demonstrated live — base fee at the
+  floor when idle, climbing 1→3 gwei under load, decaying after
+  (`chain/gembad/demo-feemarket.sh`). `GembaForwarder` (EIP-2771) + `WorkplaceCheckIn`
+  in `contracts/src/paymaster`; live devnet demo: an employee with 0 GMB makes a
+  successful, correctly-attributed tx whose gas the relayer pays
+  (`contracts/script/SponsoredDemo.s.sol`). Relayer is per-institution, not a chain
+  dependency (ADR-011). 41 Foundry tests, Slither triaged.*
 - **Phase 5 — Access control.** `AccessControlNFT` + off-chain PII/log backend
   (Node/Express + PostgreSQL RLS), GDPR split.
 - **Phase 6 — On-ramp.** GembaPay stablecoin → GMB purchase flow (no fiat redemption;

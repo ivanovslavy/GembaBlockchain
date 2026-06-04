@@ -47,15 +47,31 @@ Cosmos↔EVM seam is resolved (`SeamProbe.sol` + the resolution in
 `docs/phase3-treasury-principles.md`): feesplit deposits native GMB straight into
 the Faucet's address.
 
+## Phase 4 — DONE (sponsored gas, meta-tx relay)
+
+| Contract | File | Notes |
+|---|---|---|
+| `GembaForwarder` | `src/paymaster/GembaForwarder.sol` | EIP-2771 trusted forwarder; relayer pays gas, employee only signs (no GMB) |
+| `WorkplaceCheckIn` | `src/paymaster/WorkplaceCheckIn.sol` | ERC2771Context demo target; attributes the action to the employee, not the relayer |
+
+Meta-tx relay first (not ERC-4337 — faster start). The relayer is a per-institution
+operational dependency, **not** a chain dependency, and the employee always keeps a
+direct-submit fallback (`docs/risks.md` ADR-011). Live devnet demo
+(`contracts/script/SponsoredDemo.s.sol` + `chain/gembad`): an employee with **0 GMB**
+makes a successful tx whose gas the **sponsoring wallet** pays.
+
+EIP-1559 fee tuning (chain-side) is demonstrated by `chain/gembad/demo-feemarket.sh`:
+base fee at the 1 gwei floor when idle, scaling up under load, decaying after.
+
 ### Build & test
 
 ```bash
 cd contracts
 ./setup-libs.sh                 # fetch pinned OpenZeppelin v5 + forge-std into lib/
-forge test                      # 36 tests incl. invariant/fuzz suites
-slither . --filter-paths "lib/|test/" --exclude-dependencies   # findings triaged in SECURITY.md
+forge test                      # 41 tests incl. invariant/fuzz + meta-tx suites
+slither . --filter-paths "lib/|test/|script/" --exclude-dependencies   # triaged in SECURITY.md
 ```
 
 ## Later phases
 
-`Paymaster` (Phase 4), `AccessControlNFT` (Phase 5), `Ticketing` (Phase 8).
+`AccessControlNFT` (Phase 5), `Ticketing` (Phase 8).
