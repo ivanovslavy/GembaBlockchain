@@ -422,7 +422,10 @@ the box.
   `docs/phase3-treasury-principles.md`: tests first, funding last (no contract
   funded before unit + invariant/fuzz + Slither; reserves audited before mainnet
   genesis); upgrade authority is Governor+Timelock only, never an EOA; design the
-  Cosmos↔EVM faucet seam before coding it.**
+  Cosmos↔EVM faucet seam before coding it.** *Done: OZ-v5 contracts in `contracts/src`
+  (UUPS reserves, Timelock-only upgrades, supermajority Governor, pause-only
+  EmergencyPause), 36 Foundry tests incl. invariant/fuzz, Slither triaged
+  (`contracts/SECURITY.md`); seam proven on devnet (`SeamProbe`). All UNFUNDED.*
 - **Phase 4 — Fees & sponsored gas.** Tune EIP-1559 params for **low but non-zero
   cost that scales with usage** (cheap per-tx, real aggregate security budget — §16.8);
   `Paymaster` (meta-tx relay first) so institutions sponsor employees' gas.

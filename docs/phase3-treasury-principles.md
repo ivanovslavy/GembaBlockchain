@@ -74,3 +74,23 @@ deliberate design — decide it before coding the Faucet, not after:
 
 This is the one place where the two layers of GembaBlockchain meet; getting the
 interface right up front avoids a painful retrofit.
+
+### RESOLVED (devnet prototype, `contracts/src/SeamProbe.sol`)
+
+Prototyped on the gembad devnet before writing the real Faucet. Result:
+**Variant 1 works — `feesplit` deposits directly into the Faucet contract's
+address.** A bank-layer send (`gembad tx bank send`, i.e. exactly what feesplit's
+`SendCoins` does) of 12,345 GMB to a deployed contract's address showed up
+immediately as the contract's **native EVM balance** (`address(this).balance`),
+and the contract **spent it** via a normal EVM call (`forward()` moved 5,000 GMB
+out, balance 12,345 → 7,345). So in cosmos/evm v0.7.0 the native-coin bank balance
+and the EVM balance of a *contract* account are the same ledger, and the contract
+has full control of funds that arrived at the bank layer.
+
+**Design decision for the Faucet:** the Faucet contract simply holds **native
+GMB** at its (proxy) address; no wrapper, no sweep. `x/feesplit`'s `faucet_account`
+param is pointed at the **Faucet proxy address**, and feesplit sends to that
+address (a one-line change from `SendCoinsFromModuleToModule` to
+`SendCoinsFromModuleToAccount` — done as part of wiring, the contract design does
+not depend on it). The proxy address is stable across upgrades, so re-pointing is
+never needed after launch.

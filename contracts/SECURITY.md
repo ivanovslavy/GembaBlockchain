@@ -1,0 +1,55 @@
+# contracts — Security notes & Slither triage
+
+Static analysis: `slither . --filter-paths "lib/|test/" --exclude-dependencies`
+(Slither 0.11.3). Every finding is triaged below. Per
+`docs/phase3-treasury-principles.md`: **tests first, funding last** — no contract
+holds tokens until tests + (for reserves) an audit are done. These contracts are
+**unfunded** and **not deployed to mainnet**.
+
+## Resolved
+
+- **Missing zero-check, `GembaVotes` constructor `_governance`** → added
+  `ZeroAddress` revert.
+- **Missing zero-check, `GembaVotes.withdrawTo` `to`** → added `ZeroAddress`
+  revert (prevents burning vGMB and losing the native GMB to `address(0)`).
+
+## Accepted (intentional / not exploitable)
+
+- **"Sends ETH to arbitrary destination" — `BaseReserve._release`.** The
+  destination is chosen by an **access-controlled** caller: `release()` is
+  `onlyOwner` (the Timelock), and `Faucet.grant()` is granter/owner-only and
+  capped. Moving GMB to a chosen recipient is the contract's whole purpose; the
+  control is *who* may call, enforced and tested. `_release` runs under
+  `nonReentrant` and checks the call's success.
+- **"Low-level call" — `_release`, `GembaVotes.withdrawTo`.** Native GMB transfers
+  must use `call{value:}` (the only safe way to send native value post-EIP-1884).
+  All are guarded by `nonReentrant` and revert on failure.
+- **Missing zero-check — `Faucet` `granter`.** A zero granter is **valid and
+  intentional**: it disables the formula/automation path, leaving only governance
+  `release()`. Not a bug.
+- **"Costly operations in a loop" — `EmergencyPause` constructor.** Runs once at
+  deployment over a small, fixed guardian list. Acceptable.
+- **Naming — `__BaseReserve_init`, `__gap`.** OpenZeppelin upgradeable conventions
+  (initializer prefix, storage gap). Intentional.
+
+## Out of scope
+
+- **`SeamProbe.sol`** — a **devnet-only** probe used to prove the Cosmos↔EVM seam
+  (`docs/phase3-treasury-principles.md`). It is never deployed to production; its
+  Slither findings (arbitrary send, low-level call, event-after-call) are
+  irrelevant to the treasury system.
+- **`HelloGemba.sol`** — a Phase 1 deploy smoke-test, not part of Phase 3.
+
+## Design properties enforced by tests
+
+- Reserve funds leave **only** via the owner (Timelock): `release()` is `onlyOwner`
+  (`Reserve.t.sol`, `GovernanceIntegration.t.sol`), and the fuzz invariant
+  `FaucetInvariant` (128k calls) shows no unauthorized/over-cap call can drain it.
+- **Upgrade authority is the Timelock only**, never an EOA
+  (`test_UpgradeOnlyByOwnerTimelock`).
+- **EmergencyPause can only pause/unpause**, never move funds
+  (`test_PauseCannotMoveFunds`).
+- **1-GMB-1-vote with reserves excluded**; every vGMB backed 1:1 by native GMB
+  (`VotesInvariant`).
+- A proposal needs **high quorum AND supermajority** and a **timelock delay**
+  before any reserve pays out (`GovernanceIntegration.t.sol`).
