@@ -412,10 +412,17 @@ the box.
   Solidity deploy work.
 - **Phase 2 — Custom chain modules.** Reserve-funded validator reward streamer
   (zero-inflation), 60/40 fee-distribution split to the faucet. Verify rewards flow
-  without inflation and fees split correctly on devnet.
+  without inflation and fees split correctly on devnet. *Done: `chain/x/rewardstreamer`
+  + `chain/x/feesplit` (EVM-independent, mint/burn-free interfaces), wired into the
+  `gembad` binary (`chain/gembad`) and demonstrated live on single-node and
+  4-validator devnets — supply constant, fee split 60/40.*
 - **Phase 3 — Treasury & governance contracts.** `Governor` + `Timelock`, `Faucet`,
   `FoundationTreasury`, `DAOReserve`, `LiquidityReserve`, `EmergencyPause`; reserve
-  contracts excluded from voting; formula + vesting grant logic.
+  contracts excluded from voting; formula + vesting grant logic. **Follow
+  `docs/phase3-treasury-principles.md`: tests first, funding last (no contract
+  funded before unit + invariant/fuzz + Slither; reserves audited before mainnet
+  genesis); upgrade authority is Governor+Timelock only, never an EOA; design the
+  Cosmos↔EVM faucet seam before coding it.**
 - **Phase 4 — Fees & sponsored gas.** Tune EIP-1559 params for **low but non-zero
   cost that scales with usage** (cheap per-tx, real aggregate security budget — §16.8);
   `Paymaster` (meta-tx relay first) so institutions sponsor employees' gas.

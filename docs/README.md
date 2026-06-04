@@ -12,6 +12,13 @@ here expand on specific areas.
   MiCA as a launch blocker (ADR-009), and de-facto-centralized-at-genesis (ADR-010).
   Mirrors `CLAUDE.md` §16.
 
+- [`phase3-treasury-principles.md`](./phase3-treasury-principles.md) — binding
+  principles for the Phase 3 Solidity contracts: **tests first, funding last**
+  (no contract funded before unit + invariant/fuzz + Slither; reserves also need
+  an audit before mainnet genesis), upgrade authority is Governor+Timelock only
+  (never an EOA), and the Cosmos↔EVM seam where `x/feesplit` deposits into the
+  Solidity Faucet.
+
 ## Planned (later phases)
 
 - Halt-recovery runbook (Phase 9).

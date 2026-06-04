@@ -21,6 +21,16 @@ func (k Keeper) StreamRewards(ctx sdk.Context) (math.Int, error) {
 		return math.ZeroInt(), nil
 	}
 
+	// Don't stream on the very first block. At height 1 the distribution module
+	// has no previous-block votes to allocate against, so it won't pay out the
+	// fee collector that block; a reward streamed at height 1 would linger and be
+	// picked up by the next block's feesplit (leaking the validator reward to the
+	// faucet). From height 2 on, distribution drains the fee collector in the same
+	// block the reward is added, so the reward reaches validators in full.
+	if ctx.BlockHeight() <= 1 {
+		return math.ZeroInt(), nil
+	}
+
 	perBlock := params.PerBlockReward()
 	if !perBlock.IsPositive() {
 		return math.ZeroInt(), nil

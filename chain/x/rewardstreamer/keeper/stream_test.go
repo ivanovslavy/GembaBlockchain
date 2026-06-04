@@ -23,7 +23,8 @@ func setup(t *testing.T) (sdk.Context, keeper.Keeper, *gtu.BankFake) {
 	t.Helper()
 	key := storetypes.NewKVStoreKey(types.StoreKey)
 	tkey := storetypes.NewTransientStoreKey("transient_rewardstreamer")
-	ctx := sdktestutil.DefaultContext(key, tkey)
+	// height > 1 so the first-block streaming guard (see StreamRewards) is inactive.
+	ctx := sdktestutil.DefaultContext(key, tkey).WithBlockHeight(10)
 	bank := gtu.NewBankFake()
 	k := keeper.NewKeeper(key, bank)
 	return ctx, k, bank

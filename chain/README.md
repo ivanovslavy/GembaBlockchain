@@ -55,10 +55,17 @@ data. See root `.gitignore`.
   **feesplit → rewardstreamer → distribution** (so only fees are split, and the
   reward lands before distribution pays out).
 
-  Remaining: wire the `AppModule`s into the evmd-derived `gembad` binary — see
-  [`x/WIRING.md`](./x/WIRING.md). The post-reserve **tail reward** (ADR-008 (b),
-  recirculation-funded, never minted) is still reserved scope; **do not fake it
-  with minting — zero inflation is an invariant (§3.1).**
+  **Node wiring DONE.** The `AppModule`s are wired into the evmd-derived `gembad`
+  binary (see [`gembad/`](./gembad) — a version-pinned patch + build script, no
+  evmd vendored) and demonstrated live on both a single-node and a 4-validator BFT
+  devnet: a real EVM transfer paying a 2.1 GMB fee moved exactly 0.84 GMB (40%) to
+  the faucet module account while 60% went to validators, and total supply stayed
+  exactly 100,000,000 GMB across blocks while the reward streamed from the reserve
+  (`gembad/demo-gembad.sh`). The original wiring spec is in [`x/WIRING.md`](./x/WIRING.md).
+
+  The post-reserve **tail reward** (ADR-008 (b), recirculation-funded, never
+  minted) is still reserved scope; **do not fake it with minting — zero inflation
+  is an invariant (§3.1).**
 
 ```bash
 cd chain && go test ./...        # run all module tests

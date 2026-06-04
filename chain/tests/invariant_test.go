@@ -45,6 +45,7 @@ func newHarness(t *testing.T) *harness {
 		map[string]*storetypes.TransientStoreKey{"t1": storetypes.NewTransientStoreKey("t1")},
 		nil,
 	)
+	ctx = ctx.WithBlockHeight(10) // past the first-block streaming guard
 	bank := gtu.NewBankFake()
 	return &harness{
 		ctx:  ctx,

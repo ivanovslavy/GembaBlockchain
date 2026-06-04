@@ -10,6 +10,7 @@
 package testutil
 
 import (
+	"context"
 	"fmt"
 
 	"cosmossdk.io/math"
@@ -56,17 +57,17 @@ func (b *BankFake) Mint(module string, coins sdk.Coins) {
 
 // --- rewardstreamer/feesplit BankKeeper methods ---
 
-func (b *BankFake) GetBalance(_ sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
+func (b *BankFake) GetBalance(_ context.Context, addr sdk.AccAddress, denom string) sdk.Coin {
 	return sdk.NewCoin(denom, b.get(addr).AmountOf(denom))
 }
 
-func (b *BankFake) GetAllBalances(_ sdk.Context, addr sdk.AccAddress) sdk.Coins {
+func (b *BankFake) GetAllBalances(_ context.Context, addr sdk.AccAddress) sdk.Coins {
 	return b.get(addr)
 }
 
 // GetSupply is the total across ALL accounts: the model's source of truth for
 // total supply. If any code path created coins, this would rise.
-func (b *BankFake) GetSupply(_ sdk.Context, denom string) sdk.Coin {
+func (b *BankFake) GetSupply(_ context.Context, denom string) sdk.Coin {
 	total := math.ZeroInt()
 	for _, coins := range b.balances {
 		total = total.Add(coins.AmountOf(denom))
@@ -76,7 +77,7 @@ func (b *BankFake) GetSupply(_ sdk.Context, denom string) sdk.Coin {
 
 // SendCoinsFromModuleToModule moves coins between module accounts. It errors on
 // insufficient funds, so it can never overdraw (and thus never create) coins.
-func (b *BankFake) SendCoinsFromModuleToModule(_ sdk.Context, sender, recipient string, amt sdk.Coins) error {
+func (b *BankFake) SendCoinsFromModuleToModule(_ context.Context, sender, recipient string, amt sdk.Coins) error {
 	from := authtypes.NewModuleAddress(sender)
 	to := authtypes.NewModuleAddress(recipient)
 
