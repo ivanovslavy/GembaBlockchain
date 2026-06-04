@@ -29,5 +29,15 @@ data. See root `.gitignore`.
 
 ## Phase
 
-Built in **Phase 1** (local devnet) and **Phase 2** (custom modules). Not yet
-scaffolded with Go code — directory placeholder for Phase 0.
+- **Phase 1 — DONE (local devnet).** No Go fork yet: we run the pinned upstream
+  `cosmos/evm` `evmd` **v0.7.0** binary and bake GembaBlockchain's economics into
+  genesis. See [`scripts/`](./scripts/) — single-node and 4-validator devnets,
+  with every genesis anchor (zero inflation, non-zero fee floor per ADR-008a,
+  chainId 821206, ~2 s blocks, §4.1 allocation) mapped to its spec section.
+  Verified: MetaMask-connect RPC calls, a GMB transfer, a Solidity deploy, and
+  4-validator BFT liveness with 1 validator down (§5.3).
+- **Phase 2 — TODO (custom Go modules).** This is where we fork/extend `evmd`:
+  the `ValidatorRewardStreamer`, the **60/40 fee split**, and the post-reserve
+  **tail reward** (ADR-008 (b), recirculation-funded, never minted). Isolate them
+  so upstream bumps stay clean (CLAUDE.md §0.10). **Scope reserved here — do not
+  fake the tail reward with minting; zero inflation is an invariant (§3.1).**
