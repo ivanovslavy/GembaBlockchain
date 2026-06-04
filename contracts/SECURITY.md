@@ -66,6 +66,17 @@ findings from the pass).
   beyond the call the employee signed (ADR-011 "Paymaster constraints"); replay,
   bad-signature and expired-deadline paths are tested in `MetaTx.t.sol`.
 
+## Phase 6 (GembaPay on-ramp)
+
+- **`GembaOnRamp.buy` / `withdrawGmb`** — "sends ETH to arbitrary destination" /
+  "low-level call": **intentional and access-/guard-protected**. `buy` sends GMB to
+  the **paying buyer** (`msg.sender`) who just transferred stablecoin in; CEI (pull
+  payment, then deliver) + `nonReentrant` (tested in `OnRamp.t.sol`
+  `test_BuyReentrancyBlocked`). `withdrawGmb` is `onlyOwner` + `nonReentrant`.
+  Native GMB transfers must use `call{value:}` with a checked success — done.
+- The **MiCA gate** (`publicSaleEnabled`, default `false`) is enforced and tested
+  (`test_PublicSaleDisabledByDefault`); enabling is `onlyOwner`.
+
 ## Out of scope
 
 - **`SeamProbe.sol`** — a **devnet-only** probe used to prove the Cosmos↔EVM seam

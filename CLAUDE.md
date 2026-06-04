@@ -449,7 +449,13 @@ the box.
   RLS isolating each institution's identity rows, Express API, GDPR erasure
   (on-chain revoke + off-chain delete), 8 unit tests + an RLS integration test.*
 - **Phase 6 — On-ramp.** GembaPay stablecoin → GMB purchase flow (no fiat redemption;
-  no DEX operated by us).
+  no DEX operated by us). *Done: `GembaOnRamp` (`contracts/src/onramp`) — fixed-rate
+  stablecoin→GMB sale, `nonReentrant` + SafeERC20, 8 Foundry tests. **MiCA gate
+  (ADR-009): `publicSaleEnabled` is FALSE by default; enabling public sale on a
+  public/main network is BLOCKED until written MiCA sign-off from a Bulgarian
+  fintech lawyer** — built/tested on devnet (operator toggled the flag), demo swaps
+  50 stablecoin → 500 GMB. Internal/closed formula grants to institutions go via the
+  Faucet (Phase 3) and are not gated here.*
 - **Phase 7 — Explorer.** Blockscout / GembaScan + API keys; optional Cosmos explorer.
 - **Phase 8 — Tickets & perks.** `Ticketing` ERC-1155, employee-bonus flows.
 - **Phase 9 — Hardening.** Seeds/persistent peers, monitoring, pruning, backups,

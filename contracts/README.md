@@ -81,6 +81,17 @@ slither . --filter-paths "lib/|test/|script/" --exclude-dependencies   # triaged
 Pairs with the off-chain backend `services/access-control` (PostgreSQL RLS + GDPR
 split). 7 Foundry tests; Slither clean.
 
+## Phase 6 — DONE (GembaPay on-ramp)
+
+| Contract | File | Notes |
+|---|---|---|
+| `GembaOnRamp` | `src/onramp/GembaOnRamp.sol` | fixed-rate stablecoin→GMB sale (no DEX, no fiat redemption); SafeERC20 + `nonReentrant` |
+
+**MiCA gate (ADR-009):** `publicSaleEnabled` is **false by default**; enabling public
+sale on a public/main network is **blocked until written MiCA sign-off** from a
+Bulgarian fintech lawyer (see the contract header + `docs/risks.md` ADR-009). Built
+and tested on devnet only. 8 Foundry tests; live demo `script/OnRampDemo.s.sol`.
+
 ## Later phases
 
 `Ticketing` (Phase 8).
