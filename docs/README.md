@@ -19,10 +19,13 @@ here expand on specific areas.
   (never an EOA), and the Cosmos↔EVM seam where `x/feesplit` deposits into the
   Solidity Faucet.
 
+- [`runbooks/`](./runbooks) — **Phase 9 node-operations runbooks**: peers & pruning
+  (validator vs archive), validator key management (tmkms), backups, halt recovery,
+  and coordinated upgrades. Pair with [`/monitoring`](../monitoring) (Prometheus +
+  the bonded-ratio security metric, ADR-008).
+
 ## Planned (later phases)
 
-- Halt-recovery runbook (Phase 9).
-- Coordinated node-operator upgrade runbook (chain binary/consensus changes are
-  social coordination, not on-chain governance — `CLAUDE.md` §7).
-- Validator key-management guide (KMS/Vault/`tmkms`, Phase 9).
-- Archive vs pruned node disk-sizing guidance (`CLAUDE.md` §11).
+- Public-launch checklist gating on the hard blockers (audit ADR-006, MiCA ADR-009,
+  security-budget tail ADR-008 — the tail reward is implemented; audit + MiCA are
+  the founder's separate, non-code tracks).

@@ -1,0 +1,29 @@
+# Prometheus scrape config for a GembaBlockchain node (Phase 9 monitoring).
+# Scrapes CometBFT consensus metrics, the Cosmos SDK app telemetry, and the
+# node_exporter (which surfaces the bonded-ratio textfile metric, ADR-008).
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - alerts.yml
+
+scrape_configs:
+  # CometBFT metrics — enable in config.toml: [instrumentation] prometheus = true
+  # (listens on :26660). Block height, peers, consensus rounds, missing validators.
+  - job_name: cometbft
+    static_configs:
+      - targets: ["localhost:26660"]
+
+  # Cosmos SDK app telemetry — enable in app.toml: [telemetry] enabled = true,
+  # and expose via [api] or the node's metrics endpoint.
+  - job_name: gemba-app
+    static_configs:
+      - targets: ["localhost:1317"]
+    metrics_path: /metrics
+
+  # node_exporter textfile collector — carries gemba_bonded_ratio (ADR-008),
+  # written by bonded-ratio-exporter.sh, plus host metrics (disk for pruning).
+  - job_name: node
+    static_configs:
+      - targets: ["localhost:9100"]

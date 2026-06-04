@@ -475,7 +475,13 @@ the box.
   (`script/TicketingDemo.s.sol`): issue, paid buy, GMB bonus + perk ticket, redeem.*
 - **Phase 9 — Hardening.** Seeds/persistent peers, monitoring, pruning, backups,
   validator key management (KMS/Vault/`tmkms`), runbooks (halt recovery, coordinated
-  upgrade), security review / audit before public launch.
+  upgrade), security review / audit before public launch. *Technical part done: the
+  post-reserve **tail reward** (`x/tailreward`, ADR-008b — recirculation, no mint,
+  supply-invariant tested + live); `/monitoring` (Prometheus + the **bonded-ratio**
+  security metric & ADR-008 alerts at 66/50/33); `docs/runbooks/` (peers & pruning
+  validator-vs-archive, tmkms key mgmt, backups, halt recovery, coordinated
+  upgrade). The **security audit (ADR-006)** and **MiCA sign-off (ADR-009)** are the
+  founder's separate, non-code tracks and remain hard launch blockers (§16).*
 
 ---
 
