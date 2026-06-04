@@ -543,6 +543,18 @@ contradictions.
    that widens both electorates, and **published decentralization KPIs** (independent
    operators, Nakamoto coefficient, top-operator stake share, bonded ratio, founder
    share of circulating GMB). Full ADR: `/docs/risks.md` (ADR-010).
+10. **Meta-tx relayer is an institution's operational dependency, not the chain's.**
+   The Phase 4 `Paymaster` (sponsored gas) uses a meta-tx relay: an institution's
+   relayer submits its employees' txs and pays the gas, so an employee needs no GMB.
+   Risks: relayer trust (it can censor/delay) and single-point-of-failure (relayer
+   down ⇒ that institution's sponsored employees can't submit *through it*). These
+   are **per-institution operational** risks, **not** chain/consensus risks: each
+   institution runs its own relayer for its own employees; one relayer's failure or
+   censorship affects only that institution, never GembaBlockchain. Critically, an
+   employee can always **submit directly on-chain themselves** (with a little GMB) —
+   the relayer is a convenience, not the only path, and the chain has no protocol
+   dependency on any relayer. **Explicitly NOT a launch blocker** (unlike ADR-006/
+   008/009). Full ADR: `/docs/risks.md` (ADR-011).
 
 > **Hard launch blockers (do not ship a public launch until all clear):**
 > **MiCA classification** — no public GMB sale / open on-ramp until a Bulgarian

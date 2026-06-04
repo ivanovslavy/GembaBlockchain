@@ -318,6 +318,35 @@
 
 ---
 
+## ADR-011 — Meta-tx relayer is an institution's operational dependency, not the chain's
+
+- **Status:** Accepted (NOT a launch blocker)
+- **Context:** The `Paymaster` for sponsored gas (Phase 4) uses a meta-tx relay: a
+  relayer (server) submits transactions on behalf of employees and pays the gas
+  from the sponsoring wallet, so an employee transacts without ever holding GMB.
+  This introduces two risks: (1) **relayer trust** — it can censor or delay the
+  submission of specific transactions; (2) **single point of failure** — if the
+  relayer goes down, that institution's sponsored employees cannot submit through
+  it.
+- **Decision:** The relayer is an **operational dependency of the institution that
+  runs it, NOT of the whole chain.** Each institution runs its own relayer for its
+  own employees; failure or censorship by one relayer affects only that institution,
+  never GembaBlockchain. Critically, an employee **always retains the option to
+  submit their transaction directly on-chain themselves** (if they hold a little GMB
+  for gas) — the relayer is a convenience, not the only path. The chain has **no
+  protocol dependency on any relayer.**
+- **Consequences:** The sponsored UX depends on the availability and honesty of the
+  relevant institution's relayer — an **operational, not a consensus** risk.
+  Mitigations: the relayer is **stateless and easily restartable/replaceable**; the
+  employee has a **direct-submit fallback**; and the relayer logic **cannot move
+  funds beyond paying gas** (Paymaster constraints). This is an acceptable trade-off
+  for workplace access control — the institution is responsible for its own relayer,
+  as for any other of its internal servers. Recorded explicitly: the relayer is
+  **NOT a launch blocker** (unlike ADR-006/008/009) — it is a per-institution
+  operational concern, not a chain-level risk.
+
+---
+
 ## Cross-reference: hard launch blockers (must clear before public launch)
 
 | ADR | Blocker | Clears when |
