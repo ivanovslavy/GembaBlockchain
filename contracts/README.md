@@ -72,6 +72,15 @@ forge test                      # 41 tests incl. invariant/fuzz + meta-tx suites
 slither . --filter-paths "lib/|test/|script/" --exclude-dependencies   # triaged in SECURITY.md
 ```
 
+## Phase 5 — DONE (access control)
+
+| Contract | File | Notes |
+|---|---|---|
+| `AccessControlNFT` | `src/access/AccessControlNFT.sol` | soulbound ERC-1155 capability (token id = zone); issuer-gated grant/revoke; **no PII on-chain** (CLAUDE.md §10) |
+
+Pairs with the off-chain backend `services/access-control` (PostgreSQL RLS + GDPR
+split). 7 Foundry tests; Slither clean.
+
 ## Later phases
 
-`AccessControlNFT` (Phase 5), `Ticketing` (Phase 8).
+`Ticketing` (Phase 8).

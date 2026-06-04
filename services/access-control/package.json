@@ -1,0 +1,17 @@
+{
+  "name": "@gemba/access-control",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "GembaBlockchain access-control backend: off-chain PII/logs (PostgreSQL + RLS), on-chain anonymous capability NFTs. GDPR split (CLAUDE.md §10).",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/*.test.js",
+    "test:integration": "node --test test/integration/*.test.js"
+  },
+  "dependencies": {
+    "ethers": "^6.13.0",
+    "express": "^4.21.0",
+    "pg": "^8.13.0"
+  }
+}

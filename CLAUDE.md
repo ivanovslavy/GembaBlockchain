@@ -443,7 +443,11 @@ the box.
   (`contracts/script/SponsoredDemo.s.sol`). Relayer is per-institution, not a chain
   dependency (ADR-011). 41 Foundry tests, Slither triaged.*
 - **Phase 5 — Access control.** `AccessControlNFT` + off-chain PII/log backend
-  (Node/Express + PostgreSQL RLS), GDPR split.
+  (Node/Express + PostgreSQL RLS), GDPR split. *Done: soulbound ERC-1155 capability
+  NFT (no PII on-chain, issuer-gated, 7 Foundry tests) in `contracts/src/access`;
+  off-chain backend in `services/access-control` — PostgreSQL schema with `FORCE`
+  RLS isolating each institution's identity rows, Express API, GDPR erasure
+  (on-chain revoke + off-chain delete), 8 unit tests + an RLS integration test.*
 - **Phase 6 — On-ramp.** GembaPay stablecoin → GMB purchase flow (no fiat redemption;
   no DEX operated by us).
 - **Phase 7 — Explorer.** Blockscout / GembaScan + API keys; optional Cosmos explorer.
