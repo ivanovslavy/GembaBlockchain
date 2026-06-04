@@ -49,6 +49,10 @@ an authenticated API key).
 npm install
 npm test                       # unit tests (validation + GDPR logic), no DB needed
 
+npm run test:rls               # RLS tenant-isolation test on a real (embedded) PG,
+                               # no Docker needed — VERIFIED: A cannot see B's PII
+
+# or against your own PostgreSQL:
 docker compose up -d           # local PostgreSQL with schema + RLS loaded
 DATABASE_URL="postgres://gemba_app:devpassword@localhost:5432/gemba" \
   npm run test:integration     # proves RLS tenant isolation
