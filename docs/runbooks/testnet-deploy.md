@@ -199,3 +199,76 @@ re-synced — no manual action.)*
 
 Finally work through `testnet-launch-checklist.md`, and rehearse a coordinated
 upgrade (`coordinated-upgrade.md`) and halt recovery (`halt-recovery.md`).
+
+## 7. Adding a validator to a LIVE network (permissionless dynamic join)
+
+A new validator joins a running chain by syncing as a full node, then sending a
+`MsgCreateValidator` — no genesis change, no coordination. This is the permissionless
+entry of §5.2. *(Verified: a 4th node joined the live 3-validator testnet, entered the
+active set, and signed every block.)*
+
+**a. Fresh, independent node — never reuse keys.**
+```bash
+H=/home/slavy/.gembad-testnet-node3
+gembad init gemba-tn-val-node3 --chain-id gemba-testnet-1 --home "$H"   # fresh consensus + node key
+gembad keys add node3val --keyring-backend test --algo eth_secp256k1 --home "$H"
+```
+> **CRITICAL:** the new node MUST have its **own** `priv_validator_key.json` and
+> `node_key.json`. A shared consensus key = **double-signing = slash + tombstone**
+> (§5.6). Verify the consensus pubkey differs from every existing node:
+> `gembad comet show-validator --home "$H"` (and `show-node-id`).
+
+**b. Co-located on an existing node's machine?** (e.g. a 2nd validator on one host —
+not the Hetzner layout, where each is its own host). Then **offset every port** in
+`config.toml`/`app.toml` (p2p/rpc/proxy_app/grpc/json-rpc/api/pprof/prometheus, e.g.
+`26666/26667/26668/9091/8555/1327/6061/26670`), use a distinct systemd unit name
+(`gembad-node3.service`), and set **`allow_duplicate_ip = true`** on the peers it
+connects to — otherwise they reject it as a duplicate of the IP they already peer
+with (same machine), and it can't gossip its votes. (On separate hosts, none of this
+applies.)
+
+**c. Canonical genesis + peers + config**, exactly as §3: copy the published
+`genesis.json` (sha256 must match), set `persistent_peers` to the existing
+validators, `addr_book_strict=false`, `mempool.type="app"`,
+`minimum-gas-prices="1000000000agmb"`, `evm-chain-id=821207`.
+
+**d. Start as a FULL NODE and let it sync** (systemd unit per §5, `Restart=always`,
+enabled). Wait until caught up before validating:
+```bash
+curl -s localhost:26667/status | jq .result.sync_info.catching_up   # must be false
+```
+
+**e. Fund the operator, then create the validator on-chain.** The operator account
+needs ≥ self-bond + fees; fund it from the drip faucet or a transfer:
+```bash
+gembad tx bank send tnfaucet $(gembad keys show node3val -a --keyring-backend test --home "$H") \
+  1100000000000000000000000agmb --from tnfaucet --gas auto --gas-adjustment 1.5 \
+  --gas-prices 1000000000agmb --node tcp://localhost:26657 -y
+cat > validator.json <<JSON
+{ "pubkey": $(gembad comet show-validator --home "$H"),
+  "amount": "1000000000000000000000000agmb", "moniker": "gemba-tn-val-node3",
+  "commission-rate": "0.1", "commission-max-rate": "0.2",
+  "commission-max-change-rate": "0.01", "min-self-delegation": "1" }
+JSON
+gembad tx staking create-validator validator.json --from node3val --keyring-backend test \
+  --home "$H" --chain-id gemba-testnet-1 --node tcp://localhost:26667 \
+  --gas auto --gas-adjustment 1.5 --gas-prices 1000000000agmb -y
+```
+
+**f. Verify it joined the active set and signs.** The new node enters the bonded set
+at the end of the block the tx lands in:
+```bash
+gembad q staking validators --node tcp://localhost:26657 -o json | jq -r \
+  '.validators[]|select(.status=="BOND_STATUS_BONDED")|.description.moniker'   # now N+1
+# confirm it signs — check a SETTLED (older) block, not the in-flight one
+# (a block commits at >2/3, so the latest commit may show one fewer signer):
+gembad q slashing signing-info $(gembad comet show-validator --home "$H") \
+  --node tcp://localhost:26657 -o json | jq .val_signing_info   # missed≈0, not jailed
+```
+
+## 8. BFT fault-tolerance test (≥4 validators)
+
+With **4** validators, the set tolerates **one** offline (3/4 = 75% > 2/3), so the
+chain keeps producing. Test it: `sudo systemctl stop gembad` on one node → confirm
+the other three keep advancing → start it again → confirm it catches back up. (With
+exactly 3, see the n=3 pause note in §6.)
