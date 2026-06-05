@@ -12,6 +12,7 @@ Operational runbooks for running and maintaining GembaBlockchain nodes. Pair wit
 | [`coordinated-upgrade.md`](./coordinated-upgrade.md) | binary/consensus upgrades via `x/upgrade` + cosmovisor, or emergency restart |
 | [`testnet-deploy.md`](./testnet-deploy.md) | deploy `gemba-testnet-1` on 5 geo-separated validators (genesis assembly, seeds, firewall, systemd) |
 | [`testnet-launch-checklist.md`](./testnet-launch-checklist.md) | first-weeks checklist: block production, peers, bonded ratio, zero-inflation under load, drills |
+| [`public-testnet-operations.md`](./public-testnet-operations.md) | **live public deployment**: 4-validator topology, add/remove (unbond, NAT) procedures, explorer+RPC architecture, MetaMask + chain-registry, and the version-pairing / next-image / CORS gotchas |
 
 These are **social/operational** procedures: there is no admin key that force-runs
 the chain (§6). Test every procedure on a devnet/testnet before mainnet (§0.9).
