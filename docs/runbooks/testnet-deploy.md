@@ -123,30 +123,79 @@ Run the **drip faucet** (`services/testnet-faucet`) and one **archive node**
 (`pruning = "nothing"`) for the explorer (`explorer/`) — the explorer points at the
 archive node, never a pruned validator.
 
-## 5. systemd
+## 5. Durable setup with systemd (survives reboot — verified)
 
+Goal: after a reboot of any machine, its node comes back **automatically** and
+rejoins, with no manual step.
+
+**a. Put the binary on a persistent path.** `/tmp` is wiped on reboot, so never run
+the node from `/tmp/gembad`. Install to `/usr/local/bin` on every machine:
+```bash
+sudo cp /tmp/gembad /usr/local/bin/gembad && sudo chmod 755 /usr/local/bin/gembad
+hash -r && gembad version --long      # confirm it resolves with no full path
+```
+Build with version ldflags if you want `gembad version` to print a tag (the bare
+`build-gembad.sh` leaves it blank; the binary still works — the sha256 is the
+identity, see §0).
+
+**b. Keep all node data under the home in `/home`** (`~/.gembad-testnet-nodeN`),
+never in `/tmp`. Confirm `config/genesis.json`, `config/priv_validator_key.json`,
+`config/node_key.json` and `data/` all live under the home.
+
+**c. The unit.** `WorkingDirectory` is **required** — systemd's default CWD is `/`,
+which the service user cannot write, and the node creates a relative `data` dir at
+startup → `mkdir data: permission denied` crash-loop. Set it to the node home:
 ```ini
-# /etc/systemd/system/gembad.service
+# /etc/systemd/system/gembad.service     (set --home / WorkingDirectory per machine)
 [Unit]
-Description=GembaBlockchain testnet validator
+Description=GembaBlockchain testnet validator (gemba-testnet-1)
 After=network-online.target
+Wants=network-online.target
 [Service]
-User=gemba
-ExecStart=/usr/local/bin/gembad start --home /var/lib/gemba --chain-id gemba-testnet-1 \
-  --evm.evm-chain-id 821207 --minimum-gas-prices 1000000000agmb
-Restart=on-failure
+User=slavy
+WorkingDirectory=/home/slavy/.gembad-testnet-node0
+Environment=HOME=/home/slavy
+ExecStart=/usr/local/bin/gembad start --home /home/slavy/.gembad-testnet-node0 \
+  --chain-id gemba-testnet-1 --evm.evm-chain-id 821207 \
+  --minimum-gas-prices 1000000000agmb --json-rpc.enable=false
+Restart=always
 RestartSec=3
 LimitNOFILE=65535
 [Install]
 WantedBy=multi-user.target
 ```
+
+**d. Enable + switch off any manual process** (avoid two signers on one home):
 ```bash
-systemctl enable --now gembad && journalctl -u gembad -f
+sudo systemctl daemon-reload && sudo systemctl enable gembad
+# stop any nohup/foreground node BY THE BINARY (not 'pkill -f "gembad start"',
+# which also matches your own shell): kill the process whose comm is gembad:
+for p in $(ps -eo pid,comm | awk '$2=="gembad"{print $1}'); do sudo kill -9 "$p"; done
+sudo systemctl start gembad
+systemctl is-active gembad && systemctl is-enabled gembad
 ```
 
-## 6. Verify launch
+## 6. Verify launch + reboot test
 
-All 5 validators online, `gembad status` height advancing on each, 4 peers each,
-validator set = 5. Then work through `testnet-launch-checklist.md`. Practice a
-coordinated upgrade (`coordinated-upgrade.md`) and a halt recovery
-(`halt-recovery.md`) on the testnet before relying on them for mainnet.
+Bring-up: every validator `active`+`enabled`, height advancing, peers = N−1 each,
+identical app hash. Then **prove durability with a real reboot** (not just
+`enable`):
+```bash
+ssh <node> 'sudo reboot'        # SSH drops — expected
+# wait for it to return, then:
+ssh <node> 'systemctl is-active gembad; curl -s localhost:26657/status \
+  | jq "{h:.result.sync_info.latest_block_height, catching_up:.result.sync_info.catching_up}"'
+```
+Expect: `gembad` already `active` on a fresh boot (uptime ~0 min), peers reconnected,
+`catching_up:false`, height in sync with the others. *(Verified on the i3 node: after
+`sudo reboot` it came back in ~60s, the service auto-started, rejoined both peers and
+re-synced — no manual action.)*
+
+> **BFT liveness note.** With **3 equal-stake** validators, any single one offline
+> drops the set to exactly 2/3 — not the **strictly >2/3** CometBFT needs to commit
+> — so the chain **pauses** while a node reboots and resumes the moment it rejoins.
+> That is expected for n=3. To tolerate one node down (no pause), run **≥4**
+> validators (the Hetzner target is 5, §5.3) — then a reboot is fully seamless.
+
+Finally work through `testnet-launch-checklist.md`, and rehearse a coordinated
+upgrade (`coordinated-upgrade.md`) and halt recovery (`halt-recovery.md`).
