@@ -1,0 +1,8 @@
+[
+  {
+    "url": "ipfs://__REPLACE_WITH_PINNED_CID__",
+    "width": 512,
+    "height": 512,
+    "format": "png"
+  }
+]
