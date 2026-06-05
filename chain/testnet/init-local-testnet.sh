@@ -52,6 +52,14 @@ TMP="$(mktemp)"
 jq --arg a "$RS_RESERVE_ADDR" --arg b "$FAUCET_MODULE_ADDR" '.app_state.auth.accounts |= map(select(.address != $a and .address != $b))' "$GEN" >"$TMP" && mv "$TMP" "$GEN"
 # testnet conveniences: shorter unbonding; custom-module genesis (tail stays off)
 jq --arg u "$TN_UNBONDING_TIME" '.app_state.staking.params.unbonding_time = $u' "$GEN" >"$TMP" && mv "$TMP" "$GEN"
+# GENESIS FEE FIX (ADR-008a): set feemarket min_gas_price = 0 so zero-fee gentxs
+# (MsgCreateValidator) pass InitChain — the cosmos MinGasPriceDecorator short-
+# circuits on 0. base_fee (1 gwei) and node minimum-gas-prices (1 gwei) stay
+# non-zero for runtime; restore min_gas_price=1e9 via governance post-launch.
+# (The real multi-machine deploy MUST do this too — see docs/runbooks/testnet-deploy.md
+# step 2c — because its gentxs are zero-fee; here gentxs carry --gas-prices, but we
+# set it for parity with the documented launch path.)
+jq '.app_state.feemarket.params.min_gas_price = "0.000000000000000000"' "$GEN" >"$TMP" && mv "$TMP" "$GEN"
 
 mkdir -p "$N0/config/gentx"
 for i in $(seq 0 $((N-1))); do

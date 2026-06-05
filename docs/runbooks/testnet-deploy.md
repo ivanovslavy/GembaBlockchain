@@ -52,7 +52,27 @@ b. Collect every validator's gentx and finalize:
    gembad genesis validate-genesis --home <coord-home>
    sha256sum config/genesis.json     # publish this hash
    ```
-c. **Publish** the canonical `genesis.json` (+ its sha256) and the **peer list**:
+c. **GENESIS FEE FIX — required (CLAUDE.md ADR-008a).** gentxs are zero-fee
+   (`MsgCreateValidator` with no `--gas-prices`), but the cosmos `MinGasPriceDecorator`
+   enforces `feemarket.min_gas_price` on **both** CheckTx and DeliverTx — so at
+   `InitChain` it rejects the zero-fee gentxs ("minimum global fee … insufficient
+   fee") and the node panics. The decorator **short-circuits when `min_gas_price`
+   is 0**, so set it to 0 in genesis (the node's `minimum-gas-prices` and the EVM
+   `base_fee` stay non-zero — genesis txs run in DeliverTx mode where the validator
+   min-gas-price check is skipped, so they do NOT block genesis):
+   ```bash
+   jq '.app_state.feemarket.params.min_gas_price = "0.000000000000000000"' \
+      config/genesis.json | sponge config/genesis.json
+   gembad genesis validate-genesis --home <coord-home>
+   sha256sum config/genesis.json     # THIS is the canonical hash to publish
+   ```
+   **ADR-008a is preserved for runtime and fully restored post-genesis:** `base_fee`
+   stays 1 gwei and node `minimum-gas-prices` stays 1 gwei; once the chain is live,
+   a governance `feemarket` param-change sets `min_gas_price` back to `1000000000…`
+   to re-arm the consensus-level floor. (Alternatively, create gentxs WITH
+   `--gas-prices 1000000000agmb` so they carry a fee — but that means regenerating
+   gentxs; the min_gas_price=0 approach does not.)
+d. **Publish** the canonical `genesis.json` (+ its sha256) and the **peer list**:
    `gembad comet show-node-id --home ...` on each node → `nodeid@public_ip:26656`.
 
 ## 3. Each validator: install genesis, peers, config
@@ -61,16 +81,34 @@ c. **Publish** the canonical `genesis.json` (+ its sha256) and the **peer list**
 cp canonical-genesis.json /var/lib/gemba/config/genesis.json
 sha256sum /var/lib/gemba/config/genesis.json    # MUST match the published hash
 ```
-`config.toml [p2p]`:
+After installing the canonical genesis, **reset any prior data** so the node
+InitChains fresh on it (keeps keys): `gembad comet unsafe-reset-all --home <home>`.
+
+`config.toml`:
 ```toml
-persistent_peers = "<id1>@ip1:26656,<id2>@ip2:26656,..."   # the other 4 validators
+# [p2p]
+persistent_peers = "<id1>@ip1:26656,<id2>@ip2:26656,..."   # the OTHER validators
 seeds = "<seed_id>@seed_ip:26656"                          # 1-2 seed nodes
+addr_book_strict = false        # REQUIRED on a private LAN (192.168.x) — strict
+                                # mode rejects non-routable IPs from the address book
+# [mempool]
+type = "app"                    # REQUIRED by the EVM mempool (default "flood" panics)
 ```
-`app.toml`: `pruning = "custom"` (validators prune; see `node-setup.md`),
-`minimum-gas-prices = "1000000000agmb"`, `evm-chain-id = 821207`, `[telemetry]
-enabled = true`. Enable CometBFT prometheus (`config.toml [instrumentation]`).
+`app.toml` (these were the per-node consistency fixes — set them on EVERY node):
+```toml
+minimum-gas-prices = "1000000000agmb"   # NOT the default "0aatom" (wrong denom);
+                                        # this is the runtime node-level floor (ADR-008a)
+evm-chain-id = 821207                    # testnet EVM chainId (default is 262144)
+pruning = "custom"                       # validators prune (see node-setup.md)
+```
+Also `[telemetry] enabled = true` and CometBFT prometheus (`config.toml
+[instrumentation]`; offset `prometheus_listen_addr` per host only if co-located).
 Run **one** signer per validator; protect the consensus key (`validator-keys.md`,
 tmkms recommended).
+
+> The gentx `memo` may carry whatever IP the validator auto-detected at gentx time
+> (often a different subnet) — it's only a hint. Always set `persistent_peers`
+> explicitly with the correct addresses, as above.
 
 ## 4. Firewall & exposure (CLAUDE.md §11)
 
