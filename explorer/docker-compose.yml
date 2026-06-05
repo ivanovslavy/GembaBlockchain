@@ -51,10 +51,17 @@ services:
   frontend:
     image: ghcr.io/blockscout/frontend:v1.37.0
     environment:
-      NEXT_PUBLIC_NETWORK_NAME: GembaBlockchain
-      NEXT_PUBLIC_NETWORK_ID: "821206"
+      NEXT_PUBLIC_NETWORK_NAME: GembaBlockchain testnet
+      NEXT_PUBLIC_NETWORK_SHORT_NAME: gemba-testnet
+      NEXT_PUBLIC_NETWORK_ID: "821207"
+      NEXT_PUBLIC_NETWORK_CURRENCY_NAME: Gemba
       NEXT_PUBLIC_NETWORK_CURRENCY_SYMBOL: GMB
-      NEXT_PUBLIC_API_HOST: localhost
+      NEXT_PUBLIC_NETWORK_CURRENCY_DECIMALS: "18"
+      # APP_HOST/API_HOST = the laptop's LAN IP so the UI works from the laptop AND
+      # other 192.168.100.x devices (browser fetches the API from this host).
+      NEXT_PUBLIC_APP_HOST: 192.168.100.10
+      NEXT_PUBLIC_APP_PROTOCOL: http
+      NEXT_PUBLIC_API_HOST: 192.168.100.10
       NEXT_PUBLIC_API_PORT: "4000"
       NEXT_PUBLIC_API_PROTOCOL: http
     ports:

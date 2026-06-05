@@ -272,3 +272,63 @@ With **4** validators, the set tolerates **one** offline (3/4 = 75% > 2/3), so t
 chain keeps producing. Test it: `sudo systemctl stop gembad` on one node → confirm
 the other three keep advancing → start it again → confirm it catches back up. (With
 exactly 3, see the n=3 pause note in §6.)
+
+## 9. JSON-RPC for apps (MetaMask/Foundry) + LAN-only firewall
+
+Enable the EVM JSON-RPC so wallets/tools can connect. In the systemd `ExecStart`
+(per §5), replace `--json-rpc.enable=false` with:
+```
+--json-rpc.enable=true --json-rpc.address 0.0.0.0:8545 --json-rpc.ws-address 0.0.0.0:8546 --json-rpc.api eth,net,web3,txpool,debug
+```
+Bind `0.0.0.0` so it's reachable on the LAN. **Co-located nodes need distinct RPC
+ports** — on the laptop node0 uses 8545/8546 and node3 uses **8555/8556** (offset, as
+its other ports). `daemon-reload` + restart one node at a time (4-set tolerates 1).
+Verify per node: `eth_chainId` → `0xc87d7` (821207) and `eth_blockNumber` grows.
+
+**Firewall — LAN-only, NEVER public.** This is a local testnet: nothing is exposed to
+the internet (no router port-forward, no public bind). Where `ufw` is active, allow
+the needed ports **only from the LAN subnet**:
+```bash
+LAN=192.168.100.0/24
+for p in 8545 8546; do sudo ufw allow from $LAN to any port $p proto tcp; done   # every node
+# laptop also hosts node3 + the explorer:
+for p in 8555 8556 4000 80; do sudo ufw allow from $LAN to any port $p proto tcp; done
+```
+P2P 26656 is already open between nodes (peers connected). CometBFT RPC (26657) stays
+localhost. **Public access (reverse proxy + Let's Encrypt) is only for Hetzner — not
+here.** A regular `ufw allow <port>` (no `from`) opens it to every interface; always
+scope testnet rules to the LAN subnet.
+
+MetaMask network: name `GembaBlockchain testnet`, RPC `http://<node-ip>:8545` (or
+:8555 for node3), chainId **821207**, symbol **GMB**, explorer `http://<laptop-ip>`.
+
+## 10. Block explorer (GembaScan / Blockscout) + archive node
+
+Blockscout needs an **archive** node (`pruning=nothing`) — never a pruned validator
+(§11 of CLAUDE.md). Don't repurpose a validator; run a **dedicated archive full node**
+(it block-syncs from the validators, which keep blocks even with state pruning, and
+re-executes with `pruning=nothing` for full historical state):
+- init a separate home, copy the canonical genesis, offset all ports (e.g. p2p 26676
+  / rpc 26677 / grpc 9092 / json-rpc **8565**/8566), `pruning=nothing`,
+  `persistent_peers` = the validators, `allow_duplicate_ip=true` if co-located.
+- systemd unit with `--pruning nothing --json-rpc.enable=true --json-rpc.address
+  0.0.0.0:8565 --json-rpc.api eth,net,web3,debug,txpool` (Blockscout needs `debug`/trace).
+- verify it serves history: `eth_getBalance <addr> 0x1` returns the genesis balance
+  (a pruned node errors).
+
+Explorer (`explorer/`, Docker — needs `sudo` if the user isn't in the `docker` group):
+- `explorer/envs/backend.env` (gitignored — holds `SECRET_KEY_BASE`): set
+  `CHAIN_ID=821207`, point `ETHEREUM_JSONRPC_HTTP_URL` / `_TRACE_URL` at
+  `http://host.docker.internal:8565` and `_WS_URL` at `ws://host.docker.internal:8566`,
+  and `SECRET_KEY_BASE=$(openssl rand -hex 32)`. The compose maps
+  `host.docker.internal:host-gateway`; allow the docker subnet to the archive:
+  `sudo ufw allow from 172.16.0.0/12 to any port 8565`.
+- frontend (`docker-compose.yml`) requires `NEXT_PUBLIC_APP_HOST` (set to the laptop
+  LAN IP so the UI works from other devices), `NEXT_PUBLIC_APP_PROTOCOL`,
+  `NEXT_PUBLIC_API_HOST` (LAN IP), `NEXT_PUBLIC_NETWORK_ID=821207`. Do **not** set
+  `NEXT_PUBLIC_API_WS_PROTOCOL` — frontend v1.37.0 fails its congruity check on it.
+- `sudo docker compose up -d`; backend API on `:4000`, **visual UI on port 80**.
+  *(Verified: archive synced + serving historical state; Blockscout indexed all blocks
+  in real time; UI returns HTTP 200. Cosmos-level staking/bank txs don't appear — only
+  EVM txs do, so the tx list populates once you transact via MetaMask. `sc-verifier`
+  needs internet for solc and is optional — contract verification only.)*
