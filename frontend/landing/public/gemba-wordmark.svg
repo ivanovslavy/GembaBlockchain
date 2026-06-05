@@ -1,0 +1,27 @@
+<svg viewBox="0 0 400 80" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gembaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Logo icon -->
+  <g transform="translate(10, 8) scale(0.125)">
+    <circle cx="256" cy="256" r="220" fill="none" stroke="url(#gembaGrad)" stroke-width="12" opacity="0.3"/>
+    <circle cx="256" cy="36" r="8" fill="#4F46E5"/>
+    <circle cx="476" cy="256" r="8" fill="#4F46E5"/>
+    <circle cx="256" cy="476" r="7" fill="#4F46E5"/>
+    <circle cx="36" cy="256" r="6" fill="#4F46E5"/>
+    <circle cx="256" cy="256" r="170" fill="none" stroke="url(#gembaGrad)" stroke-width="16"/>
+    <path d="M256 130 A126 126 0 1 0 382 256 L300 256" fill="none" stroke="url(#gembaGrad)" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="256" cy="130" r="12" fill="#4F46E5"/>
+    <circle cx="382" cy="256" r="12" fill="#06B6D4"/>
+    <circle cx="256" cy="382" r="12" fill="#4F46E5"/>
+    <circle cx="130" cy="256" r="12" fill="#06B6D4"/>
+    <circle cx="300" cy="256" r="10" fill="#6366F1"/>
+  </g>
+  
+  <!-- GembaPay text -->
+  <text x="90" y="52" font-family="system-ui, -apple-system, sans-serif" font-size="36" font-weight="700" fill="url(#gembaGrad)">GembaPay</text>
+</svg>
