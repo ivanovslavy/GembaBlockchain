@@ -37,16 +37,47 @@ gembad start --home ~/.gembad-devnet --chain-id gemba-1 --evm.evm-chain-id 82120
 #    SECRET_KEY_BASE (openssl rand -hex 32) + the archive node URLs:
 cp envs/backend.env.example envs/backend.env   # backend.env is git-ignored (secrets)
 # 2. bring up the stack (Docker required):
-docker compose up -d            # UI on http://localhost, API on :4000/api
+docker compose up -d            # UI + API on http://localhost  (single origin, see below)
 ```
 
 Images are pinned in `docker-compose.yml`. The backend reads internal txs via
 `debug_traceBlockByNumber` (callTracer) from the archive node.
 
-> Note: the live Blockscout UI/API needs Docker. In the dev environment used to
-> build this, Docker was unavailable, so we verified the layer Blockscout consumes
-> — see "Verified against the archive node" below — and provide the full,
-> reproducible setup here (one `docker compose up` away).
+> **Live.** GembaScan is running against the GembaBlockchain test network and is
+> displaying real chain data, including the **first GMB transfer** (block 965). See
+> [`docs/testnet-status.md`](../docs/testnet-status.md). Open `http://localhost/`
+> on the host or `http://192.168.100.10/` from the LAN.
+
+## Architecture: single-origin reverse proxy + version pairing
+
+Two things must line up or the **UI shows a "500 — Oops! Something went wrong"
+page even though the API answers fine from `curl`** (the failures are browser-only:
+CORS preflight and JS field-shape errors, which `curl` never triggers):
+
+1. **Single origin.** An nginx reverse proxy ([`proxy/gembascan.conf`](./proxy/gembascan.conf))
+   is the only public entrypoint, on port **80**. It serves the frontend at `/`,
+   proxies the backend API at `/api`, and proxies the live-update websocket at
+   `/socket` as plain `ws`. Same-origin access (via the configured host) needs no
+   CORS at all; for cross-origin callers (e.g. opening `http://localhost` while the
+   app host is the LAN IP) the proxy adds a permissive CORS shim that **echoes the
+   requested headers** — so any custom header the frontend sends is allowed,
+   immune to frontend/backend skew. The frontend is configured with
+   `NEXT_PUBLIC_API_PORT=80` and `NEXT_PUBLIC_API_WEBSOCKET_PROTOCOL=ws` (the node
+   is not TLS, so `wss://` would fail with `ERR_SSL_PROTOCOL_ERROR`).
+
+2. **Frontend/backend version pairing.** The Blockscout **frontend tag must match
+   the backend's API contract.** Backend `6.8.0` returns the `tx_types` field shape;
+   the matching frontend is **`v1.36.3`** (the last on that contract). A newer
+   frontend (`v1.37.0`) expects the renamed `transaction_types` field and sends a
+   custom `updated-gas-oracle` request header — against backend `6.8.0` the homepage
+   did `undefined.sort()` and fell into the 500 error boundary. **Bump the frontend
+   and backend together**, and re-check the `tx_types` ↔ `transaction_types` cutover
+   if you change either tag.
+
+The `sc-verifier` image's compiled-in default points the Solidity compiler list at
+the now-defunct `solc-bin.ethereum.org`; `docker-compose.yml` repoints it at the
+live `binaries.soliditylang.org` and disables the zkSync-Era fetcher (we are not a
+zkSync chain), so the verifier starts cleanly instead of crash-looping.
 
 ## Contract verification
 
@@ -73,7 +104,9 @@ which you pass as `?apikey=` to the Etherscan-compatible endpoint at `/api` (you
 control the rate limits, self-hosted). Example call:
 
 ```bash
-curl "http://localhost:4000/api?module=account&action=balance&address=0x963E...&apikey=YOUR_KEY"
+# via the single-origin proxy (port 80); the backend's :4000 is also published for
+# direct/local API use.
+curl "http://localhost/api?module=account&action=balance&address=0x963E...&apikey=YOUR_KEY"
 # -> {"status":"1","message":"OK","result":"2001234000000000000000000"}
 ```
 

@@ -32,8 +32,17 @@ services:
 
   sc-verifier:
     image: ghcr.io/blockscout/smart-contract-verifier:v1.9.0
+    restart: unless-stopped
     environment:
       SMART_CONTRACT_VERIFIER__SERVER__HTTP__ADDR: 0.0.0.0:8050
+      # The image's compiled-in default points the Solidity compiler list at the
+      # now-defunct solc-bin.ethereum.org (NXDOMAIN) — the fetcher init fails and the
+      # whole verifier exits, so the backend gets nxdomain on sc-verifier:8050 and
+      # every verification-touching page 500s. Repoint at the live Solidity binaries
+      # host, and disable the zkSync-Era solc fetcher (we are not a zkSync chain; its
+      # fetcher also defaults to the dead domain and would crash startup).
+      SMART_CONTRACT_VERIFIER__SOLIDITY__FETCHER__LIST__LIST_URL: https://binaries.soliditylang.org/linux-amd64/list.json
+      SMART_CONTRACT_VERIFIER__ZKSYNC_SOLIDITY__ENABLED: "false"
 
   backend:
     image: blockscout/blockscout:6.8.0
@@ -49,7 +58,13 @@ services:
       - "4000:4000"
 
   frontend:
-    image: ghcr.io/blockscout/frontend:v1.37.0
+    # Pinned to match backend 6.8.0's API shape. v1.37.0 expected the newer
+    # backend response (field `transaction_types`, and a custom `updated-gas-oracle`
+    # request header) — against 6.8.0 (which still returns `tx_types`) the homepage
+    # type-badge did `undefined.sort()` and the page fell into the "500 Oops" error
+    # boundary. v1.36.3 is the last frontend on the `tx_types` API contract, so it
+    # is the correct pair for backend 6.8.0. Bump backend + frontend together.
+    image: ghcr.io/blockscout/frontend:v1.36.3
     environment:
       NEXT_PUBLIC_NETWORK_NAME: GembaBlockchain testnet
       NEXT_PUBLIC_NETWORK_SHORT_NAME: gemba-testnet
@@ -58,14 +73,33 @@ services:
       NEXT_PUBLIC_NETWORK_CURRENCY_SYMBOL: GMB
       NEXT_PUBLIC_NETWORK_CURRENCY_DECIMALS: "18"
       # APP_HOST/API_HOST = the laptop's LAN IP so the UI works from the laptop AND
-      # other 192.168.100.x devices (browser fetches the API from this host).
+      # other 192.168.100.x devices. Both UI and API are served on ONE origin (the
+      # proxy on :80) so same-origin access needs no CORS; the proxy also adds a
+      # CORS shim for cross-origin callers (e.g. someone opening http://localhost).
       NEXT_PUBLIC_APP_HOST: 192.168.100.10
+      NEXT_PUBLIC_APP_PORT: "80"
       NEXT_PUBLIC_APP_PROTOCOL: http
       NEXT_PUBLIC_API_HOST: 192.168.100.10
-      NEXT_PUBLIC_API_PORT: "4000"
+      NEXT_PUBLIC_API_PORT: "80"
       NEXT_PUBLIC_API_PROTOCOL: http
+      # Live-update socket must be plain ws:// (the node/backend is not TLS) — the
+      # default derived wss:// caused ERR_SSL_PROTOCOL_ERROR.
+      NEXT_PUBLIC_API_WEBSOCKET_PROTOCOL: ws
+    # No host port — the proxy is the single public entrypoint (see proxy service).
+    expose:
+      - "3000"
+
+  # Single-origin reverse proxy: UI + API + websocket on :80. See proxy/gembascan.conf.
+  proxy:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - frontend
+    volumes:
+      - ./proxy/gembascan.conf:/etc/nginx/nginx.conf:ro
     ports:
-      - "80:3000"
+      - "80:80"
 
 volumes:
   blockscout-db-data:
