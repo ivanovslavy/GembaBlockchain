@@ -18,7 +18,9 @@
 | EVM chainId | `821207` (EIP-155; distinct from mainnet's `821206`) |
 | Native coin | Gemba (GMB) — **test GMB, no value** |
 | Consensus | CometBFT BFT PoS, ~2 s blocks, instant finality |
-| Explorer | GembaScan (Blockscout) — see [`/explorer`](../explorer/README.md) |
+| Explorer (public) | **https://testnet.gembascan.io** (GembaScan / Blockscout) |
+| EVM JSON-RPC (public) | **https://testnet.gembascan.io/rpc** |
+| Active validators | 4 (3 on public cloud hosts + 1 operator node), each 1,000,000 GMB |
 
 ## What is verified working
 
@@ -57,13 +59,37 @@ displayed by GembaScan:
 > keys / mnemonics behind them are not in the repository (secret hygiene,
 > `CLAUDE.md` §14).
 
-## Viewing it in GembaScan
+## Public deployment
 
-GembaScan is served on a single origin (the reverse proxy on port 80):
+The network moved from a single-laptop setup to a **public backbone**:
 
-- From the host: `http://localhost/`
-- From the LAN (recommended for other devices): `http://192.168.100.10/`
-- The transaction: `http://192.168.100.10/tx/0x3467cbaaca69443ee2e7576c2e20122d11edae48d95cb22386e7f764310d7465`
+- **Validators (4):** three run on public cloud hosts (geo: EU) and one is an
+  operator-run node, each bonded 1,000,000 GMB, all signing every block. Entry was
+  the permissionless dynamic join of [`runbooks/testnet-deploy.md`](./runbooks/testnet-deploy.md) §7
+  (sync as a full node → `MsgCreateValidator`); decommissioned validators were
+  removed cleanly by **unbonding their full self-stake** (participation ends at once,
+  one at a time, never dropping below the BFT minimum), not just stopped.
+- **Explorer + RPC host:** a dedicated **archive node** (`pruning=nothing`) feeds a
+  Blockscout (GembaScan) stack; **Apache** terminates TLS (behind Cloudflare) and
+  same-origin reverse-proxies the UI (`/`), the Blockscout API (`/api`, `/socket`),
+  and the **EVM JSON-RPC** (`/rpc`). The Blockscout **frontend is pinned to the tag
+  matching the backend's API contract** — see [`/explorer/README.md`](../explorer/README.md).
 
-Setup, architecture, and the explorer's frontend/backend version-pairing rule are
-documented in [`/explorer/README.md`](../explorer/README.md).
+## MetaMask network settings
+
+After the migration, add/point MetaMask at:
+
+| Field | Value |
+|---|---|
+| Network name | GembaBlockchain testnet |
+| New RPC URL | **https://testnet.gembascan.io/rpc** |
+| Chain ID | **821207** |
+| Currency symbol | **GMB** |
+| Block explorer URL | **https://testnet.gembascan.io** |
+
+Only the **RPC URL** and **explorer URL** changed in the migration; the network
+name, currency symbol, and chain ID are unchanged. Addresses remain standard `0x…`
+(eth_secp256k1, coin type 60).
+
+The first GMB transfer (above) is viewable at
+`https://testnet.gembascan.io/tx/0x3467cbaaca69443ee2e7576c2e20122d11edae48d95cb22386e7f764310d7465`.
