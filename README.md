@@ -53,6 +53,13 @@ The project is built in phases (see `CLAUDE.md` §13).
 - Phase 2, Custom chain modules: next. The validator reward streamer, the 60/40 fee
   split, and the post-reserve tail reward, all zero-inflation (no minting).
 
+**Live test network.** The GembaBlockchain **test network is up and working end to
+end** — producing ~2 s blocks, serving EVM JSON-RPC, accepting MetaMask, and the
+**first GMB transfer has been made and is indexed in GembaScan** (the self-hosted
+Blockscout explorer). This is the valueless dress-rehearsal testnet (`gemba-testnet-1`,
+EVM chainId `821207`), not mainnet — public launch is still gated by the blockers
+below. Details and the first-transaction record: [`docs/testnet-status.md`](./docs/testnet-status.md).
+
 ## Quick start (local devnet)
 
 Prerequisites: Go (the version pinned in the upstream `cosmos/evm` `go.mod`), a C

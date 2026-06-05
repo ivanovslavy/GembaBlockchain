@@ -12,6 +12,10 @@ here expand on specific areas.
   MiCA as a launch blocker (ADR-009), and de-facto-centralized-at-genesis (ADR-010).
   Mirrors `CLAUDE.md` §16.
 
+- [`testnet-status.md`](./testnet-status.md) — **live status of the test network**:
+  what is verified working end to end, and the record of the **first GMB transaction**
+  indexed in GembaScan. The valueless dress-rehearsal testnet, not mainnet.
+
 - [`phase3-treasury-principles.md`](./phase3-treasury-principles.md) — binding
   principles for the Phase 3 Solidity contracts: **tests first, funding last**
   (no contract funded before unit + invariant/fuzz + Slither; reserves also need
