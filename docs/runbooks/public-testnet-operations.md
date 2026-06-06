@@ -138,3 +138,29 @@ it is a governance change to `x/feemarket` (authority = the gov module account),
 Submit + deposit, then vote with bonded validators (quorum 33.4%, threshold 50%);
 the validator operator keys (`val0..val3`) live in the re-genesis keyring backup.
 Type URL `/cosmos.evm.feemarket.v1.MsgUpdateParams` verified against the live binary.
+
+## 8. KNOWN ISSUE — browser shows HTTP 500 on search / Tokens (server-side is 200)
+
+**Symptom (2026-06-06):** in the browser, typing a contract address in the search box,
+and opening the **Tokens** page, show an **HTTP 500**.
+
+**What we verified — it is NOT reproducible server-side.** Every relevant endpoint returns
+**200** when hit directly (curl, incl. with cookies + cache-busting; Cloudflare reports
+`cf-cache-status: DYNAMIC`, i.e. uncached):
+- `/api/v2/search?q=…` → 200, `/api/v2/tokens` → 200
+- frontend SSR `/search-results`, `/tokens` → 200, and their `/_next/data/<buildId>/*.json` → 200
+- `/node-api/csrf` → 200 (after the Apache `get_csrf` stub, §explorer-account-login runbook)
+
+**Leading hypotheses (to confirm):**
+1. **Stale client** — the browser is running a cached app bundle / service worker from before
+   the fixes. Test in a **fresh incognito window** or after **clearing site data**; if it's
+   gone there, it's client cache.
+2. **Frontend/backend version skew** — the explorer runs `frontend:latest` (v2.3.5) against
+   `backend:7.0.2`. Blockscout warns these must be bumped together (see the pinned
+   `explorer/docker-compose.yml` comments). A client-side handler in v2.3.5 may throw on a
+   backend 7.0.2 response shape. **Fix path:** pin the frontend to the version Blockscout
+   ships for backend 7.0.2 and re-test.
+
+**To action this:** open DevTools → Network, reproduce, and capture the exact failing
+request (URL + status + response body). That pinpoints whether it's a specific API call,
+a `/node-api/*` route, or a client render error. Until then this is logged, not fixed.
