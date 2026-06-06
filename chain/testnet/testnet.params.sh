@@ -19,18 +19,22 @@ TN_FAUCET_MNEMONIC="***REMOVED-ROTATED-FAUCET-MNEMONIC***"
 TN_FAUCET_ADDR_0X="0x40a0cb1C63e026A81B55EE1308586E21eec1eFa9"  # dev2
 TN_FAUCET_ALLOC="20000000"      # 20,000,000 test GMB to drip to testers
 
-# --- allocation (total = 100,000,000 test GMB, mirroring mainnet §4.1 shape) ---
-# circulation = 5 validators x 2,000,000; drip faucet 20M; reserves as on mainnet
-# but trimmed to fit the 20M drip account. Sums to 100M.
-TN_VAL_EACH="2000000"           # per genesis validator (self-bonds 1M of it)
-TN_ALLOC_REWARD_RESERVE="20000000"   # rewardstreamer module account (20M)
-TN_ALLOC_FAUCET_MODULE="20000000"    # faucet module account (40%-fee intake)
-TN_ALLOC_FOUNDATION="10000000"
-TN_ALLOC_DAO="10000000"
-TN_ALLOC_LIQUIDITY="5000000"
-TN_ALLOC_FOUNDER="5000000"
-# 5*2,000,000 + 20,000,000(drip) + 20,000,000 + 20,000,000 + 10,000,000
-#   + 10,000,000 + 5,000,000 + 5,000,000 = 100,000,000 ✓
+# --- allocation: EXACT mainnet §4.1 %s of 100M (corrected 2026-06-06, re-genesis path A) ---
+# Each reserve EOA below holds its exact §4.1 amount and is transferred IN FULL into its
+# Solidity reserve contract right after genesis (Timelock custody), so every contract ends
+# up holding exactly its %. The testnet DRIP faucet is no longer a separate allocation — it
+# draws from the Faucet contract via the real §4.1 grant mechanism (true dress rehearsal).
+TN_VAL_EACH="2000000"                # circulation: 5 validators x 2M = 10M (self-bond 1M each)
+TN_ALLOC_FAUCET="30000000"           # 30% Public/Municipal Reserve -> Faucet contract
+TN_ALLOC_REWARD_RESERVE="20000000"   # 20% validator rewards -> rewardstreamer module
+TN_ALLOC_FOUNDATION="15000000"       # 15% -> FoundationTreasury contract
+TN_ALLOC_DAO="10000000"              # 10% -> DAOReserve contract
+TN_ALLOC_CONTINGENCY="10000000"      # 10% (was liquidity) -> ContingencyReserve contract
+TN_ALLOC_FOUNDER="5000000"           # 5%  founder EOA (non-voting)
+# 30M + 20M + 15M + 10M + 10M + 5M + 10M(circulation) = 100,000,000 ✓
+# NOTE: init-local-testnet.sh must allocate to the faucet/foundation/dao/contingency reserve
+# EOAs with these amounts (no faucet MODULE, no separate drip EOA). See
+# docs/runbooks/testnet-re-genesis.md.
 
 # --- testnet conveniences (shorter than mainnet for faster iteration) ---
 TN_UNBONDING_TIME="259200s"     # 3 days (mainnet would be 14-21d, §5.5)
