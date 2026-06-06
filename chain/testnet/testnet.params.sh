@@ -11,7 +11,7 @@ TN_EVM_CHAIN_ID="821207"
 
 # --- validators: the 5 Hetzner servers (BFT N>=3f+1: 5 tolerate 1 down, §5.3) ---
 TN_VALIDATORS=5
-TN_SELF_BOND_GMB="1000000"      # 1,000,000 test GMB self-bonded per validator
+TN_SELF_BOND_GMB="1000"          # 1,000 test GMB self-bonded per validator (= min self-bond, faucet-reachable in 10 days)
 
 # --- testnet drip faucet account (the faucet SERVICE controls this key) ---
 # DEVNET/TESTNET-ONLY well-known key — valueless tokens. dev2 from cosmos/evm.

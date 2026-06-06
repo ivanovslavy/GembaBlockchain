@@ -192,15 +192,23 @@ control (validator set, governance, fees).
 
 ### 5.2 Becoming / staying a validator
 
-- **Stake-only entry, no KYC.** Bond GMB ≥ the current threshold and you are in the
-  active set. No approval, no identity check. (If a specific institution ever needs
-  to know who validates its data, that is an **off-chain legal contract**, never a
-  protocol gate.)
+- **Stake-only entry, no KYC.** Bond GMB ≥ the current **minimum self-bond** and you
+  are in the active set. No approval, no identity check. (If a specific institution
+  ever needs to know who validates its data, that is an **off-chain legal contract**,
+  never a protocol gate.)
+- **Minimum self-bond (anti-spam floor).** A small minimum self-delegation is enforced
+  at validator creation (testnet launch: **1,000 GMB** — reachable from the drip faucet
+  in ~10 days). It stops trivial 0.001-GMB validators without being a real barrier
+  (~0.001% of supply). Enforced by a custom ante decorator reading a
+  **governance-tunable parameter** — raise/lower it later by an `x/consensus`-style
+  `MsgUpdateParams` gov proposal, no chain restart needed (the §5.2 "growing threshold").
 - **Active set cap.** CometBFT communication is O(n²), so the active set has a
-  configurable `MaxValidators` (e.g. 100). Entry is permissionless and ranked by
+  configurable `MaxValidators` (launch: **150**). Entry is permissionless and ranked by
   stake: above the cap you are a candidate that rotates in when your bonded stake
-  out-ranks an active validator. "Unlimited" = permissionless + ranked, not
-  literally infinite simultaneous validators.
+  out-ranks an active validator. Being out-ranked is **not** being kicked — you keep
+  your stake, stay a registered validator, and re-enter by bonding more; no slashing.
+  `MaxValidators` is itself governance-tunable (raise it as the network matures).
+  "Unlimited" = permissionless + ranked, not literally infinite simultaneous validators.
 - **Sybil resistance = the stake itself.** Running 10 validators costs 10× the
   stake in real bonded GMB. Power is never free; it is bought with locked capital,
   same as everyone. This is the design, not a bug — it is *why* nobody (including a

@@ -24,7 +24,7 @@ DECIMALS="18"
 TIMEOUT_COMMIT="2s"
 
 # --- Active validator set cap (CLAUDE.md §5.2: permissionless + ranked, O(n^2)) ---
-MAX_VALIDATORS="100"
+MAX_VALIDATORS="150"
 
 # =============================================================================
 # SECURITY-BUDGET ANCHORS  (docs/risks.md ADR-008 / ADR-008a)
