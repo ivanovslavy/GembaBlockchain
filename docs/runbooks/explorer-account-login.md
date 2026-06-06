@@ -1,18 +1,21 @@
-# Runbook — GembaScan account login (status: DISABLED, deferred)
+# Runbook — GembaScan account login (status: ENABLED 2026-06-06)
 
-> **Recorded decision (2026-06-06):** user login on GembaScan stays **DISABLED** until
-> an **email-verification-code flow is added** — Blockscout sends a sign-up/login
-> **verification code by email via SendGrid**, and without that mail provider the
-> account can never become verified (so "Log in" cannot work). Enabling login =
-> wiring SendGrid (the "email code" sender) + flipping the account flags back on.
-> Everything else in the chain (Auth0, cloak key, reCAPTCHA, Postgres pool) is already
-> done; **SendGrid / the email code is the one remaining blocker.**
+> **UPDATE 2026-06-06 — login is now ENABLED.** `ACCOUNT_ENABLED=true` (backend) +
+> `NEXT_PUBLIC_IS_ACCOUNT_SUPPORTED=true` (frontend) + reCaptcha key restored. Login is
+> handled by **Auth0** (`/auth/auth0` → `gembachain.eu.auth0.com`, verified 302). The
+> **csrf-stub Apache workaround was REMOVED** (it was only for the account-off state).
+>
+> **Correction:** login does NOT need SendGrid — per Blockscout docs, **login = Auth0**;
+> **SendGrid is only for watchlist *notification* emails** (`ACCOUNT_SENDGRID_*`, now also
+> configured with the `gembascan.io` authenticated domain, sender `no-reply@gembascan.io`).
+> The earlier "email-code via SendGrid blocks login" note was a misdiagnosis.
+>
+> **Known background quirk:** for *logged-out* users `/api/account/v2/get_csrf` returns 401,
+> and the frontend's `/api/csrf` route 500s on any non-200 — a cosmetic background error
+> until the user logs in (then get_csrf returns 200 with the token). Does not block the
+> Auth0 login flow.
 
-> The per-user **login + personal API keys** feature of the self-hosted Blockscout
-> explorer is **intentionally disabled** (2026-06-06). It works up to a point but the
-> last step needs another external service (SendGrid, for the email verification code).
-> The **Etherscan-compatible API works without it** (see bottom). This documents how far
-> we got and how to finish.
+> Historical notes below (the path we took to get here) are kept for reference.
 
 ## Why it's disabled
 

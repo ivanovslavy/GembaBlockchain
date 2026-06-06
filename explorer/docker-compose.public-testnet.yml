@@ -73,6 +73,10 @@ services:
       # it is protected by the project's Allowed-Domains list in the Reown dashboard,
       # where testnet.gembascan.io (and gembascan.io) should be allowlisted.
       NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID: a25f7bcc46433fecddee320e76fa307f
-      NEXT_PUBLIC_IS_ACCOUNT_SUPPORTED: "false"
+      # Account login ENABLED 2026-06-06 (Auth0 + SendGrid for watchlist mail). The
+      # reCaptcha key is required by the account UI. Backend side: ACCOUNT_ENABLED=true
+      # + ACCOUNT_AUTH0_* + ACCOUNT_SENDGRID_* in envs/backend.env (gitignored).
+      NEXT_PUBLIC_IS_ACCOUNT_SUPPORTED: "true"
+      NEXT_PUBLIC_RE_CAPTCHA_APP_SITE_KEY: 6LdeUg8tAAAAAHyfaixIg9B6i88Ck8YR1vLzAfem
     ports: [ "127.0.0.1:3000:3000" ]
 volumes: { blockscout-db-data: {} }
