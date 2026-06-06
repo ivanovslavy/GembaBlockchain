@@ -139,7 +139,17 @@ Submit + deposit, then vote with bonded validators (quorum 33.4%, threshold 50%)
 the validator operator keys (`val0..val3`) live in the re-genesis keyring backup.
 Type URL `/cosmos.evm.feemarket.v1.MsgUpdateParams` verified against the live binary.
 
-## 8. KNOWN ISSUE — browser shows HTTP 500 on search / Tokens (server-side is 200)
+## 8. RESOLVED — browser HTTP 500 on search / Tokens (was a version mismatch)
+
+> **FIXED 2026-06-07:** root cause was a **backend↔frontend version mismatch** — frontend
+> `v2.3.5` requires backend **v9.1.x** but the backend was **v7.0.2**, so pages crashed
+> client-side (the frontend referenced API fields the old backend doesn't return) while every
+> API call returned 200. Fix = align versions to a published, compatible pair:
+> **backend `ghcr.io/blockscout/blockscout:9.0.2` + frontend `ghcr.io/blockscout/frontend:v2.3.0`**
+> (per the compatibility matrix; 9.1.x had no published docker image). Migrations 7→9 ran
+> cleanly on a 23 MB DB (backed up first via pg_dump). Tokens/search/login all work and the UI
+> is faster. **Lesson: bump backend and frontend together to a matrix-compatible pair.**
+> Original investigation kept below.
 
 **Symptom (2026-06-06):** in the browser, typing a contract address in the search box,
 and opening the **Tokens** page, show an **HTTP 500**.
