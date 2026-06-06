@@ -1,0 +1,8 @@
+# gemba-validator — never commit node data or keys
+.gembad/
+*.key
+*mnemonic*
+priv_validator_key.json
+priv_validator_state.json
+node_key.json
+*.log

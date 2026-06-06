@@ -1,0 +1,24 @@
+# Reference systemd unit (the installer writes this for you to /etc/systemd/system/gembad.service).
+# Adjust User / paths / flags as needed, then: systemctl daemon-reload && systemctl enable --now gembad
+[Unit]
+Description=GembaBlockchain node (gemba-testnet-1)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=YOUR_USER
+Type=simple
+ExecStart=/usr/local/bin/gembad start \
+  --home /home/YOUR_USER/.gembad \
+  --chain-id gemba-testnet-1 \
+  --evm.evm-chain-id 821207 \
+  --minimum-gas-prices 1000000000agmb
+# Add for RPC providers / explorers only (do NOT expose on a bare validator):
+#   --json-rpc.enable=true --json-rpc.address 0.0.0.0:8545 \
+#   --json-rpc.ws-address 0.0.0.0:8546 --json-rpc.api eth,net,web3,txpool,debug
+Restart=always
+RestartSec=5
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
