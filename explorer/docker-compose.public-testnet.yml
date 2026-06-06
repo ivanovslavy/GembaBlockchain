@@ -77,6 +77,9 @@ services:
       # reCaptcha key is required by the account UI. Backend side: ACCOUNT_ENABLED=true
       # + ACCOUNT_AUTH0_* + ACCOUNT_SENDGRID_* in envs/backend.env (gitignored).
       NEXT_PUBLIC_IS_ACCOUNT_SUPPORTED: "true"
-      NEXT_PUBLIC_RE_CAPTCHA_APP_SITE_KEY: 6LdeUg8tAAAAAHyfaixIg9B6i88Ck8YR1vLzAfem
+      # MUST be a reCAPTCHA v2 *invisible* site key (Blockscout supports invisible
+      # only). A v2 Checkbox key throws "reCAPTCHA initialization error" on the
+      # watchlist-email widget. (public site key; backend has the matching secret.)
+      NEXT_PUBLIC_RE_CAPTCHA_APP_SITE_KEY: 6LdKpxAtAAAAAIxrVl3crE_BbfzMYGBvqVDJmpqT
     ports: [ "127.0.0.1:3000:3000" ]
 volumes: { blockscout-db-data: {} }
