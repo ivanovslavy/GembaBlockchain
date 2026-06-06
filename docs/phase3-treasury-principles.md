@@ -1,7 +1,8 @@
 # Phase 3 — Treasury & Governance Contract Principles
 
 > Binding principles for the Phase 3 Solidity contracts (Governor, Timelock,
-> Faucet, FoundationTreasury, DAOReserve, LiquidityReserve, EmergencyPause). Read
+> Faucet, FoundationTreasury, DAOReserve, LiquidityReserve [→ ContingencyReserve,
+> `CLAUDE.md` §8], EmergencyPause). Read
 > together with `CLAUDE.md` §7, §9 and `docs/risks.md`. Recorded **before** writing
 > the contracts on purpose — these are design decisions, not afterthoughts.
 
@@ -18,7 +19,7 @@ No contract receives tokens before it is tested. In order:
 4. **Local devnet**, then **public testnet** exercise of the real flows.
 5. **Only then** funding — and even then, in stages.
 
-**Genesis-funded reserve contracts** (Faucet, Foundation, DAO, Liquidity) hold real
+**Genesis-funded reserve contracts** (Faucet, Foundation, DAO, Contingency) hold real
 supply from block 0, so they additionally **require an external security audit
 before mainnet genesis** (consistent with `docs/risks.md` ADR-006: no public
 launch before audit). A bug in a pre-funded reserve is not patchable by "deploy a

@@ -18,7 +18,7 @@ must be updated from 100M → 100B.
 | 2 | Validator Rewards Reserve | 20% | 20B | zero-inflation rewards (~10y stream via `x/rewardstreamer`) |
 | 3 | Foundation | 15% | 15B | dev/audits via governance |
 | 4 | **DAO Reserve (contingency)** | 10% | 10B | **unforeseen needs** ("непредвидени") — governance-released |
-| 5 | Liquidity Reserve | 10% | 10B | seed/deepen liquidity if governance decides |
+| 5 | **Contingency Reserve** (*резерв непредвиден*) | 10% | 10B | unforeseen/strategic needs (replaces the former Liquidity Reserve — **no liquidity by design**, §8). NB: overlaps the DAO contingency #4 — decide whether to merge into one 20% bucket |
 | 6 | Circulation pool | 10% | 10B | day-0 liveness + neutral voting base |
 | 7 | Founder/Ops | 5% | 5B | working capital (sold for stablecoin, recirculates) |
 
@@ -31,9 +31,10 @@ must be updated from 100M → 100B.
 
 Same 7-bucket %s, but bucket #1's role (public distribution) is played by the **drip
 faucet** (`services/testnet-faucet`, hands out valueless test GMB) instead of formula
-grants: drip-faucet 30B, validator-rewards 20B, foundation 15B, DAO 10B, liquidity 10B,
+grants: drip-faucet 30B, validator-rewards 20B, foundation 15B, DAO 10B, contingency 10B,
 circulation 10B, founder 5B. Mirrors mainnet so the real governance/treasury flows can be
-tested before mainnet.
+tested before mainnet. (No liquidity bucket — GembaBlockchain provides no liquidity by
+design, §8.)
 
 ## Two OPEN decisions — confirm with the user before regenerating genesis
 
@@ -47,8 +48,9 @@ tested before mainnet.
 
 ## Two problems this rework must also FIX (found this session)
 
-1. **Current testnet genesis ≠ spec.** Live chain has foundation 10M (spec 15%), liquidity
-   5M (spec 10%), **founder 9M (spec 5% — too high!)**, and the faucet split awkwardly
+1. **Current testnet genesis ≠ spec.** Live chain has foundation 10M (spec 15%), a
+   `liquidity` EOA 5M (the liquidity reserve is now **removed** → its 10% becomes a
+   contingency reserve), **founder 9M (spec 5% — too high!)**, and the faucet split awkwardly
    across a `tnfaucet` EOA + a `faucet` module. The genesis generator (`chain/testnet`) put
    different numbers than `CLAUDE.md §4.1`. The 100B regen must align to the agreed %s.
 2. **Reserves are NOT held by the governance contracts.** The native GMB sits in EOA genesis

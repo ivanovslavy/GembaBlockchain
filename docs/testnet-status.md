@@ -6,7 +6,7 @@
 >
 > This is the **valueless test network** — a mainnet dress rehearsal, not the
 > public mainnet. Public launch remains gated by the hard blockers in `CLAUDE.md`
-> §16 (MiCA sign-off, upstream audit, security-budget tail). See also
+> §16 (upstream audit, security-budget tail). See also
 > [`runbooks/testnet-deploy.md`](./runbooks/testnet-deploy.md).
 
 ## Network identity

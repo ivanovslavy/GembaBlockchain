@@ -14,21 +14,21 @@
 
 ## ADR-001 — Free transferability implies a market price we do not control
 
-- **Status:** Accepted — gated (see ADR-009 / MiCA)
+- **Status:** Accepted
 - **Context:** GMB is freely transferable on a permissionless chain. We do not
-  run a DEX and do not redeem GMB for fiat, but nothing stops a third party from
-  creating a liquidity pool. A market price may emerge that we neither set nor
-  control. This is the price of real decentralization: a transfer allowlist
-  would re-centralize the chain (rejected — see §16 of `CLAUDE.md`).
+  run a DEX, **seed no liquidity ourselves (ADR-003)**, and do not redeem GMB for
+  fiat, but nothing stops a third party from creating a liquidity pool. A market
+  price may emerge that we neither set nor control. This is the price of real
+  decentralization: a transfer allowlist would re-centralize the chain (rejected —
+  see §16 of `CLAUDE.md`).
 - **Decision:** Accept free transferability as a hard design property. Do **not**
   add a transfer allowlist, redemption desk, or operated market. Be honest in all
   docs that GMB is a *freely transferable utility coin*, not a closed-loop
   voucher.
 - **Consequences:** A secondary market price can appear and move independently of
-  any "intended" value. This **weakens the MiCA "limited-network / utility"
-  argument** — GMB looks closer to a genuine crypto-asset than to a closed
-  voucher. Classification **must** be confirmed with a Bulgarian fintech lawyer
-  before any public sale (ADR-009).
+  any "intended" value, entirely outside our control. GembaBlockchain itself seeds
+  no liquidity, runs no exchange and makes **no public sale** (ADR-003) — it is built
+  for use, not trading.
 
 ---
 
@@ -50,18 +50,19 @@
 
 ---
 
-## ADR-003 — Liquidity reserve sets the initial price, then the market moves
+## ADR-003 — No liquidity provided, by design (former liquidity reserve removed)
 
-- **Status:** Accepted
-- **Context:** If/when governance decides to seed a liquidity pool, the initial
-  pool ratio mechanically sets the *starting* price. The 10% liquidity reserve
-  could in principle be used to lean against the market.
-- **Decision:** The liquidity reserve exists to **support depth, not to dictate
-  price**. It is a modest (10%), non-voting, governance + timelock-gated bucket.
-  A 50% mega-reserve was considered and rejected as a systemic point of control.
-- **Consequences:** We influence the *starting* price once and can support depth
-  thereafter, but we do not and cannot peg the price. After seeding, price is
-  market-driven.
+- **Status:** Accepted (revised 2026-06-06)
+- **Context:** GembaBlockchain is built for *use*, not speculation or trading. An
+  earlier design held a 10% "liquidity reserve" to seed/deepen a pool if governance
+  decided. That is **removed**: we provide **no liquidity** and operate **no
+  exchange/DEX**.
+- **Decision:** Seed **no** liquidity and set **no** initial pool ratio. The freed
+  10% becomes a **contingency reserve** for unforeseen needs (non-voting, governance +
+  timelock; `CLAUDE.md` §8). We never market-make or support price in any way.
+- **Consequences:** GembaBlockchain never influences GMB's price — not even the
+  *starting* price. Any market is purely third-party (ADR-001 / §16.1) and entirely
+  outside our control. Reinforces the "utility, not speculation" stance.
 
 ---
 
@@ -252,28 +253,20 @@
 
 ---
 
-## ADR-009 — MiCA classification is an explicit launch blocker before public sale
+## ADR-009 — MiCA / public-sale gate (WITHDRAWN 2026-06-06)
 
-- **Status:** Accepted — gated (**hard blocker**)
-- **Context:** GMB is freely transferable (ADR-001), which weakens any
-  "limited-network" or pure-utility exemption argument under the EU **Markets in
-  Crypto-Assets (MiCA)** regulation. Selling GMB to the public in the EU without
-  the correct classification (utility token vs asset-referenced/e-money token vs
-  other crypto-asset) and any required white paper / authorisation could be an
-  unauthorised offering. The founder is based in Bulgaria (EU).
-- **Decision:** Treat MiCA classification as an **explicit, hard launch blocker**:
-  - No **public sale** of GMB and no fiat-adjacent on-ramp marketing until GMB's
-    MiCA classification is confirmed in writing by a **Bulgarian fintech lawyer**
-    and any resulting obligations (white paper, disclosures, registration) are met.
-  - Devnet, testnet, internal/closed grants to institutions by formula, and
-    technical development are **not** blocked by this gate.
-  - The on-ramp (Phase 6, GembaPay stablecoin → GMB) and any public sale flow are
-    the milestones this blocker guards.
-- **Consequences:** Phases 0–5 (and 7–8 technical work) proceed; the **public
-  sale / open on-ramp does not ship** until legal sign-off. This is a deliberate
-  schedule dependency, documented so it is not "discovered" late. Cross-reference:
-  ADR-001 (why the exemption is weak), ADR-006 (the other hard pre-public-launch
-  gate — upstream audit).
+- **Status:** Withdrawn — superseded by the no-liquidity / no-public-sale design
+  (ADR-003; `CLAUDE.md` §2, §8).
+- **Why withdrawn:** GembaBlockchain provides **no liquidity**, operates **no
+  exchange/DEX**, makes **no public sale** of GMB, and distributes to institutions
+  only via **closed formula grants** (Faucet). With no public offering and no
+  project-operated market, the team's position is that the public-sale MiCA trigger
+  this ADR guarded does not arise, so MiCA is **no longer treated as a launch
+  blocker**. The on-ramp's `publicSaleEnabled` stays FALSE by design.
+- **Residual note (NOT legal advice):** GMB is still *freely transferable*, so a third
+  party could create a market (ADR-001) — outside the project's control. Withdrawing
+  this gate is a **project decision, not a legal determination**. If a public sale or
+  fiat-adjacent on-ramp is ever introduced, the MiCA question must be revisited then.
 
 ---
 
@@ -352,5 +345,5 @@
 | ADR | Blocker | Clears when |
 |---|---|---|
 | ADR-006 | Cosmos EVM pre-v1 / unaudited | Upstream audit lands **and** our own review is done |
-| ADR-009 | MiCA classification | Written sign-off from a Bulgarian fintech lawyer + any required obligations met |
+| ADR-009 | MiCA / public-sale gate | **Withdrawn** — no liquidity, no exchange, no public sale by design (ADR-003); not a launch blocker |
 | ADR-008 | Long-term security budget | Tail-reward (recirculation) mechanism implemented + tested; bonded-ratio monitoring in place |

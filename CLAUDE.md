@@ -76,11 +76,20 @@ NFT contracts deployed on the chain.
 
 ## 2. Philosophy
 
-GembaBlockchain is a **public, decentralized utility chain**. Value comes from
-*use* (cheaper service access, workplace access control, event tickets, employee
-perks), not speculation. The endgame is infrastructure **owned and run by its
-participants**, including public institutions — but every participant, including
-municipalities, follows the same on-chain rules. No participant has special power.
+GembaBlockchain is **Bulgaria's first blockchain** — a **public, decentralized
+utility chain** built **for the good of society**, for public institutions and
+private organizations to integrate and deliver services to their citizens and users.
+Value comes from *use* (cheaper service access, workplace access control, event
+tickets, employee perks), **not speculation**. The endgame is infrastructure **owned
+and run by its participants**, including public institutions — but every participant,
+including municipalities, follows the same on-chain rules. No participant has special
+power.
+
+**Not built for speculation or trading — by design.** GembaBlockchain **provides no
+liquidity for GMB**, operates **no exchange/DEX**, and does not redeem GMB for fiat.
+GMB exists to be *used*, not bought and sold. (We cannot stop a third party on a
+permissionless chain from creating a market — but we seed none ourselves; section 8 &
+16.1.)
 
 - **Permissionless.** Anyone with enough GMB can validate. Anyone can hold and
   transfer GMB. No operator approves participants.
@@ -88,10 +97,11 @@ municipalities, follows the same on-chain rules. No participant has special powe
   non-voting operations/sales treasury — like a central bank with no vote. This is
   what makes "decentralized / given to society" credible.
 - **Honest about what GMB is.** GMB is a *freely transferable utility coin on a
-  public chain*, **not** a closed-loop voucher. We do not operate a DEX and do not
-  redeem GMB for fiat, but on a permissionless chain we **cannot** prevent a third
-  party from creating a market. A market price may emerge that we do not control.
-  This is a conscious trade-off (section 16).
+  public chain*, **not** a closed-loop voucher. We do not operate a DEX, **provide no
+  liquidity ourselves by design**, and do not redeem GMB for fiat, but on a
+  permissionless chain we **cannot** prevent a third party from creating a market. A
+  market price may emerge that we do not control. This is a conscious trade-off
+  (section 16).
 
 ---
 
@@ -104,7 +114,7 @@ municipalities, follows the same on-chain rules. No participant has special powe
 3. **No privileged validators.** Genesis validators have no permanent advantage;
    same rules, same stake economics, can be out-ranked and replaced.
 4. **Reserves never vote.** The contracts/accounts holding the faucet, foundation,
-   DAO, validator and liquidity reserves have zero voting power.
+   DAO, validator and contingency reserves have zero voting power.
 5. **Founder never votes and never validates with privilege.**
 6. **No unilateral control of reserves.** Funds leave any reserve only via
    governance + timelock (and, for emergencies, a pause-only multisig — section 7).
@@ -122,11 +132,12 @@ matter more than the absolute number; `N` can be scaled).
 > ⚠️ **PENDING CHANGE (decided 2026-06-06, NOT yet applied):** supply moves to
 > **`N = 100,000,000,000 GMB` (100B)** on **both** testnet and mainnet; bucket #1 below
 > ("faucet") is renamed **Public/Municipal Reserve** to avoid confusion with the testnet
-> *drip* faucet. The live `gemba-testnet-1` genesis is still the OLD 100M with proportions
-> that don't match this table (foundation/liquidity too low, founder too high), and the
-> reserve **contracts are not deployed/funded** (reserves sit in EOAs/modules). Full brief
-> + the two open decisions: **[`docs/tokenomics-pending.md`](docs/tokenomics-pending.md)**
-> — do this next session.
+> *drip* faucet; the **liquidity reserve is removed** (no liquidity by design, §8) and that
+> 10% becomes a **contingency reserve**. The live `gemba-testnet-1` genesis is still the OLD
+> 100M with mismatched proportions (foundation too low, founder too high) and the reserve
+> **contracts are not deployed/funded** (reserves sit in EOAs/modules). Full brief + the
+> open decisions: **[`docs/tokenomics-pending.md`](docs/tokenomics-pending.md)** — do this
+> next session.
 
 | Bucket | Share | GMB (N=100M) | Votes? | Purpose |
 |---|---|---|---|---|
@@ -134,12 +145,12 @@ matter more than the absolute number; `N` can be scaled).
 | Validator rewards reserve (~10 yrs) | 20% | 20,000,000 | No | funds validator rewards with zero inflation |
 | Foundation (development, audits) | 15% | 15,000,000 | No | dev funding via governance |
 | DAO reserve (contingency) | 10% | 10,000,000 | No | unforeseen needs; released by governance |
-| **Liquidity reserve** | 10% | 10,000,000 | No | GMB to seed/deepen liquidity *if/when* governance decides |
+| **Contingency reserve** *(непредвиден)* | 10% | 10,000,000 | No | unforeseen/strategic needs; released via governance + timelock. Replaces the former liquidity reserve — **no liquidity is seeded** (§8) |
 | Client / circulation pool | 10% | 10,000,000 | **Yes** (when staked/delegated) | GMB in circulation from day 0 so the network is alive and has a voting base |
 | Founder / operations + sale | 5% | 5,000,000 | No (excluded) | working capital: sold for stablecoin → cheaper access, recirculates |
 
 Founder contributed 10 of an original 15 points: +2% faucet, +1% foundation,
-+4% DAO, +3% liquidity, keeping 5%.
++4% DAO, +3% contingency, keeping 5%.
 
 **Only circulating, staked GMB votes** (section 7). All reserves are held in
 non-voting contracts/accounts.
@@ -281,7 +292,7 @@ Two different fears, two different answers:
   governance approval above the cap. You govern the *tap*, not the water already
   poured.
 
-Reserves that hold supply (faucet, foundation, DAO, validator, liquidity) are the
+Reserves that hold supply (faucet, foundation, DAO, validator, contingency) are the
 critical attack surface: they are **non-voting**, **no one holds a unilateral key**
 to them, withdrawals go only through governance + timelock, grants leave by on-chain
 formula, and the emergency multisig can only **pause**, never drain (section 7).
@@ -297,7 +308,7 @@ parameters. Voting power = **bonded (staked) GMB**. Reserves are not staked ⇒ 
 do not vote naturally. Founder does not stake-to-vote ⇒ excluded.
 
 **B. Treasury/contract governance — Solidity Governor + Timelock.** Controls the
-reserve contracts (faucet, foundation, DAO, liquidity) and protocol contracts.
+reserve contracts (faucet, foundation, DAO, contingency) and protocol contracts.
 - **1 GMB = 1 vote**, with reserve-holding contracts **explicitly excluded** from
   `getVotes`.
 - Flow is **code only**, no steward: propose → vote (quorum + threshold) → queue in
@@ -322,16 +333,22 @@ The voting base grows as GMB distributes.
 
 ---
 
-## 8. Liquidity reserve (10%)
+## 8. Contingency reserve (10%) — *резерв за непредвидени нужди*
 
-- Purpose: **seed and deepen liquidity** if/when governance decides to create a
-  pool — not price control. Released only via Governor + Timelock.
-- When liquidity is created, the initial pool ratio **sets the starting price**;
-  from then the price is market-driven. The reserve gives power to **support depth**,
-  not to dictate price against the market.
-- Holding it as a separate, modest (10%), non-voting, governance-gated bucket keeps
-  it from being a systemic point of control (a 50% mega-reserve was rejected —
-  section 16).
+> Replaces the former "liquidity reserve". **GembaBlockchain provides no liquidity
+> for GMB and operates no DEX/exchange by design** — it is not built for speculation
+> or trading (§2, §16.1). So there is **no liquidity-seeding bucket**. The 10% is held
+> instead as a **contingency reserve for unforeseen needs**.
+
+- **Purpose:** a non-voting reserve for **unforeseen / strategic needs** the chain may
+  face, released **only via Governor + Timelock**. Not for market-making, not for
+  price support — we seed no liquidity.
+- Holding it as a separate, modest (10%), non-voting, governance-gated bucket keeps it
+  from being a systemic point of control.
+- **Note (overlaps the DAO contingency reserve §4.1 #4):** both are now
+  contingency-style buckets. Whether to keep them distinct (DAO-directed vs general
+  unforeseen) or merge into one 20% reserve is an open tokenomics decision —
+  `docs/tokenomics-pending.md`.
 
 ---
 
@@ -347,7 +364,7 @@ treasuries and app logic live in **Solidity**.
 | `Faucet` | public/municipal reserve; intake of 40% of fees; formula + vesting grants; per-grant cap |
 | `FoundationTreasury` | dev funding, released by governance |
 | `DAOReserve` | contingency funds, released by governance |
-| `LiquidityReserve` | holds the 10% liquidity GMB; released only by governance + timelock |
+| `ContingencyReserve` *(rename of `LiquidityReserve.sol` — code rename pending)* | holds the 10% contingency GMB for unforeseen needs; released only by governance + timelock. **No liquidity is seeded (§8).** |
 | `EmergencyPause` (multisig) | pause-only guardian; governance-elected, replaceable; cannot move funds |
 | `AccessControlNFT` | ERC-721/1155 capability tokens for workplace access (no PII) |
 | `Paymaster` | sponsored gas so an institution funds employees' fees from one wallet (meta-tx relay first; ERC-4337 later) |
@@ -432,7 +449,8 @@ the box.
   `gembad` binary (`chain/gembad`) and demonstrated live on single-node and
   4-validator devnets — supply constant, fee split 60/40.*
 - **Phase 3 — Treasury & governance contracts.** `Governor` + `Timelock`, `Faucet`,
-  `FoundationTreasury`, `DAOReserve`, `LiquidityReserve`, `EmergencyPause`; reserve
+  `FoundationTreasury`, `DAOReserve`, `LiquidityReserve` (to be renamed/repurposed →
+  `ContingencyReserve`, §8), `EmergencyPause`; reserve
   contracts excluded from voting; formula + vesting grant logic. **Follow
   `docs/phase3-treasury-principles.md`: tests first, funding last (no contract
   funded before unit + invariant/fuzz + Slither; reserves audited before mainnet
@@ -459,12 +477,11 @@ the box.
   (on-chain revoke + off-chain delete), 8 unit tests + an RLS integration test.*
 - **Phase 6 — On-ramp.** GembaPay stablecoin → GMB purchase flow (no fiat redemption;
   no DEX operated by us). *Done: `GembaOnRamp` (`contracts/src/onramp`) — fixed-rate
-  stablecoin→GMB sale, `nonReentrant` + SafeERC20, 8 Foundry tests. **MiCA gate
-  (ADR-009): `publicSaleEnabled` is FALSE by default; enabling public sale on a
-  public/main network is BLOCKED until written MiCA sign-off from a Bulgarian
-  fintech lawyer** — built/tested on devnet (operator toggled the flag), demo swaps
-  50 stablecoin → 500 GMB. Internal/closed formula grants to institutions go via the
-  Faucet (Phase 3) and are not gated here.*
+  stablecoin→GMB sale, `nonReentrant` + SafeERC20, 8 Foundry tests. `publicSaleEnabled`
+  is **FALSE by default** — by design there is **no public sale** (GembaBlockchain is for
+  use, not trading, §2). Distribution to institutions is via **closed formula grants**
+  (Faucet, Phase 3), not a public sale — built/tested on devnet (operator toggled the
+  flag), demo swaps 50 stablecoin → 500 GMB.*
 - **Phase 7 — Explorer.** Blockscout / GembaScan + API keys; optional Cosmos explorer.
   *Done: `explorer/` — pinned Blockscout docker-compose + `envs/backend.env`
   (Etherscan-compatible API, self-issued API keys, contract verification via
@@ -489,8 +506,8 @@ the box.
   supply-invariant tested + live); `/monitoring` (Prometheus + the **bonded-ratio**
   security metric & ADR-008 alerts at 66/50/33); `docs/runbooks/` (peers & pruning
   validator-vs-archive, tmkms key mgmt, backups, halt recovery, coordinated
-  upgrade). The **security audit (ADR-006)** and **MiCA sign-off (ADR-009)** are the
-  founder's separate, non-code tracks and remain hard launch blockers (§16).*
+  upgrade). The **security audit (ADR-006)** remains the founder's separate, non-code
+  track and a hard launch blocker (§16).*
 - **Public testnet (mainnet dress rehearsal).** `gemba-testnet-1` (distinct chain-id
   + EVM chainId 821207, valueless tokens): `chain/testnet` (genesis generator,
   verified locally as a 5-validator network producing blocks), `services/testnet-faucet`
@@ -549,16 +566,20 @@ These are **chosen**, not overlooked. Documented so they are not later flagged a
 contradictions.
 
 1. **Free transferability ⇒ possible market price we don't control.** GMB is freely
-   transferable on a permissionless chain. We do not run a DEX and do not redeem to
-   fiat, but a third party *can* create a liquidity pool. A market price may emerge.
-   Accepted. This also **weakens the MiCA "limited-network/utility" argument** — GMB
-   is closer to a genuine crypto-asset than a closed voucher. *Confirm classification
-   with a Bulgarian fintech lawyer before public sale.*
+   transferable on a permissionless chain. We do not run a DEX, **seed no liquidity
+   ourselves by design**, and do not redeem to fiat, but a third party *can* create a
+   liquidity pool. A market price may emerge.
+   Accepted. GembaBlockchain seeds no liquidity, runs no exchange, makes no public
+   sale, and distributes to institutions via closed formula grants — it is built for
+   *use*, not trading. (A third party could still create a market; that is outside our
+   control.)
 2. **Small early voting base.** ~90% of GMB sits in non-voting reserves at launch.
    Mitigated by high quorum + supermajority + long timelock + formula-based (not
    discretionary) grants, and by the base growing as GMB distributes. No human steward.
-3. **Liquidity reserve sets the initial price, then the market moves.** The reserve
-   supports depth, not price control.
+3. **No liquidity provided — by design.** The former liquidity reserve is removed;
+   GembaBlockchain seeds **no** liquidity and runs no exchange (§2, §8). We do not even
+   set an initial pool ratio. Any market is purely third-party (§16.1) and its price is
+   entirely outside our control. The freed 10% is now a contingency reserve (§8).
 4. **Emergency multisig is residual centralization.** It can only pause, never drain;
    governance elects and can replace its signers. Bounded and revocable.
 5. **You cannot control already-distributed GMB.** Control is on the faucet's
@@ -616,11 +637,7 @@ contradictions.
    008/009). Full ADR: `/docs/risks.md` (ADR-011).
 
 > **Hard launch blockers (do not ship a public launch until all clear):**
-> **MiCA classification** — no public GMB sale / open on-ramp until a Bulgarian
-> fintech lawyer confirms GMB's MiCA class in writing and any obligations (white
-> paper, disclosures, registration) are met; free transferability (risk 1) weakens
-> the limited-network/utility exemption, so this is an **explicit blocker**, not a
-> formality (ADR-009). **Upstream audit** — Cosmos EVM pre-v1 (risk 6, ADR-006).
+> **Upstream audit** — Cosmos EVM pre-v1 (risk 6, ADR-006).
 > **Security-budget tail** — recirculation tail-reward implemented + tested and
 > bonded-ratio monitoring live (risk 8, ADR-008). Devnet/testnet and closed
 > formula-based institutional grants are **not** blocked by these gates.

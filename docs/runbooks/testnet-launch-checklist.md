@@ -35,8 +35,8 @@ up `/monitoring` (Prometheus + Grafana + the bonded-ratio metric) on day 0.
       fee rises** with block fullness and **decays** when idle (the `demo-feemarket`
       behaviour) — never below the 1 gwei floor.
 - [ ] Mempool stays healthy; no runaway pending; gas estimation works for apps.
-- [ ] Deploy the Phase 3–8 contracts (governance, faucet, NFTs, on-ramp behind its
-      MiCA flag, tickets) and exercise the real flows end-to-end.
+- [ ] Deploy the Phase 3–8 contracts (governance, faucet, NFTs, on-ramp with its
+      `publicSaleEnabled=false` default, tickets) and exercise the real flows end-to-end.
 
 ## Zero inflation (the marquee invariant)
 
@@ -68,6 +68,6 @@ up `/monitoring` (Prometheus + Grafana + the bonded-ratio metric) on day 0.
 
 Weeks of stable block production across regions, the bonded ratio held near target,
 zero-inflation confirmed live, the upgrade + halt-recovery drills rehearsed, and the
-two **non-code** hard blockers progressing on their own tracks: the **security audit
-(ADR-006)** and the **MiCA sign-off (ADR-009)** — both still required before any
-public mainnet sale.
+remaining **non-code** hard blocker progressing on its own track: the **security audit
+(ADR-006)** — required before any public mainnet launch. (The MiCA / public-sale gate
+ADR-009 was withdrawn — no liquidity, no exchange, no public sale by design.)

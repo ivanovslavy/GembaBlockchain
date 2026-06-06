@@ -48,16 +48,16 @@ const FEATURES = [
     body: "GMB is minted once at genesis and never again. Validator rewards come from a pre-minted reserve, not new issuance — no dilution.",
   },
   {
-    title: "Utility, not speculation",
-    body: "GMB is a utility coin: cheaper service access, workplace access control, event tickets and employee perks. Value comes from use.",
+    title: "Utility, never speculation",
+    body: "By design GembaBlockchain provides no liquidity for GMB and operates no exchange. It is not built for speculation or trading — GMB exists to be used (service access, access control, tickets, perks), not bought and sold.",
   },
   {
     title: "Founder holds no power",
     body: "The founder wallet is a non-voting treasury. No privileged validators, no admin key over reserves — funds move only via governance + timelock.",
   },
   {
-    title: "Owned by its participants",
-    body: "The endgame is infrastructure run by the institutions and community that use it — every participant, including municipalities, follows the same on-chain rules.",
+    title: "For society & institutions",
+    body: "Created for the good of society — for public institutions and private organizations to integrate the chain and deliver services to their citizens and users, all under the same on-chain rules.",
   },
 ];
 
@@ -96,17 +96,21 @@ function App() {
       <main>
         <section className="hero">
           <img className="hero-logo" src="/gemba-symbol.svg" alt="GembaBlockchain" />
-          <div className="badge">Live testnet · gemba-testnet-1</div>
+          <div className="badge">🇧🇬 Bulgaria's first blockchain · Live testnet</div>
           <h1>
-            A public, decentralized,
+            Bulgaria's first blockchain —
             <br />
-            <span className="grad">permissionless PoS L1</span>
+            <span className="grad">built for society, not speculation</span>
           </h1>
           <p className="lede">
-            GembaBlockchain is a sovereign Cosmos EVM chain. Its native coin
-            <strong> Gemba (GMB)</strong> is a utility coin inside an ecosystem —
-            cheaper service access, workplace access control, tickets and perks.
-            Built to be owned and run by the institutions and community that use it.
+            GembaBlockchain is a sovereign, public, permissionless Cosmos EVM PoS L1 —
+            <strong> the first blockchain built in Bulgaria</strong>. Its native coin
+            <strong> Gemba (GMB)</strong> is a pure utility coin: cheaper service access,
+            workplace access control, tickets and perks. <strong>By design no liquidity
+            is provided for GMB and we operate no exchange</strong> — the chain is not
+            made for speculation or trading. It exists for the good of society: for
+            public institutions and private organizations to integrate it and deliver
+            services to their citizens and users.
           </p>
           <div className="cta">
             <button className="btn btn-primary" onClick={addToMetaMask}>
@@ -155,10 +159,13 @@ function App() {
 
         <section className="note">
           <p>
-            <strong>Honest by design.</strong> <code>gemba-testnet-1</code> is a
-            valueless public test network — a mainnet dress rehearsal. The chain is
-            permissionless by rule and decentralizing over time; the public mainnet is
-            gated by an independent security audit and regulatory (MiCA) sign-off.
+            <strong>Not for speculation — by design.</strong> GembaBlockchain provides
+            no liquidity for GMB, runs no exchange and does not redeem GMB for fiat. It
+            is infrastructure for institutions and organizations to serve people, not a
+            tradable asset. <code>gemba-testnet-1</code> is a valueless public test
+            network — a mainnet dress rehearsal. The chain is permissionless by rule and
+            decentralizing over time; the public mainnet is gated by an independent
+            security audit.
           </p>
         </section>
       </main>
@@ -182,7 +189,8 @@ function App() {
           </a>
         </nav>
         <p className="copy">
-          GembaBlockchain · public decentralized PoS L1 · GMB utility coin
+          GembaBlockchain · Bulgaria's first blockchain · public decentralized PoS L1 ·
+          built for society, not speculation
         </p>
       </footer>
     </div>

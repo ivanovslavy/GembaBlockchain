@@ -9,8 +9,8 @@ here expand on specific areas.
 - [`risks.md`](./risks.md) — **Risk & Decision Register** (ADR format). Every
   conscious trade-off in long form, including the long-term security budget
   (ADR-008), gas-price-in-real-value (ADR-008a), the two electorates (ADR-008b),
-  MiCA as a launch blocker (ADR-009), and de-facto-centralized-at-genesis (ADR-010).
-  Mirrors `CLAUDE.md` §16.
+  the withdrawn MiCA / public-sale gate (ADR-009 — no liquidity/no public sale by
+  design), and de-facto-centralized-at-genesis (ADR-010). Mirrors `CLAUDE.md` §16.
 
 - [`testnet-status.md`](./testnet-status.md) — **live status of the test network**:
   what is verified working end to end, and the record of the **first GMB transaction**
@@ -30,6 +30,7 @@ here expand on specific areas.
 
 ## Planned (later phases)
 
-- Public-launch checklist gating on the hard blockers (audit ADR-006, MiCA ADR-009,
-  security-budget tail ADR-008 — the tail reward is implemented; audit + MiCA are
-  the founder's separate, non-code tracks).
+- Public-launch checklist gating on the hard blockers (audit ADR-006, security-budget
+  tail ADR-008 — the tail reward is implemented; the audit is the founder's separate,
+  non-code track). The MiCA / public-sale gate (ADR-009) was withdrawn — no liquidity,
+  no exchange, no public sale by design.
