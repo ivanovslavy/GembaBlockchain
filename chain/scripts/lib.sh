@@ -86,7 +86,13 @@ patch_economics() {
   ' "$G" >"$T" && mv "$T" "$G"
 
   # --- block gas cap + short DEVNET governance periods (fast iteration only) ---
-  jq '.consensus.params.block.max_gas = "10000000"' "$G" >"$T" && mv "$T" "$G"
+  # block.max_gas is the CometBFT consensus cap that the EVM reports as the block gas
+  # limit (eth_getBlockByNumber.gasLimit). 10M was too low for EVM workloads — a single
+  # contract deploy (e.g. the GembaSwap router) is ~4-5M and a CREATE2 pair deploy ~2.5M,
+  # so a deploy+swap batch couldn't fit. Raised to 100M (10x; Ethereum L1 is ~30M). The
+  # value is governable post-launch via an x/consensus MsgUpdateParams proposal. See
+  # docs/risks.md (the block-gas-limit finding) and docs/runbooks/raise-block-gas-limit.md.
+  jq '.consensus.params.block.max_gas = "100000000"' "$G" >"$T" && mv "$T" "$G"
   jq '
     .app_state.gov.params.max_deposit_period   = "30s"
     | .app_state.gov.params.voting_period       = "30s"

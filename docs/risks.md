@@ -340,6 +340,28 @@
 
 ---
 
+## ADR-012 — Block gas limit was too low (10M); raised to 100M
+
+- **Status:** Fixed in code for new genesis; live testnet pending a governance bump.
+- **Context (found 2026-06-06 deploying the GembaSwap DEX):** the EVM block gas limit
+  (`eth_getBlockByNumber.gasLimit`) is the CometBFT consensus param
+  `consensus_params.block.max_gas`, which the genesis generator hardcoded to **10,000,000**.
+  That is too low for EVM: a router deploy is ~4–5M and a CREATE2 pair deploy ~2.5M, so a
+  deploy-then-swap batch can't fit one block, and tooling (forge) flips between out-of-gas
+  (estimate too low for swaps — Cosmos EVM `eth_estimateGas` under-reports) and "exceeds block
+  gas limit" (estimate × multiplier over 10M). This is a real chain-config limitation, not a
+  contract bug.
+- **Decision:** raise `block.max_gas` to **100,000,000** (100M — ~3× Ethereum L1; not
+  unlimited, which would be a liveness risk). Set in `chain/scripts/lib.sh` for all new
+  genesis. On the already-running testnet it changes only via an `x/consensus`
+  `MsgUpdateParams` gov proposal — `docs/runbooks/raise-block-gas-limit.md`.
+- **Consequences:** new chains get 100M from block 0; the live testnet keeps 10M until the
+  gov bump (workaround: explicit per-tx `--gas-limit` under 10M). Governable upward later.
+- **Secondary note:** Cosmos EVM `eth_estimateGas` is unreliable for AMM swaps/deploys;
+  scripts/tools should set explicit gas rather than trust estimation.
+
+---
+
 ## Cross-reference: hard launch blockers (must clear before public launch)
 
 | ADR | Blocker | Clears when |

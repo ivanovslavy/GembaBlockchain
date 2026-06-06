@@ -6,7 +6,7 @@
 #
 # Setup: start a gembad node with a SMALL block gas limit so the EIP-1559 target
 # (= block max_gas / elasticity_multiplier) is easy to exceed for the demo. The
-# real chain keeps max_gas = 10,000,000; here we lower it for visibility only:
+# real chain uses max_gas = 100,000,000 (ADR-012); here we lower it for visibility only:
 #
 #   GEMBAD=/tmp/gembad ./init-gembad.sh
 #   jq '.consensus.params.block.max_gas="500000"' \
