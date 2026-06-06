@@ -31,6 +31,22 @@ Self-hosted Blockscout account is a chain of external services — **all of thes
 
 So: Auth0 + cloak + reCAPTCHA-config are done; the remaining gap is **email verification (SendGrid)** + the **flaky reCAPTCHA widget** (the Auth0-redirect path sidesteps the widget).
 
+## ⚠️ Side effect while disabled — the CSRF / "HTTP 500" trap (fixed 2026-06-06)
+
+With account **off** but `NEXT_PUBLIC_RE_CAPTCHA_APP_SITE_KEY` still set on the frontend,
+the explorer threw an **HTTP 500 on ordinary browsing** (e.g. after searching an
+address). Cause: a present reCaptcha site key turns on the reCaptcha-gated frontend
+features (CSV export, public-tag submission), which fetch a CSRF token on page load via
+`/node-api/csrf` → backend `/api/account/v2/get_csrf`. With `ACCOUNT_ENABLED=false` the
+backend returns **404 "Account functionality is disabled"**, and the Next.js proxy
+surfaces it as a **500**.
+
+**Fix (while account stays off):** do **not** set `NEXT_PUBLIC_RE_CAPTCHA_APP_SITE_KEY`
+on the frontend. reCaptcha does nothing useful while account is off, so removing it loses
+no working feature and stops the CSRF fetch (verified: 0 `/node-api/csrf` calls after the
+change). **When you re-enable account (below), put the reCaptcha key back** in the same
+step — account login needs it.
+
 ## How to finish later (for mainnet, if wanted)
 
 1. Sign up for **SendGrid** (free tier), verify a sender, create an API key. Set in
