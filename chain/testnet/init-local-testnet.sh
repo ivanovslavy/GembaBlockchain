@@ -33,7 +33,7 @@ for i in $(seq 0 $((N-1))); do
 done
 # drip faucet account (the faucet SERVICE controls this key) + non-voting reserves
 echo "$TN_FAUCET_MNEMONIC" | "$EVMD" keys add tnfaucet --recover --keyring-backend "$KEYRING" --algo "$KEYALGO" --home "$N0" >/dev/null 2>&1
-for b in foundation dao liquidity founder; do "$EVMD" keys add "$b" --keyring-backend "$KEYRING" --algo "$KEYALGO" --home "$N0" >/dev/null 2>&1; done
+for b in foundation dao contingency founder faucetreserve; do "$EVMD" keys add "$b" --keyring-backend "$KEYRING" --algo "$KEYALGO" --home "$N0" >/dev/null 2>&1; done
 
 # --- allocation (total 100,000,000 test GMB) ---
 for i in $(seq 0 $((N-1))); do
@@ -42,14 +42,14 @@ for i in $(seq 0 $((N-1))); do
 done
 gacct tnfaucet "$TN_FAUCET_ALLOC"
 gacct "$RS_RESERVE_ADDR" "$TN_ALLOC_REWARD_RESERVE"
-gacct "$FAUCET_MODULE_ADDR" "$TN_ALLOC_FAUCET_MODULE"
+gacct faucetreserve "$TN_ALLOC_FAUCET"
 gacct foundation "$TN_ALLOC_FOUNDATION"; gacct dao "$TN_ALLOC_DAO"
-gacct liquidity "$TN_ALLOC_LIQUIDITY"; gacct founder "$TN_ALLOC_FOUNDER"
+gacct contingency "$TN_ALLOC_CONTINGENCY"; gacct founder "$TN_ALLOC_FOUNDER"
 
 GEN="$N0/config/genesis.json"; patch_economics "$GEN"
 TMP="$(mktemp)"
 # strip BaseAccounts at the module addresses (created lazily as ModuleAccounts)
-jq --arg a "$RS_RESERVE_ADDR" --arg b "$FAUCET_MODULE_ADDR" '.app_state.auth.accounts |= map(select(.address != $a and .address != $b))' "$GEN" >"$TMP" && mv "$TMP" "$GEN"
+jq --arg a "$RS_RESERVE_ADDR" '.app_state.auth.accounts |= map(select(.address != $a))' "$GEN" >"$TMP" && mv "$TMP" "$GEN"
 # testnet conveniences: shorter unbonding; custom-module genesis (tail stays off)
 jq --arg u "$TN_UNBONDING_TIME" '.app_state.staking.params.unbonding_time = $u' "$GEN" >"$TMP" && mv "$TMP" "$GEN"
 # GENESIS FEE FIX (ADR-008a): set feemarket min_gas_price = 0 so zero-fee gentxs

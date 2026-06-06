@@ -10,14 +10,14 @@ TN_COSMOS_CHAIN_ID="gemba-testnet-1"
 TN_EVM_CHAIN_ID="821207"
 
 # --- validators: the 5 Hetzner servers (BFT N>=3f+1: 5 tolerate 1 down, §5.3) ---
-TN_VALIDATORS=5
+TN_VALIDATORS=4
 TN_SELF_BOND_GMB="1000"          # 1,000 test GMB self-bonded per validator (= min self-bond, faucet-reachable in 10 days)
 
 # --- testnet drip faucet account (the faucet SERVICE controls this key) ---
 # DEVNET/TESTNET-ONLY well-known key — valueless tokens. dev2 from cosmos/evm.
 TN_FAUCET_MNEMONIC="***REMOVED-ROTATED-FAUCET-MNEMONIC***"
 TN_FAUCET_ADDR_0X="0x40a0cb1C63e026A81B55EE1308586E21eec1eFa9"  # dev2
-TN_FAUCET_ALLOC="20000000"      # 20,000,000 test GMB to drip to testers
+TN_FAUCET_ALLOC="2000000"       # 2,000,000 drip (carved from circulation); the 30M faucet reserve lives in the Faucet contract
 
 # --- allocation: EXACT mainnet §4.1 %s of 100M (corrected 2026-06-06, re-genesis path A) ---
 # Each reserve EOA below holds its exact §4.1 amount and is transferred IN FULL into its
