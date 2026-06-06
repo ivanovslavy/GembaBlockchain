@@ -41,7 +41,7 @@ require an audit before mainnet genesis.
 | `FoundationTreasury` / `DAOReserve` / `ContingencyReserve` | `src/reserves/` | UUPS reserves; release only by Timelock |
 | `BaseReserve` | `src/reserves/BaseReserve.sol` | shared UUPS base: owner=Timelock, upgrade authority Timelock-only, Pausable |
 | `EmergencyPause` | `src/governance/EmergencyPause.sol` | m-of-n guardian; **pause-only**, guardians replaceable by governance |
-| *DEX dev tooling* | `src/dex/` | **optional, NOT project-operated**: Uniswap-V2-style AMM + `WGMB` + **pure-native `GembaNativePool`** + `LiquidityLocker`, for developers to deploy for their own ERC-20 tokens. See `src/dex/README.md`. |
+| *DEX dev tooling* | `src/dex/` | **optional, NOT project-operated**: `gembaswap/` = **official Uniswap V2 renamed 1:1** (full Router02) + `WGMB` + **pure-native `GembaNativePool`** + `LiquidityLocker`, for developers to deploy for their own ERC-20 tokens. See `src/dex/README.md`. |
 
 Upgrade authority of every reserve is the **Timelock only, never an EOA**. The
 Cosmos↔EVM seam is resolved (`SeamProbe.sol` + the resolution in

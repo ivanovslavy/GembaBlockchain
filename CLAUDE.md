@@ -378,14 +378,15 @@ treasuries and app logic live in **Solidity**.
 > here. They are listed in §15 (Custom chain logic), not in this contract table.
 
 > **Optional developer DEX tooling (`contracts/src/dex/`) — NOT project-operated.**
-> The repo ships a Uniswap-V2-style AMM (`WGMB`, `GembaSwapFactory`/`Pair`/`Router`), a
-> **pure-native-GMB pool** (`GembaNativePool` + factory — holds native GMB directly, no
-> WGMB), and a `LiquidityLocker`. These are **permissionless reference contracts for
-> ecosystem developers to deploy for their OWN ERC-20 tokens** (bootstrap/test their
-> token's liquidity). This does **not** contradict "we operate no DEX / seed no GMB
-> liquidity" (§2, §8, §16.1): the project deploys/operates none of these and seeds no
-> GMB market; a third party deploying a market is the §16.1 reality we already accept.
-> See `contracts/src/dex/README.md`.
+> `gembaswap/` is the **official Uniswap V2 renamed 1:1** (`UniswapV2`→`GembaSwap`,
+> core 0.5.16 + periphery 0.6.6, full Router02 ABI, pair init-hash recomputed) — nothing
+> abbreviated. Plus `WGMB` (wrapped native), a **pure-native-GMB pool** (`GembaNativePool`
+> — holds native GMB directly, no WGMB), and a `LiquidityLocker`. These are
+> **permissionless reference contracts for ecosystem developers to deploy for their OWN
+> ERC-20 tokens** (bootstrap/test their token's liquidity). This does **not** contradict
+> "we operate no DEX / seed no GMB liquidity" (§2, §8, §16.1): the project deploys/operates
+> none of these and seeds no GMB market; a third party deploying a market is the §16.1
+> reality we already accept. See `contracts/src/dex/README.md`.
 
 ---
 

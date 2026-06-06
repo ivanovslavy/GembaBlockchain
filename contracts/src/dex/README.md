@@ -1,44 +1,46 @@
-# GembaSwap — optional developer DEX tooling
+# GembaSwap — developer DEX tooling (1:1 Uniswap V2, renamed)
 
 > **Positioning (read first).** GembaBlockchain itself **does not operate a DEX** and
 > **provides no liquidity for GMB** — it is built for use, not speculation/trading
 > (`CLAUDE.md` §2, §8, §16). These contracts are **permissionless, optional
-> infrastructure that ecosystem developers can deploy for their OWN ERC-20 tokens** —
-> to bootstrap and test their token's liquidity. They are **not** a project-operated
-> canonical GMB market. On a permissionless chain anyone can deploy a DEX (§16.1); this
-> is just a clean, audited-style reference so developers don't have to write their own.
+> infrastructure that ecosystem developers deploy for their OWN ERC-20 tokens** — to
+> bootstrap and test their token's liquidity. They are **not** a project-operated
+> canonical GMB market. On a permissionless chain anyone can deploy a DEX (§16.1).
 
-A Uniswap-V2-style constant-product (x·y=k) AMM ported to Solidity 0.8.x with the
-project's security standards, plus a "pure native GMB" pool variant and a liquidity
-locker. 0.30% swap fee to LPs. 90 Foundry tests pass (`test/Dex.t.sol`).
+## `gembaswap/` — the AMM is the official Uniswap V2, renamed 1:1
 
-## Contracts
+`src/dex/gembaswap/` is a **byte-for-byte port of Uniswap V2** (core 0.5.16 +
+periphery 0.6.6) with **only** two changes: every identifier `UniswapV2` → `GembaSwap`
+(contracts, libraries, interfaces, revert-string prefixes) and the pair init-code-hash
+constant in `GembaSwapLibrary.pairFor` recomputed to match our compiled `GembaSwapPair`
+(standard when deploying Uniswap V2 on a new chain). The logic, math, fees (0.30%),
+and the **full Router02 ABI** are identical to mainnet Uniswap V2 — nothing abbreviated.
+
+| Contract | = Uniswap V2 | Role |
+|---|---|---|
+| `gembaswap/core/GembaSwapFactory` | `UniswapV2Factory` | creates one pair per ERC-20 pair (CREATE2) |
+| `gembaswap/core/GembaSwapPair` | `UniswapV2Pair` | the x·y=k pool; is the ERC-20 LP token |
+| `gembaswap/core/GembaSwapERC20` | `UniswapV2ERC20` | LP token base (EIP-2612 permit) |
+| `gembaswap/periphery/GembaSwapRouter02` | `UniswapV2Router02` | **full** periphery: add/remove liquidity (+ETH), all swap variants (exact-in/out, ETH, **fee-on-transfer supporting**), quote/getAmountsOut/In |
+| `gembaswap/periphery/GembaSwapLibrary` | `UniswapV2Library` | pairFor/quote math (patched init hash) |
+
+`Router02.WETH()` is our `WGMB` (wrapped native GMB). Fee-on-transfer tokens are
+supported via the standard `...SupportingFeeOnTransferTokens` functions.
+
+## Other contracts (Gemba-original)
 
 | Contract | What it is |
 |---|---|
-| `WGMB` | Wrapped GMB (WETH9-style). Native GMB isn't an ERC-20; wrap 1:1 so AMMs/ERC-20 tooling can hold the GMB side. |
-| `GembaSwapFactory` | Deploys one `GembaSwapPair` per ERC-20 pair (permissionless). |
-| `GembaSwapPair` | The ERC-20↔ERC-20 constant-product pool; is itself the ERC-20 LP token. |
-| `GembaSwapRouter` | Periphery: `addLiquidity`/`removeLiquidity`, multi-hop swaps, **plus native-GMB convenience** (`addLiquidityGMB`, `swapExactGMBForTokens`, `swapExactTokensForGMB`) that wrap/unwrap WGMB at the edges so users handle pure native GMB. |
-| **`GembaNativePool`** | **The "pure native GMB" variant** — a self-contained GMB↔token pool that **holds native GMB directly (no WGMB)**, with its own `addLiquidity`/`removeLiquidity`/`swapExactNativeForTokens`/`swapExactTokensForNative`. No router needed. |
-| `GembaNativePoolFactory` | One native pool per token (discoverability). |
-| `LiquidityLocker` | Time-locks ERC-20 (typically LP) tokens until a timestamp; owner can only withdraw after unlock and only **extend** (anti-rug). No admin, no path to move locked tokens. |
+| `WGMB` | Wrapped GMB (WETH9-style, 1:1) — the `WETH` for GembaSwapRouter02. |
+| **`GembaNativePool`** (+ `GembaNativePoolFactory`) | A **pure-native** GMB↔token AMM that holds native GMB **directly (no WGMB)**, with its own add/remove/swap. The "no wrapper" option. |
+| `LiquidityLocker` | Time-locks LP tokens (withdraw-after-unlock, extend-only; anti-rug). No admin. |
 
 ## Native GMB — two ways
 
-Native GMB is not an ERC-20 (no `balanceOf`/`transfer`), so an AMM pool needs an
-ERC-20 handle for the GMB side. Two options:
+1. **GembaSwapRouter02 + WGMB** (standard, Uniswap-SDK-compatible): the pool holds WGMB;
+   the router's `addLiquidityETH`/`swapExactETHForTokens`/`swapExactTokensForETH` (and the
+   fee-on-transfer variants) wrap/unwrap so users handle native GMB.
+2. **`GembaNativePool`** (pure native): the pool holds native GMB directly — no WGMB.
 
-1. **WGMB + router** (standard, Uniswap-SDK-compatible). The **pool** holds WGMB; the
-   **router** wraps/unwraps so the **user** deals in pure native GMB. Use this for
-   ERC-20↔ERC-20 pairs and standard tooling.
-2. **`GembaNativePool`** (pure native). The pool holds native GMB directly — no WGMB
-   contract involved at all. Simplest for a single GMB↔token pool; not Uniswap-SDK
-   shaped.
-
-## Notes / omissions (kept minimal on purpose)
-
-- No TWAP price oracle and no protocol fee (the `feeTo` Uniswap mechanism) — not needed
-  for dev tooling; LPs get the full 0.30%.
-- Pair address discovery is via `factory.getPair` (a call), not CREATE2 init-code-hash.
-- Not deployed or operated by the project. A developer deploys what they need.
+Tests: `test/Dex.t.sol` (deploys GembaSwap via `vm.deployCode`, exercises ERC-20, native,
+and fee-on-transfer swaps + the native pool + the locker). Not project-operated.
