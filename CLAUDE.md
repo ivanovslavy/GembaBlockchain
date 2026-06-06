@@ -119,6 +119,15 @@ municipalities, follows the same on-chain rules. No participant has special powe
 Total supply `N` minted once. Recommended `N = 100,000,000 GMB` (proportions
 matter more than the absolute number; `N` can be scaled).
 
+> ⚠️ **PENDING CHANGE (decided 2026-06-06, NOT yet applied):** supply moves to
+> **`N = 100,000,000,000 GMB` (100B)** on **both** testnet and mainnet; bucket #1 below
+> ("faucet") is renamed **Public/Municipal Reserve** to avoid confusion with the testnet
+> *drip* faucet. The live `gemba-testnet-1` genesis is still the OLD 100M with proportions
+> that don't match this table (foundation/liquidity too low, founder too high), and the
+> reserve **contracts are not deployed/funded** (reserves sit in EOAs/modules). Full brief
+> + the two open decisions: **[`docs/tokenomics-pending.md`](docs/tokenomics-pending.md)**
+> — do this next session.
+
 | Bucket | Share | GMB (N=100M) | Votes? | Purpose |
 |---|---|---|---|---|
 | Public / municipal reserve (the **faucet**) | 30% | 30,000,000 | No | grants to institutions by formula + vesting; refilled by 40% of fees |
