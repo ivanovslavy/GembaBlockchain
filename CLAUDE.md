@@ -377,6 +377,16 @@ treasuries and app logic live in **Solidity**.
 > in Go modules, not Solidity. There is no Besu-style `miningbeneficiary` contract
 > here. They are listed in §15 (Custom chain logic), not in this contract table.
 
+> **Optional developer DEX tooling (`contracts/src/dex/`) — NOT project-operated.**
+> The repo ships a Uniswap-V2-style AMM (`WGMB`, `GembaSwapFactory`/`Pair`/`Router`), a
+> **pure-native-GMB pool** (`GembaNativePool` + factory — holds native GMB directly, no
+> WGMB), and a `LiquidityLocker`. These are **permissionless reference contracts for
+> ecosystem developers to deploy for their OWN ERC-20 tokens** (bootstrap/test their
+> token's liquidity). This does **not** contradict "we operate no DEX / seed no GMB
+> liquidity" (§2, §8, §16.1): the project deploys/operates none of these and seeds no
+> GMB market; a third party deploying a market is the §16.1 reality we already accept.
+> See `contracts/src/dex/README.md`.
+
 ---
 
 ## 10. Access control & GDPR
