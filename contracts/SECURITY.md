@@ -6,6 +6,29 @@ Static analysis: `slither . --filter-paths "lib/|test/" --exclude-dependencies`
 holds tokens until tests + (for reserves) an audit are done. These contracts are
 **unfunded** and **not deployed to mainnet**.
 
+## Remix AI review hardening (2026-06-06)
+
+Minor findings from a Remix AI pass over each contract, triaged & addressed:
+
+- **`EmergencyPause`** — *front-running on guardian add/remove (no fund loss).* Real
+  cause: a removed guardian's stale confirmation kept counting toward a threshold (and
+  a guardian could pre-confirm just before removal). Fix: added `configEpoch`, mixed
+  into the confirmation id and bumped on every `setGuardian`/`setThreshold`, so any
+  config change invalidates pending confirmations. No fund path either way (pause-only).
+- **`GembaTicketing`** — *consider rejecting stray native value.* Added explicit
+  reverting `receive()`/`fallback()` (`DirectPaymentNotAllowed`) so inbound GMB can only
+  arrive via `buy()` (which tracks `proceeds`); fail loud instead of silent default revert.
+- **`GembaPerks`** — *suggested address(0) checks for `ticketing.issue`.* Already present
+  (`grantPerk` validates `employee != 0`; constructor validates `ticketing`/`admin`). No
+  change needed.
+- **`HelloGemba`** (Phase-1 smoke test) — `setGreeting` was open; restricted to `deployer`.
+- **`SeamProbe`** (Phase-3 devnet probe) — `forward()` (the spend path) was open; restricted
+  to `owner` (deployer). `receive()` is intentionally left open and documented — the probe
+  must accept bank-layer deposits from any sender; only `owner` can move funds out.
+- **`LiquidityReserve` → `ContingencyReserve`** — renamed (no liquidity by design, §8).
+
+All 83 Foundry tests pass after these changes.
+
 ## Retroactive security pass (docs/security-standards.md)
 
 All Phase 3 & 4 contracts were reviewed against the standards. Changes:
@@ -13,7 +36,7 @@ All Phase 3 & 4 contracts were reviewed against the standards. Changes:
 - **`GembaVotes`** — added `ZeroAmount` custom error; `depositFor` now validates
   `to != 0` and `msg.value != 0`; `withdrawTo` now validates `amount != 0`. CEI
   (burn before send) + `nonReentrant` documented.
-- **`BaseReserve`** (and `Faucet`/`FoundationTreasury`/`DAOReserve`/`LiquidityReserve`)
+- **`BaseReserve`** (and `Faucet`/`FoundationTreasury`/`DAOReserve`/`ContingencyReserve`)
   — added `ZeroAmount`; `_release` now validates `amount != 0` (single validated
   exit, reached by `release` and `Faucet.grant`).
 - **`EmergencyPause`** — now `is ReentrancyGuard`; `confirm()` is `nonReentrant`

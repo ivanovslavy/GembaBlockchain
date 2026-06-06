@@ -16,7 +16,7 @@ them (proxy + Timelock).
 | `Faucet` | public/municipal reserve; intake of 40% of fees; formula + vesting grants; per-grant cap |
 | `FoundationTreasury` | dev funding, released by governance |
 | `DAOReserve` | contingency funds, released by governance |
-| `LiquidityReserve` | holds the 10% liquidity GMB; released only by governance + timelock |
+| `ContingencyReserve` | holds the 10% contingency GMB (unforeseen needs; **no liquidity seeded — by design**, CLAUDE.md §8); released only by governance + timelock |
 | `EmergencyPause` (multisig) | pause-only guardian; governance-elected, replaceable; **cannot move funds** |
 | `AccessControlNFT` | ERC-721/1155 capability tokens for workplace access (no PII) |
 | `Paymaster` | sponsored gas (meta-tx relay first; ERC-4337 later) |
@@ -38,7 +38,7 @@ require an audit before mainnet genesis.
 | `GembaTimelock` | `src/governance/GembaTimelock.sol` | TimelockController; owns every reserve; open execution after delay |
 | `GembaGovernor` | `src/governance/GembaGovernor.sol` | high quorum + **supermajority** (66–75%) + timelock |
 | `Faucet` | `src/reserves/Faucet.sol` | UUPS; receives feesplit's 40%; capped formula grants + governance `release` |
-| `FoundationTreasury` / `DAOReserve` / `LiquidityReserve` | `src/reserves/` | UUPS reserves; release only by Timelock |
+| `FoundationTreasury` / `DAOReserve` / `ContingencyReserve` | `src/reserves/` | UUPS reserves; release only by Timelock |
 | `BaseReserve` | `src/reserves/BaseReserve.sol` | shared UUPS base: owner=Timelock, upgrade authority Timelock-only, Pausable |
 | `EmergencyPause` | `src/governance/EmergencyPause.sol` | m-of-n guardian; **pause-only**, guardians replaceable by governance |
 

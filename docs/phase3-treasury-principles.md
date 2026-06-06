@@ -1,8 +1,8 @@
 # Phase 3 — Treasury & Governance Contract Principles
 
 > Binding principles for the Phase 3 Solidity contracts (Governor, Timelock,
-> Faucet, FoundationTreasury, DAOReserve, LiquidityReserve [→ ContingencyReserve,
-> `CLAUDE.md` §8], EmergencyPause). Read
+> Faucet, FoundationTreasury, DAOReserve, ContingencyReserve [renamed from
+> LiquidityReserve — no liquidity by design, `CLAUDE.md` §8], EmergencyPause). Read
 > together with `CLAUDE.md` §7, §9 and `docs/risks.md`. Recorded **before** writing
 > the contracts on purpose — these are design decisions, not afterthoughts.
 

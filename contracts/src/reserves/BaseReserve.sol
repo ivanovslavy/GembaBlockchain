@@ -9,7 +9,7 @@ import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/ut
 
 /// @title BaseReserve
 /// @notice Base for all GembaBlockchain reserve/treasury contracts (Foundation,
-/// DAO, Liquidity, Faucet). Holds native GMB and enforces the §3.6 invariant:
+/// DAO, Contingency, Faucet). Holds native GMB and enforces the §3.6 invariant:
 /// **no unilateral control of reserves.**
 ///
 /// - **Upgradeable (UUPS):** the implementation can evolve, but the upgrade

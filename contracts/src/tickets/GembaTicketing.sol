@@ -46,6 +46,7 @@ contract GembaTicketing is ERC1155, AccessControl, ReentrancyGuard {
     error InsufficientBalance();
     error NativeSendFailed();
     error NotTicketHolder();
+    error DirectPaymentNotAllowed();
 
     constructor(address admin) ERC1155("") {
         if (admin == address(0)) revert ZeroAddress();
@@ -133,5 +134,16 @@ contract GembaTicketing is ERC1155, AccessControl, ReentrancyGuard {
 
     function supportsInterface(bytes4 interfaceId) public view override(ERC1155, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
+    }
+
+    /// @dev Reject stray native GMB. Tickets are paid for ONLY via `buy()` (which
+    /// tracks `proceeds`); any other inbound value would be untracked and stuck, so
+    /// we fail loud (docs/security-standards.md) instead of silently accepting it.
+    receive() external payable {
+        revert DirectPaymentNotAllowed();
+    }
+
+    fallback() external payable {
+        revert DirectPaymentNotAllowed();
     }
 }

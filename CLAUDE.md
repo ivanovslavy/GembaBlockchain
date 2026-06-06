@@ -364,7 +364,7 @@ treasuries and app logic live in **Solidity**.
 | `Faucet` | public/municipal reserve; intake of 40% of fees; formula + vesting grants; per-grant cap |
 | `FoundationTreasury` | dev funding, released by governance |
 | `DAOReserve` | contingency funds, released by governance |
-| `ContingencyReserve` *(rename of `LiquidityReserve.sol` — code rename pending)* | holds the 10% contingency GMB for unforeseen needs; released only by governance + timelock. **No liquidity is seeded (§8).** |
+| `ContingencyReserve` *(renamed from `LiquidityReserve.sol`)* | holds the 10% contingency GMB for unforeseen needs; released only by governance + timelock. **No liquidity is seeded (§8).** |
 | `EmergencyPause` (multisig) | pause-only guardian; governance-elected, replaceable; cannot move funds |
 | `AccessControlNFT` | ERC-721/1155 capability tokens for workplace access (no PII) |
 | `Paymaster` | sponsored gas so an institution funds employees' fees from one wallet (meta-tx relay first; ERC-4337 later) |
@@ -449,8 +449,8 @@ the box.
   `gembad` binary (`chain/gembad`) and demonstrated live on single-node and
   4-validator devnets — supply constant, fee split 60/40.*
 - **Phase 3 — Treasury & governance contracts.** `Governor` + `Timelock`, `Faucet`,
-  `FoundationTreasury`, `DAOReserve`, `LiquidityReserve` (to be renamed/repurposed →
-  `ContingencyReserve`, §8), `EmergencyPause`; reserve
+  `FoundationTreasury`, `DAOReserve`, `ContingencyReserve` (renamed from
+  `LiquidityReserve` — no liquidity by design, §8), `EmergencyPause`; reserve
   contracts excluded from voting; formula + vesting grant logic. **Follow
   `docs/phase3-treasury-principles.md`: tests first, funding last (no contract
   funded before unit + invariant/fuzz + Slither; reserves audited before mainnet
