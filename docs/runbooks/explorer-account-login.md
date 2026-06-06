@@ -1,21 +1,56 @@
-# Runbook — GembaScan account login (status: ENABLED 2026-06-06)
+# Runbook — GembaScan account login (status: ✅ WORKING 2026-06-07)
 
-> **UPDATE 2026-06-06 — login is now ENABLED.** `ACCOUNT_ENABLED=true` (backend) +
-> `NEXT_PUBLIC_IS_ACCOUNT_SUPPORTED=true` (frontend) + reCaptcha key restored. Login is
-> handled by **Auth0** (`/auth/auth0` → `gembachain.eu.auth0.com`, verified 302). The
-> **csrf-stub Apache workaround was REMOVED** (it was only for the account-off state).
->
-> **Correction:** login does NOT need SendGrid — per Blockscout docs, **login = Auth0**;
-> **SendGrid is only for watchlist *notification* emails** (`ACCOUNT_SENDGRID_*`, now also
-> configured with the `gembascan.io` authenticated domain, sender `no-reply@gembascan.io`).
-> The earlier "email-code via SendGrid blocks login" note was a misdiagnosis.
->
-> **Known background quirk:** for *logged-out* users `/api/account/v2/get_csrf` returns 401,
-> and the frontend's `/api/csrf` route 500s on any non-200 — a cosmetic background error
-> until the user logs in (then get_csrf returns 200 with the token). Does not block the
-> Auth0 login flow.
+> **Email-OTP login works end-to-end** (enter email → receive code → logged in → personal
+> API keys available). It is the Blockscout passwordless-email flow, backed by **Auth0**
+> (the OTP is generated/sent by Auth0, **not** by Blockscout's own SendGrid). Getting here
+> required a chain of fixes across Blockscout, the explorer host, and the Auth0 tenant —
+> recorded below so it can be reproduced for mainnet.
 
-> Historical notes below (the path we took to get here) are kept for reference.
+## ✅ The complete working recipe (every piece is required)
+
+**1. Blockscout backend** (`/root/gembascan/envs/backend.env`, gitignored):
+- `ACCOUNT_ENABLED=true`
+- `ACCOUNT_AUTH0_DOMAIN=gembachain.eu.auth0.com` (bare — NO `https://`, NO trailing `/`)
+- `ACCOUNT_AUTH0_CLIENT_ID` / `ACCOUNT_AUTH0_CLIENT_SECRET` (the Regular Web App)
+- `ACCOUNT_SENDGRID_API_KEY` / `_SENDER=no-reply@gembascan.io` / `_TEMPLATE=d-…` (watchlist mail only)
+- `RE_CAPTCHA_DISABLED=true`  ← **the reCAPTCHA workaround**, see step 2
+- `RE_CAPTCHA_CHECK_HOSTNAME=false` (the Auth0/SendGrid origin check is enough)
+
+**2. reCAPTCHA — Blockscout frontend bug, worked around.** Blockscout supports only
+reCAPTCHA **v2 invisible**, but its frontend (`latest`/v2.3.5) `executeAsync()` never
+produces a token here (confirmed via a server-side header capture: `recaptcha-v2-response`
+arrives empty; reproduced in clean incognito on Chrome+Firefox, so NOT an extension/CSP/key
+issue — the key is a valid v2-invisible key with the domains registered). So `send_otp`
+got a 403 "Invalid reCAPTCHA response". **Workaround:** `RE_CAPTCHA_DISABLED=true` on the
+backend so the empty token is accepted, **while KEEPING** `NEXT_PUBLIC_RE_CAPTCHA_APP_SITE_KEY`
+set on the frontend — because removing it hides the whole email-login UI (leaves only
+"web3 connect"). So: key present (UI shows) + backend ignores it (no 403).
+
+**3. Auth0 tenant** (the app with the Client ID above). Login is Auth0; the OTP email is
+sent by Auth0 → its SendGrid provider. Each of these was a separate blocker:
+- **M2M / Management API:** `send_otp` needs a Management-API (M2M) token. Enable the app's
+  **Client Credentials** grant AND authorize it on the **Auth0 Management API** (scopes incl.
+  `read:users`,`create:users`,`update:users`,`read:user_idp_tokens`). Symptom if missing:
+  backend log `Failed to get M2M JWT`; Auth0 `/oauth/token` returns
+  `unauthorized_client: Grant type 'client_credentials' not allowed for the client`.
+  (Authorizing on the Management API auto-enables the grant — easiest path.)
+- **Passwordless Email connection** must be **enabled for this application** (it defaulted to
+  0 enabled clients). API: `PATCH /api/v2/connections/{id}/clients` `[{client_id,status:true}]`.
+- **Auth0 Email Provider = SendGrid**, with the SendGrid API key whose account has
+  `gembascan.io` authenticated, and `default_from_address=no-reply@gembascan.io`.
+- **THE final killer:** the passwordless **connection's email template `from` defaulted to
+  `{{ application.name }} <root@auth0.com>`** → SendGrid 550 *"from address does not match a
+  verified Sender Identity"* (visible only in **Auth0 tenant logs**, type `fn` =
+  Failed-Sending-Notification). Fix: set the connection's `options.email.from` to
+  `GembaScan <no-reply@gembascan.io>` (a sender on the SendGrid-authenticated domain).
+
+**Best diagnostic:** Auth0 **tenant logs** (`GET /api/v2/logs`, scope `read:logs`) — type
+`fn` carries the exact SendGrid error; `cls` = code/link sent. Blockscout's own log only
+says the generic `Failed to get M2M JWT` / returns 200 once Auth0 accepts the request.
+
+---
+
+## Historical notes (the path we took) — kept for reference
 
 ## Why it's disabled
 
