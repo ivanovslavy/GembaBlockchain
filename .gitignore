@@ -9,6 +9,10 @@
 *.secret
 secrets/
 
+# --- Wallet private-key backup (testnet re-genesis EOAs + validator accounts) ---
+# NEVER commit. Local backup of /tmp/gemba-regenesis ephemeral keyring (see docs).
+wallet-backup/
+
 # --- Keys, mnemonics, keyrings (validator consensus keys, node keys, accounts) ---
 *.key
 *.pem

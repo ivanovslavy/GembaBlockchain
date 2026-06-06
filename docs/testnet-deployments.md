@@ -57,15 +57,36 @@
 
 ---
 
-## Verification status
+## Verification status — ✅ ALL VERIFIED (2026-06-06)
 
-| Contract | Verified on GembaScan |
+All 15 public CAs + the 4 reserve implementations behind the UUPS proxies are
+verified on GembaScan (19 contracts total).
+
+| Group | Status |
 |---|---|
-| GembaSwapFactory | ✅ |
-| GembaSwapRouter02 | ✅ |
-| All governance + reserve contracts | ⏳ bytecode-mismatch — retry with explicit constructor args |
+| Governance (Timelock, Votes, Governor, EmergencyPause) | ✅ verified |
+| Reserve proxies (Faucet, Foundation, DAO, Contingency) | ✅ verified (as `ERC1967Proxy`) |
+| Reserve implementations (Faucet, FoundationTreasury, DAOReserve, ContingencyReserve) | ✅ verified |
+| DEX (WGMB, Factory, Router02, NativePoolFactory, LiquidityLocker) | ✅ verified |
+| Demo tokens (DemoToken, DemoFeeToken) | ✅ verified |
 
-Run `contracts/script/verify-all.sh` to re-attempt (no API key needed).
+> **How (the bytecode-mismatch fix):** `forge verify-contract --guess-constructor-args`
+> failed its strict local pre-check ("Local bytecode doesn't match on-chain bytecode")
+> because of UUPS immutables + a stale `out/` metadata hash. Fix = submit the
+> **standard-JSON input** straight to the Blockscout Rust verifier:
+> `forge verify-contract <addr> <path> --show-standard-json-input` → POST to
+> `/api/v2/smart-contracts/<addr>/verification/via/standard-input` with
+> `compiler_version=v0.8.24+commit.e11b9ed9`, `autodetect_constructor_args=true`.
+> No API key needed. solc 0.8.24, optimizer 200 runs, evm `cancun`.
+
+**Reserve implementation addresses (behind the proxies):**
+
+| Proxy (public CA) | Implementation |
+|---|---|
+| Faucet `0x0C6b72AC…` | `0xbdabe30b9eb79d23c6a3cee52fc77674e7a51ebc` |
+| FoundationTreasury `0x06Cb10aCe…` | `0x1eaeae7bc6bbe37e9a9bef5c13324f14bddc65e7` |
+| DAOReserve `0x7E00f38D…` | `0x07b406e921fa22f6abafb0fd4771a2b55db0befd` |
+| ContingencyReserve `0xb5dEc986…` | `0xfd502adaf0170f8b9794ada3d1c6fafffd183de5` |
 
 ---
 
