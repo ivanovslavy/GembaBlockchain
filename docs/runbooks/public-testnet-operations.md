@@ -98,3 +98,43 @@ port-forward required; A1-style CGNAT often blocks inbound anyway).
 `gembascan.io` is **reserved for the future mainnet explorer**. `testnet.gembascan.io`
 is the current testnet explorer/RPC. When mainnet launches it gets its own
 (mainnet-pointed) explorer + archive instance on `gembascan.io`.
+
+## 7. Gas tracker shows 0 — explained (testnet runs gas FREE, by choice)
+
+The GembaScan gas tracker (and `eth_gasPrice`) reads **0** on the testnet. This is
+**not an explorer bug** — the chain itself returns 0:
+
+- `x/feemarket` has **`min_gas_price = 0`**, so under near-zero load the EIP-1559
+  base fee decays to ~0 (`gembad q feemarket params` → `base_fee ≈ 7e-18`,
+  `eth_gasPrice → 0`). Transactions go through paying ~1 wei.
+- This is a **conscious testnet choice (2026-06-06): leave gas free** so test usage
+  is frictionless. It diverges from CLAUDE.md Phase 4 / §16.8 ("1 gwei floor, low but
+  non-zero"), which still governs **mainnet**.
+
+**To restore the 1 gwei floor later** (mainnet, or if a non-zero testnet is wanted),
+it is a governance change to `x/feemarket` (authority = the gov module account),
+**not** an explorer setting. Voting period on testnet is ~30 s. Recipe:
+
+```jsonc
+// feemarket-prop.json  — gembad tx gov submit-proposal feemarket-prop.json
+{
+  "messages": [{
+    "@type": "/cosmos.evm.feemarket.v1.MsgUpdateParams",
+    "authority": "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+    "params": {
+      "no_base_fee": false, "base_fee_change_denominator": 8,
+      "elasticity_multiplier": 2, "enable_height": "0",
+      "base_fee": "1000000000.000000000000000000",       // 1 gwei = 1e9 agmb/gas
+      "min_gas_price": "1000000000.000000000000000000",  // the floor
+      "min_gas_multiplier": "0.500000000000000000"
+    }
+  }],
+  "deposit": "20000000agmb",
+  "title": "Restore 1 gwei gas floor",
+  "summary": "Set x/feemarket min_gas_price + base_fee to 1 gwei per Phase 4 / §16.8"
+}
+```
+
+Submit + deposit, then vote with bonded validators (quorum 33.4%, threshold 50%);
+the validator operator keys (`val0..val3`) live in the re-genesis keyring backup.
+Type URL `/cosmos.evm.feemarket.v1.MsgUpdateParams` verified against the live binary.
