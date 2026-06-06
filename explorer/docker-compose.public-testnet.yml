@@ -63,6 +63,14 @@ services:
       NEXT_PUBLIC_API_PORT: "443"
       NEXT_PUBLIC_API_PROTOCOL: https
       NEXT_PUBLIC_API_WEBSOCKET_PROTOCOL: wss
+      # web3: the chain RPC the UI uses for network add/switch + client-side eth_call
+      # (Read/Write Contract while connected). Without it, web3 features are off.
+      NEXT_PUBLIC_NETWORK_RPC_URL: https://testnet.gembascan.io/rpc
+      # "Blockchain interaction (writing to contract)" — i.e. Connect Wallet + Write
+      # Contract — is gated in the frontend on BOTH the RPC url above AND a
+      # WalletConnect/Reown project id. Until this is set, Write Contract stays OFF
+      # (Read Contract works via the API regardless). Free id: https://cloud.reown.com
+      # NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID: <reown-project-id>
       NEXT_PUBLIC_IS_ACCOUNT_SUPPORTED: "false"
     ports: [ "127.0.0.1:3000:3000" ]
 volumes: { blockscout-db-data: {} }
