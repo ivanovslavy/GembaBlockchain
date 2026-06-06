@@ -3,7 +3,7 @@
 # install.sh — GembaBlockchain validator/node installer (self-contained).
 #
 # Two commands and you have a synced node:
-#     git clone https://github.com/<org>/gemba-validator.git && cd gemba-validator
+#     git clone https://github.com/ivanovslavy/GembaBlockchain-Validator.git && cd GembaBlockchain-Validator
 #     ./install.sh
 #
 # It installs dependencies + the pinned Go, BUILDS `gembad` from source (so the

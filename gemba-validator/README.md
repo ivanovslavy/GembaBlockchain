@@ -3,7 +3,7 @@
 **Run a node and become a validator on GembaBlockchain — in two commands.**
 
 ```bash
-git clone https://github.com/<org>/gemba-validator.git && cd gemba-validator
+git clone https://github.com/ivanovslavy/GembaBlockchain-Validator.git && cd GembaBlockchain-Validator
 ./install.sh
 ```
 
@@ -56,7 +56,7 @@ you. This repo is the public, self‑contained way to join.
 
 ### 1. Install (gets you a synced node)
 ```bash
-git clone https://github.com/<org>/gemba-validator.git && cd gemba-validator
+git clone https://github.com/ivanovslavy/GembaBlockchain-Validator.git && cd GembaBlockchain-Validator
 MONIKER=my-validator ./install.sh          # MONIKER is optional
 ```
 The installer:
