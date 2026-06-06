@@ -68,9 +68,11 @@ services:
       NEXT_PUBLIC_NETWORK_RPC_URL: https://testnet.gembascan.io/rpc
       # "Blockchain interaction (writing to contract)" — i.e. Connect Wallet + Write
       # Contract — is gated in the frontend on BOTH the RPC url above AND a
-      # WalletConnect/Reown project id. Until this is set, Write Contract stays OFF
-      # (Read Contract works via the API regardless). Free id: https://cloud.reown.com
-      # NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID: <reown-project-id>
+      # WalletConnect/Reown project id (free: https://cloud.reown.com). This id is a
+      # NEXT_PUBLIC_ value (shipped to the browser) — public by design, not a secret;
+      # it is protected by the project's Allowed-Domains list in the Reown dashboard,
+      # where testnet.gembascan.io (and gembascan.io) should be allowlisted.
+      NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID: a25f7bcc46433fecddee320e76fa307f
       NEXT_PUBLIC_IS_ACCOUNT_SUPPORTED: "false"
     ports: [ "127.0.0.1:3000:3000" ]
 volumes: { blockscout-db-data: {} }
