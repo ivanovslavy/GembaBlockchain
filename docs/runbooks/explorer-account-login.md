@@ -50,11 +50,26 @@ features (CSV export, public-tag submission), which fetch a CSRF token on page l
 backend returns **404 "Account functionality is disabled"**, and the Next.js proxy
 surfaces it as a **500**.
 
-**Fix (while account stays off):** do **not** set `NEXT_PUBLIC_RE_CAPTCHA_APP_SITE_KEY`
-on the frontend. reCaptcha does nothing useful while account is off, so removing it loses
-no working feature and stops the CSRF fetch (verified: 0 `/node-api/csrf` calls after the
-change). **When you re-enable account (below), put the reCaptcha key back** in the same
-step — account login needs it.
+**What actually fixed it (2026-06-06).** Removing the reCaptcha key was NOT enough — the
+frontend (`frontend:latest`, v2.3.5) fetches the CSRF token on every page regardless, via
+the Next.js route `/api/csrf` → `general:csrf` → backend `/api/account/v2/get_csrf`. That
+route's handler returns **HTTP 500 for ANY non-200 upstream** (the backend 404s with account
+off). The 500 surfaces as a visible error on normal browsing (e.g. typing a CA in the search
+box → 500 toast). The handler treats **200** specially: it just reads the `x-bs-account-csrf`
+response header (absent when account is off → `{token:null}`) and returns 200. So the fix is
+to make that one path return a **static 200** at the Apache layer:
+
+```apache
+# in gembascan-le-ssl.conf, BEFORE  ProxyPass /api ...
+ProxyPass /api/account/v2/get_csrf !
+Alias    /api/account/v2/get_csrf /var/www/gembascan-brand/csrf-stub.json   # file contains: {}
+```
+
+Verified: `/api/account/v2/get_csrf` → 200, `/node-api/csrf` → 200 (was 500), other
+`/api/account/v2/*` still proxy to the backend, search/API unaffected. **⚠️ REMOVE this
+Apache block when you enable account/login** (below), otherwise it shadows the real csrf
+endpoint and login breaks. reCaptcha was also dropped from the frontend; re-add it WITH
+account when login is enabled.
 
 ## How to finish later (for mainnet, if wanted)
 
