@@ -1,0 +1,18 @@
+syntax = "proto3";
+package gemba.valgate.v1;
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+import "amino/amino.proto";
+option go_package = "github.com/ivanovslavy/GembaBlockchain/chain/x/valgate/types";
+
+// Params holds the validator-gate parameters (governance-tunable via MsgUpdateParams).
+message Params {
+  // min_self_bond is the minimum self-delegation (in agmb base units) required to
+  // create a validator. Anti-spam floor; raise/lower it by governance. §5.2.
+  string min_self_bond = 1 [
+    (cosmos_proto.scalar) = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+}

@@ -22,10 +22,9 @@ source "$HERE/network.env"
 
 MONIKER="${MONIKER:-gemba-node-$(hostname -s 2>/dev/null || echo node)}"
 HOME_DIR="${HOME_DIR:-$HOME/.gembad}"
-GITHUB_TOKEN="${GITHUB_TOKEN:-}"          # only needed while the source repo is private
 ENABLE_JSONRPC="${ENABLE_JSONRPC:-false}" # true only for RPC providers / explorers
 SVC_USER="${SVC_USER:-$USER}"
-WORK="${WORK:-$HOME/.gemba-build}"
+SRC="$HERE/src/chain"                      # bundled node source (self-contained)
 BIN=/usr/local/bin/gembad
 
 log()  { printf '\033[1;32m>> %s\033[0m\n' "$*"; }
@@ -52,21 +51,11 @@ go_toolchain() {
   export PATH="/usr/local/go/bin:$PATH"
 }
 
-source_code() {
-  local url="$GEMBA_REPO"; [ -n "$GITHUB_TOKEN" ] && url="https://x-access-token:${GITHUB_TOKEN}@${GEMBA_REPO#https://}"
-  if [ -d "$WORK/.git" ]; then
-    log "updating source ($REPO_REF)"; git -C "$WORK" remote set-url origin "$url"
-    git -C "$WORK" fetch -q --depth 1 origin "$REPO_REF" && git -C "$WORK" reset -q --hard FETCH_HEAD
-  else
-    log "cloning node source ($REPO_REF)"
-    git clone -q --depth 1 --branch "$REPO_REF" "$url" "$WORK" \
-      || die "clone failed — if the source repo is private, run: GITHUB_TOKEN=<pat> ./install.sh"
-  fi
-}
-
 build() {
-  log "building gembad from source (a few minutes the first time)…"
-  OUT=/tmp/gembad.new bash "$WORK/chain/gembad/build-gembad.sh"
+  log "building gembad from the BUNDLED node source (a few minutes the first time)…"
+  [ -x "$SRC/gembad/build-gembad.sh" ] || die "bundled source missing at $SRC — is the package complete?"
+  # build-gembad.sh fetches the pinned, PUBLIC cosmos/evm and wires in $SRC (the Gemba modules)
+  OUT=/tmp/gembad.new bash "$SRC/gembad/build-gembad.sh"
   $SUDO install -m 0755 /tmp/gembad.new "$BIN" && rm -f /tmp/gembad.new
   log "installed $($BIN version 2>/dev/null || echo gembad)"
 }
@@ -145,4 +134,4 @@ EOF
 }
 
 log "GembaBlockchain validator installer — $NETWORK (moniker=$MONIKER)"
-deps; go_toolchain; source_code; build; init_node; genesis; configure; service; status
+deps; go_toolchain; build; init_node; genesis; configure; service; status

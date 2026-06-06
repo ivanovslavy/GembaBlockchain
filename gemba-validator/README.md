@@ -61,7 +61,7 @@ MONIKER=my-validator ./install.sh          # MONIKER is optional
 ```
 The installer:
 1. installs OS deps + the pinned Go toolchain
-2. fetches the node source and **builds `gembad`** → `/usr/local/bin/gembad`
+2. **builds `gembad` from the bundled node source** (`src/chain/`) → `/usr/local/bin/gembad`
 3. `gembad init`, installs the **bundled, sha256‑verified** `genesis.json`
 4. sets the public **seeds**, gas floor and pruning
 5. installs + starts the **`gembad`** systemd service
@@ -135,8 +135,6 @@ All of these live in **`network.env`** — the single config the installer reads
 ---
 
 ## Troubleshooting
-- **`clone failed` / repo is private:** during the private phase pass a token —
-  `GITHUB_TOKEN=<github-pat> ./install.sh`.
 - **build OOM:** give the box ≥ 4 GB RAM (or add swap) and re‑run.
 - **stuck `catching_up=true`:** check TCP 26656 is open and the seeds are reachable
   (`gembad comet show-node-id`; logs for peer dials).
