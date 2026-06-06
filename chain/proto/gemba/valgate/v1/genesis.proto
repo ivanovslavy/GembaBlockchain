@@ -1,0 +1,11 @@
+syntax = "proto3";
+package gemba.valgate.v1;
+import "gogoproto/gogo.proto";
+import "amino/amino.proto";
+import "gemba/valgate/v1/params.proto";
+option go_package = "github.com/ivanovslavy/GembaBlockchain/chain/x/valgate/types";
+
+// GenesisState is the valgate module genesis.
+message GenesisState {
+  Params params = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
