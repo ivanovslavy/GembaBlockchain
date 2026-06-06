@@ -1,9 +1,18 @@
 # Runbook — GembaScan account login (status: DISABLED, deferred)
 
+> **Recorded decision (2026-06-06):** user login on GembaScan stays **DISABLED** until
+> an **email-verification-code flow is added** — Blockscout sends a sign-up/login
+> **verification code by email via SendGrid**, and without that mail provider the
+> account can never become verified (so "Log in" cannot work). Enabling login =
+> wiring SendGrid (the "email code" sender) + flipping the account flags back on.
+> Everything else in the chain (Auth0, cloak key, reCAPTCHA, Postgres pool) is already
+> done; **SendGrid / the email code is the one remaining blocker.**
+
 > The per-user **login + personal API keys** feature of the self-hosted Blockscout
 > explorer is **intentionally disabled** (2026-06-06). It works up to a point but the
-> last step needs another external service (SendGrid). The **Etherscan-compatible API
-> works without it** (see bottom). This documents how far we got and how to finish.
+> last step needs another external service (SendGrid, for the email verification code).
+> The **Etherscan-compatible API works without it** (see bottom). This documents how far
+> we got and how to finish.
 
 ## Why it's disabled
 
