@@ -1,77 +1,59 @@
-# ⚠️ PENDING — tokenomics rework (do NEXT session, not done yet)
+# Reserve-contract funding — plan + the genesis-vs-spec reconciliation
 
-> Decided 2026-06-06, **implementation deferred to the next session.** Nothing below
-> is applied yet — the live `gemba-testnet-1` still has the OLD genesis (100M, mismatched
-> proportions). This file is the brief for the next session.
+> **Supply decision (2026-06-06): stays 100,000,000 GMB (100M).** A 100B increase was
+> considered and **rejected**. The `CLAUDE.md` §4.1 proportions are authoritative.
 
-## Decision: supply → **100B GMB** on BOTH networks
+## Target: each reserve held by its contract, at its §4.1 %
 
-`N = 100,000,000,000 GMB` (100 billion), for **testnet AND mainnet**. Replaces the old
-`100,000,000` (100M). Proportions stay the same **in %** (see tables). `CLAUDE.md §4.1`
-must be updated from 100M → 100B.
+| Bucket | % | GMB (of 100M) | Held by |
+|---|---|---|---|
+| Public/Municipal Reserve | 30% | 30M | `Faucet` contract |
+| Validator Rewards | 20% | 20M | `rewardstreamer` Cosmos module (not a Solidity contract) |
+| Foundation | 15% | 15M | `FoundationTreasury` contract |
+| DAO Reserve | 10% | 10M | `DAOReserve` contract |
+| Contingency Reserve (was Liquidity) | 10% | 10M | `ContingencyReserve` contract |
+| Circulation | 10% | 10M | circulating EOAs (voting base) — not a contract |
+| Founder/Ops | 5% | 5M | founder EOA (non-voting) — not a contract |
 
-## Mainnet allocation (100B) — the 7 buckets (§4.1, % unchanged)
+So **4 Solidity contracts** must end up holding 30 + 15 + 10 + 10 = **65M** under
+Governor+Timelock custody.
 
-| # | Bucket | % | GMB | Purpose |
-|---|---|---|---|---|
-| 1 | **Public/Municipal Reserve** (was called "faucet" in §4.1) | 30% | 30B | grants to institutions by formula + vesting; refilled by 40% of fees |
-| 2 | Validator Rewards Reserve | 20% | 20B | zero-inflation rewards (~10y stream via `x/rewardstreamer`) |
-| 3 | Foundation | 15% | 15B | dev/audits via governance |
-| 4 | **DAO Reserve (contingency)** | 10% | 10B | **unforeseen needs** ("непредвидени") — governance-released |
-| 5 | **Contingency Reserve** (*резерв непредвиден*) | 10% | 10B | unforeseen/strategic needs (replaces the former Liquidity Reserve — **no liquidity by design**, §8). NB: overlaps the DAO contingency #4 — decide whether to merge into one 20% bucket |
-| 6 | Circulation pool | 10% | 10B | day-0 liveness + neutral voting base |
-| 7 | Founder/Ops | 5% | 5B | working capital (sold for stablecoin, recirculates) |
+## ⚠️ Why the live testnet can't be funded to these %s as-is
 
-> **Clarified naming gotcha:** there are TWO different 10% buckets — **DAO Reserve** =
-> contingency/unforeseen; **Circulation** = day-0 liveness/voting. Don't conflate them.
-> Also rename §4.1 bucket #1 from "faucet" to **Public/Municipal Reserve** to avoid
-> confusion with the testnet *drip* faucet (a separate thing).
+The `gemba-testnet-1` genesis (`chain/testnet/testnet.params.sh`) is **deliberately
+testing-shaped, not the mainnet §4.1 shape**: drip-faucet EOA 20M + faucet **module** 20M
+(40% total), validator-rewards **module** 20M, foundation 10M, dao 10M, liquidity 5M,
+founder 5M, circulation 10M (validators). Two problems for accurate funding:
 
-## Testnet allocation (100B) — **mirror of mainnet** (user's choice) + drip faucet
+1. **~47M sits in keyless Cosmos module accounts** (rewardstreamer 20M, faucet module 20M,
+   staking pools ~7M) — those can't be moved into Solidity contracts by transfer.
+2. The **movable EOA balances (~55M) < the 65M** the four contracts need, and the per-bucket
+   amounts don't match §4.1 (foundation 10M not 15M, contingency 5M not 10M).
 
-Same 7-bucket %s, but bucket #1's role (public distribution) is played by the **drip
-faucet** (`services/testnet-faucet`, hands out valueless test GMB) instead of formula
-grants: drip-faucet 30B, validator-rewards 20B, foundation 15B, DAO 10B, contingency 10B,
-circulation 10B, founder 5B. Mirrors mainnet so the real governance/treasury flows can be
-tested before mainnet. (No liquidity bucket — GembaBlockchain provides no liquidity by
-design, §8.)
+**Conclusion: the live contracts cannot be funded to the exact §4.1 %s without a corrected
+re-genesis.**
 
-## Two OPEN decisions — confirm with the user before regenerating genesis
+## Decision needed — two paths
 
-1. **Mainnet Public/Municipal Reserve (30%)** — user said "faucet не ми трябва на mainnet."
-   That bucket IS the heart of the GembaBlockchain vision (institutional grants), distinct
-   from the testnet drip faucet. **Confirm: keep it (recommended, just rename) or drop it
-   (then redistribute the 30%)?**
-2. **Testnet foundation** — user said "foundation не ми трябва на testnet" but chose
-   "mirror mainnet" (which includes it). **Confirm: include a test foundation bucket, or
-   drop it from testnet?**
+- **(A) Corrected re-genesis** *(clean, accurate, the proper mainnet dress rehearsal).*
+  Regenerate `gemba-testnet-1` with the §4.1 allocation (EOAs holding the exact reserve
+  amounts, or contracts predeployed+funded), then deploy + fund the reserve contracts to
+  exact %s. **Cost:** disruptive — resets chain height, re-inits the 4 validators, re-deploys
+  the live DEX, and the explorer re-indexes from 0.
+- **(B) Fund-as-available on the current chain** *(no re-genesis, approximate).* Deploy the
+  contracts and fund each from its corresponding EOA with what's movable; document the
+  **actual** % each contract ends up with and the deviation from §4.1. Reserves still move to
+  governance custody for the parts that are movable; the module-locked portions stay as-is.
 
-## Two problems this rework must also FIX (found this session)
+For **mainnet**, neither problem exists — the genesis is generated correctly from the start
+(set the EOA/contract allocation to the §4.1 %s; `chain/scripts/lib.sh` already has the
+gas-limit fix). Prefer genesis-predeploying the reserve contracts (bytecode in genesis) +
+allocating to them directly, or allocate to EOAs and fund the contracts in the launch runbook.
 
-1. **Current testnet genesis ≠ spec.** Live chain has foundation 10M (spec 15%), a
-   `liquidity` EOA 5M (the liquidity reserve is now **removed** → its 10% becomes a
-   contingency reserve), **founder 9M (spec 5% — too high!)**, and the faucet split awkwardly
-   across a `tnfaucet` EOA + a `faucet` module. The genesis generator (`chain/testnet`) put
-   different numbers than `CLAUDE.md §4.1`. The 100B regen must align to the agreed %s.
-2. **Reserves are NOT held by the governance contracts.** The native GMB sits in EOA genesis
-   accounts (`tnfaucet/foundation/dao/liquidity/founder`) + Cosmos module accounts
-   (`rewardstreamer`, `faucet`, staking pools) — NOT in `Faucet.sol`/`FoundationTreasury.sol`/
-   `DAOReserve.sol`/`LiquidityReserve.sol` (which aren't deployed at all on 821207). So the
-   "governance + timelock controls the reserves" model is NOT active — reserves are key-
-   controlled EOAs (the documented §16.9 "de-facto centralized at genesis"). Intended fix:
-   deploy the reserve/governance contracts, then **fund them** (transfer EOA → contract
-   address) so they custody the reserves under Governor+Timelock. On mainnet the cleaner
-   path is **genesis-predeploying** the contracts (bytecode in genesis state) + allocating
-   directly to their addresses.
+## Tasks once a path is chosen
 
-## Tasks for the next session (in order)
-
-1. Get the user's answers to the two open decisions above.
-2. Update `CLAUDE.md §4` (and §1 if needed): 100M → 100B, rename bucket #1 to
-   Public/Municipal Reserve, keep the clarified DAO-vs-Circulation note.
-3. Regenerate **both** genesis files (`chain/testnet` + the mainnet genesis plan) at 100B
-   with the agreed proportions → new chain-id / fresh testnet (genesis change = restart).
-4. Deploy the governance + reserve contracts on the (new) testnet and **verify** them
-   (no API key needed — Blockscout verification is open). Then fund them EOA→contract to
-   demonstrate the real governance-custody tokenomics.
-5. Decide mainnet approach: genesis-predeploy contracts vs EOA-then-migrate.
+1. Deploy `GembaVotes`, `GembaTimelock`, `GembaGovernor`, `EmergencyPause` + the 4 reserves
+   (UUPS proxies), wiring owner = Timelock, pauser = EmergencyPause.
+2. Fund the 4 reserve contracts (path A: exact %s; path B: as-available + documented).
+3. **Verify every deployed contract** on GembaScan (no API key needed).
+4. Set up DAO/governance with the genesis wallets (Votes wrapping, a test proposal flow).

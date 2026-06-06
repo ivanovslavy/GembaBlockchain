@@ -126,18 +126,18 @@ permissionless chain from creating a market — but we seed none ourselves; sect
 
 ### 4.1 Genesis allocation
 
-Total supply `N` minted once. Recommended `N = 100,000,000 GMB` (proportions
-matter more than the absolute number; `N` can be scaled).
+Total supply **`N = 100,000,000 GMB` (100M)**, minted once at genesis. (Decided
+2026-06-06: stay at 100M — a 100B increase was considered and **rejected**; proportions
+below are authoritative.) Bucket #1 ("faucet") = the **Public/Municipal Reserve**, distinct
+from the testnet *drip* faucet; the former liquidity reserve is the **Contingency Reserve**
+(no liquidity by design, §8).
 
-> ⚠️ **PENDING CHANGE (decided 2026-06-06, NOT yet applied):** supply moves to
-> **`N = 100,000,000,000 GMB` (100B)** on **both** testnet and mainnet; bucket #1 below
-> ("faucet") is renamed **Public/Municipal Reserve** to avoid confusion with the testnet
-> *drip* faucet; the **liquidity reserve is removed** (no liquidity by design, §8) and that
-> 10% becomes a **contingency reserve**. The live `gemba-testnet-1` genesis is still the OLD
-> 100M with mismatched proportions (foundation too low, founder too high) and the reserve
-> **contracts are not deployed/funded** (reserves sit in EOAs/modules). Full brief + the
-> open decisions: **[`docs/tokenomics-pending.md`](docs/tokenomics-pending.md)** — do this
-> next session.
+> **Reserve-contract funding status:** the reserves are still held by genesis EOAs + Cosmos
+> module accounts, **not yet by the Solidity reserve contracts** (Governor/Timelock custody).
+> The *testnet* genesis is deliberately testing-shaped (bigger faucet, etc.) and **does not
+> match these mainnet %s**, and ~47% of supply sits in keyless module accounts — so the live
+> testnet contracts cannot be funded to the exact %s below without a corrected re-genesis.
+> Plan + the genesis-vs-spec reconciliation: **[`docs/tokenomics-pending.md`](docs/tokenomics-pending.md)**.
 
 | Bucket | Share | GMB (N=100M) | Votes? | Purpose |
 |---|---|---|---|---|
