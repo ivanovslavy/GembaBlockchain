@@ -8,11 +8,13 @@ export class Metrics {
   }
   onSubmit(type) { this.submitted++; this.byType[type] = (this.byType[type] || 0) + 1; this._subWindow.push(Date.now()); }
   onSubmitFail(msg) { this.failedSubmit++; const k = classify(msg); this.errors[k] = (this.errors[k] || 0) + 1; }
-  onMined(latencyMs, status) {
-    this.mined++; if (status === 0) this.reverted++;
+  // mined = tx appeared in a block (cheap, no per-tx RPC). Throughput metric.
+  onMined(latencyMs) {
+    this.mined++;
     this._minWindow.push(Date.now());
     this._lat.push(latencyMs); if (this._lat.length > 5000) this._lat.shift();
   }
+  onRevert() { this.reverted++; } // best-effort, from async receipt fetch
   onTimeout() { this.timedOut++; }
   _tps(arr, win = 5000) { const now = Date.now(); while (arr.length && arr[0] < now - win) arr.shift(); return arr.length / (win / 1000); }
   snapshot(inflight) {

@@ -18,10 +18,15 @@ export class NonceManager {
     return n;
   }
   settle(address) { this.inflight.set(address, Math.max(0, (this.inflight.get(address) || 0) - 1)); }
-  // After a timeout (gap suspected) resync the local nonce to chain truth and clear in-flight.
+  // After a timeout, advance the local nonce to chain truth WITHOUT rewinding past
+  // nonces we've already broadcast (rewinding re-sends pending nonces → "replacement fee
+  // too low"). Only move forward; recompute in-flight from the gap.
   async resync(address, provider) {
-    const n = await provider.getTransactionCount(address, "latest");
-    this.next.set(address, n); this.inflight.set(address, 0);
-    return n;
+    const mined = await provider.getTransactionCount(address, "latest");
+    const cur = this.next.get(address) ?? mined;
+    const next = Math.max(cur, mined);
+    this.next.set(address, next);
+    this.inflight.set(address, Math.max(0, next - mined));
+    return next;
   }
 }

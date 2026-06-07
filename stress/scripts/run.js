@@ -33,7 +33,7 @@ const runId = `${profileName}-${new Date().toISOString().replace(/[:.]/g, "-")}`
 const logger = new RunLogger(runId, env.LOG_DIR || join(root, "logs"), Number(env.LOG_ROTATE_LINES || 200000));
 const metrics = new Metrics();
 const collector = new ReceiptCollector(providers, metrics, logger, {
-  onSettle: (addr, mined) => { nonceMgr.settle(addr); if (!mined) nonceMgr.resync(addr, providers.next()).catch(() => {}); },
+  onSettle: (addr, mined) => { nonceMgr.settle(addr); if (!mined) nonceMgr.resync(addr, providers.primary).catch(() => {}); },
 });
 const probe = new NodeProbe(env.COMETBFT_RPC, env.NODE_DATA_DIR, logger, { minFreeGb: Number(env.DISK_MIN_FREE_GB || 12) });
 
@@ -59,7 +59,7 @@ console.log(`  run ${runId}\n`);
 // init nonces (chunked)
 const nonceMgr = new NonceManager();
 for (let i = 0; i < signers.length; i += 50) {
-  await Promise.all(signers.slice(i, i + 50).map((s) => nonceMgr.init(s.address, providers.next()).catch(() => 0)));
+  await Promise.all(signers.slice(i, i + 50).map((s) => nonceMgr.init(s.address, providers.primary).catch(() => 0)));
 }
 
 let running = true;
@@ -101,7 +101,7 @@ const mon = setInterval(async () => {
   const dSub = s.submitted - prev.submitted, dErr = s.failedSubmit - prev.failedSubmit; prev = s;
   const errRate = dSub > 0 ? dErr / dSub : 0;
   s._errRate = errRate;
-  process.stdout.write(`\r  tps s/m ${s.submitTps}/${s.minedTps} | inflight ${s.inflight} | p95 ${s.p95}ms | err ${(errRate * 100).toFixed(1)}% | blk ${np.height ?? "?"} ${np.blockTimeMs ?? "?"}ms | mem ${np.mempool ?? "?"} | disk ${np.diskFreeGb ?? "?"}GB    `);
+  process.stdout.write(`\r  tps s/m ${s.submitTps}/${s.minedTps} | inflight ${s.inflight} | p95 ${s.p95}ms | err ${(errRate * 100).toFixed(1)}% | blk ${collector.lastBlock} | mem ${np.mempool ?? "-"} | disk ${np.diskFreeGb ?? "-"}GB    `);
   if (probe.aborted) { console.log(`\n⚠ ABORT: ${probe.abortReason}`); running = false; }
   global._last = s;
 }, 2000);
@@ -126,18 +126,21 @@ async function runRamp() {
   console.log(`  ▸ warmup ${profile.warmupSec}s @ ${target} tps`);
   await sleep(profile.warmupSec * 1000);
   const t0 = Date.now();
-  let knee = null;
+  let knee = null, bad = 0, bestMined = 0;
   while (running && Date.now() - t0 < profile.maxDurationSec * 1000) {
     target += profile.stepTps; rate.setRate(target);
     await sleep(profile.stepSec * 1000);
     const s = global._last || metrics.snapshot(collector.size);
+    bestMined = Math.max(bestMined, s.minedTps);
     const plateau = s.submitTps >= target * 0.8 && s.minedTps < s.submitTps * k.plateauRatio;
-    if (s.p95 > k.p95Ms || (s._errRate || 0) > k.errRate || plateau) {
-      knee = { target, reason: s.p95 > k.p95Ms ? "p95" : plateau ? "plateau" : "errors", minedTps: s.minedTps };
-      console.log(`\n  ● knee at target ${target} tps (${knee.reason}); sustained mined ≈ ${s.minedTps} tps`);
-      break;
-    }
+    const cond = s.p95 > k.p95Ms || (s._errRate || 0) > k.errRate || plateau;
+    if (cond) {
+      bad++;
+      console.log(`\n  · pressure at target ${target} (${s.p95 > k.p95Ms ? "p95" : plateau ? "plateau" : "errors"}); mined ${s.minedTps} [${bad}/2]`);
+      if (bad >= 2) { knee = { target, reason: s.p95 > k.p95Ms ? "p95" : plateau ? "plateau" : "errors", minedTps: s.minedTps, bestMined }; console.log(`\n  ● knee at target ${target} tps; sustained mined ≈ ${s.minedTps} (peak ${bestMined})`); break; }
+    } else bad = 0;
   }
+  if (knee) knee.bestMined = bestMined;
   profile._knee = knee || { target, reason: "maxDuration", minedTps: (global._last || {}).minedTps };
 }
 

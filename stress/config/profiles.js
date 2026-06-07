@@ -9,9 +9,9 @@ export function buildProfile(name, env) {
   switch (name) {
     case "A": // Calibration + ramp (~30 min) — find the knee, auto-stop.
       return {
-        name: "A", mode: "ramp", weights: "all", concurrency: 250,
-        warmupSec: 60, startTps: 5, stepTps: 10, stepSec: 30, maxDurationSec: 1800,
-        knee: { p95Ms: 3 * BLOCK_MS, errRate: 0.1, plateauRatio: 0.85 },
+        name: "A", mode: "ramp", weights: "all", concurrency: 400,
+        warmupSec: 60, startTps: 10, stepTps: 20, stepSec: 45, maxDurationSec: 1800,
+        knee: { p95Ms: 4 * BLOCK_MS, errRate: 0.15, plateauRatio: 0.7 },
       };
     case "B": // Standard (~2h): ramp → hold 80% → spike 150% → drain.
       return {

@@ -28,7 +28,7 @@ function defs(ctx) {
 
     // Adversarial
     gasBomb:        { gas: G(5000000), build: (_, f) => ({ to: A.gasbomb, data: I.gasbomb.encodeFunctionData("burn", [2000n]), gas: G(5000000) }) },
-    bigCalldata:    { gas: G(1300000), build: (_, f) => ({ to: A.storage, data: I.storage.encodeFunctionData("sink", [bigBytes]), gas: G(1300000) }) },
+    bigCalldata:    { gas: G(2600000), build: (_, f) => ({ to: A.storage, data: I.storage.encodeFunctionData("sink", [bigBytes]), gas: G(2600000) }) }, // ~50KB calldata needs >2.02M (EIP-7623 floor)
     revertOp:       { gas: G(60000), build: (_, f) => ({ to: A.storage, data: I.storage.encodeFunctionData("boom", []), gas: G(60000) }) },
   };
 }
