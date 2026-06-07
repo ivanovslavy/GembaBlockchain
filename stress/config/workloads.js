@@ -20,8 +20,9 @@ function defs(ctx) {
 
     // DEX
     dexSwap:        { gas: G(160000), build: (_, f) => ({ to: A.dex, data: I.dex.encodeFunctionData("swap", [A.t0, A.t1, 1000n, 0n]), gas: G(160000) }) },
-    dexAddLiq:      { gas: G(220000), build: (_, f) => ({ to: A.dex, data: I.dex.encodeFunctionData("addLiquidity", [A.t0, A.t1, 100000n, 100000n]), gas: G(220000) }) },
-    dexRemoveLiq:   { gas: G(180000), build: (_, f) => ({ to: A.dex, data: I.dex.encodeFunctionData("removeLiquidity", [A.t0, A.t1, 1000n]), gas: G(180000) }) },
+    dexAddLiq:      { gas: G(220000), build: (_, f) => { ctx.liqProviders.add(f); return { to: A.dex, data: I.dex.encodeFunctionData("addLiquidity", [A.t0, A.t1, 100000n, 100000n]), gas: G(220000) }; } },
+    // only wallets that have added liquidity may remove (else lp underflow → Panic 0x11)
+    dexRemoveLiq:   { gas: G(180000), build: (_, f) => ctx.liqProviders.has(f) ? { to: A.dex, data: I.dex.encodeFunctionData("removeLiquidity", [A.t0, A.t1, 1000n]), gas: G(180000) } : null },
     storageLoop:    { gas: G(450000), build: (_, f) => ({ to: A.storage, data: I.storage.encodeFunctionData("loop", [50n]), gas: G(450000) }) },
     deploy:         { gas: G(700000), build: (_, f) => ({ to: undefined, data: ctx.deployBytecode, gas: G(700000) }) },
 

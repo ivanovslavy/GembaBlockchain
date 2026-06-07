@@ -32,7 +32,9 @@ const chainId = Number(env.CHAIN_ID);
 const runId = `${profileName}-${new Date().toISOString().replace(/[:.]/g, "-")}`;
 const logger = new RunLogger(runId, env.LOG_DIR || join(root, "logs"), Number(env.LOG_ROTATE_LINES || 200000));
 const metrics = new Metrics();
-const collector = new ReceiptCollector(providers, metrics, logger);
+const collector = new ReceiptCollector(providers, metrics, logger, {
+  onSettle: (addr, mined) => { nonceMgr.settle(addr); if (!mined) nonceMgr.resync(addr, providers.next()).catch(() => {}); },
+});
 const probe = new NodeProbe(env.COMETBFT_RPC, env.NODE_DATA_DIR, logger, { minFreeGb: Number(env.DISK_MIN_FREE_GB || 12) });
 
 // workload context
@@ -43,11 +45,13 @@ const ctx = {
   addresses: records.map((r) => r.address),
   indexOf: (a) => indexByAddr.get(a),
   nft: { count: 0 }, maxNft: Number(env.MAX_NFT_SUPPLY || 200000),
+  liqProviders: new Set(), // wallets that have added DEX liquidity (gate removeLiquidity)
   deployBytecode: art("Storage").bytecode,
 };
 const work = buildWorkloadSet(profile.weights, ctx);
 const sem = new Semaphore(profile.concurrency);
 const rate = new RateLimiter(profile.startTps || 5);
+const CAP = Number(env.MAX_INFLIGHT_PER_WALLET || 4); // max unconfirmed txs per wallet
 
 console.log(`\n▶ profile ${profileName} | wallets ${records.length} | concurrency ${profile.concurrency} | RPCs ${providers.all.length}`);
 console.log(`  run ${runId}\n`);
@@ -60,8 +64,11 @@ for (let i = 0; i < signers.length; i += 50) {
 
 let running = true;
 let rr = 0;
-async function fireOne() {
-  const sig = signers[rr++ % signers.length];
+function nextSigner() { // round-robin, skipping wallets at their in-flight cap
+  for (let k = 0; k < signers.length; k++) { const s = signers[rr++ % signers.length]; if (nonceMgr.canSend(s.address, CAP)) return s; }
+  return null;
+}
+async function fireOne(sig) {
   const it = work.pick();
   let req; try { req = it.build(ctx, sig.address); } catch { return; }
   if (!req) return;
@@ -71,11 +78,19 @@ async function fireOne() {
     metrics.onSubmit(it.type);
     collector.track(hash, { submitMs, row: { ts: submitMs, profile: profileName, walletIdx: sig.index, from: sig.address, nonce, type: it.type, to: req.to ?? null, gas: req.gas.toString() } });
   } catch (e) {
+    nonceMgr.settle(sig.address);
     metrics.onSubmitFail(String(e.message || e));
     logger.write("errors", { kind: "submit", type: it.type, from: sig.address, msg: String(e.message || e).slice(0, 200) });
   }
 }
-async function pump() { while (running) { await rate.take(); if (!running) break; await sem.acquire(); fireOne().finally(() => sem.release()); } }
+async function pump() {
+  while (running) {
+    await rate.take(); if (!running) break;
+    const sig = nextSigner();
+    if (!sig) { await sleep(20); continue; } // all wallets saturated → backpressure
+    await sem.acquire(); fireOne(sig).finally(() => sem.release());
+  }
+}
 
 collector.start();
 let prev = { submitted: 0, failedSubmit: 0 };

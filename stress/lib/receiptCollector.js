@@ -1,8 +1,8 @@
 // Tracks in-flight txs and resolves them to receipts (block, status, gasUsed, latency)
 // without blocking the submit loop. Polls new blocks; sweeps stragglers; times out.
 export class ReceiptCollector {
-  constructor(providers, metrics, logger, { timeoutMs = 120000 } = {}) {
-    this.providers = providers; this.metrics = metrics; this.logger = logger; this.timeoutMs = timeoutMs;
+  constructor(providers, metrics, logger, { timeoutMs = 120000, onSettle = null } = {}) {
+    this.providers = providers; this.metrics = metrics; this.logger = logger; this.timeoutMs = timeoutMs; this.onSettle = onSettle;
     this.inflight = new Map(); // hash -> {submitMs, type, from}
     this.running = false;
     this.lastBlock = 0;
@@ -51,6 +51,7 @@ export class ReceiptCollector {
       status, gasUsed: rcpt?.gasUsed?.toString() ?? null,
     });
     if (status === 0) this.logger.write("errors", { kind: "revert", hash, type: meta.row.type, block: blockNumber });
+    this.onSettle?.(meta.row.from, true);
   }
   async _sweepLoop() {
     while (this.running) {
@@ -60,6 +61,7 @@ export class ReceiptCollector {
           this.inflight.delete(h); this.metrics.onTimeout();
           this.logger.write("tx", { ...m.row, hash: h, status: "timeout", latencyMs: now - m.submitMs });
           this.logger.write("errors", { kind: "timeout", hash: h, type: m.row.type });
+          this.onSettle?.(m.row.from, false);
         }
       }
       await sleep(3000);
