@@ -1,0 +1,37 @@
+// Three run profiles. Block time on GembaBlockchain testnet ≈ 5.2s — latency
+// thresholds are expressed in that unit. TARGET_TPS (from profile A's result) and
+// SOAK_TPS are read from env so B/C can use the discovered ceiling.
+export function buildProfile(name, env) {
+  const TARGET = Number(env.TARGET_TPS || 50);   // set from A's knee
+  const SOAK = Number(env.SOAK_TPS || Math.max(5, Math.round(TARGET * 0.4)));
+  const BLOCK_MS = Number(env.BLOCK_MS || 5200);
+
+  switch (name) {
+    case "A": // Calibration + ramp (~30 min) — find the knee, auto-stop.
+      return {
+        name: "A", mode: "ramp", weights: "all", concurrency: 250,
+        warmupSec: 60, startTps: 5, stepTps: 10, stepSec: 30, maxDurationSec: 1800,
+        knee: { p95Ms: 3 * BLOCK_MS, errRate: 0.1, plateauRatio: 0.85 },
+      };
+    case "B": // Standard (~2h): ramp → hold 80% → spike 150% → drain.
+      return {
+        name: "B", mode: "phases", weights: "all", concurrency: 350,
+        phases: [
+          { name: "ramp", fromTps: 5, toTps: TARGET, durationSec: 300 },
+          { name: "hold", tps: Math.round(TARGET * 0.8), durationSec: 6660 },
+          { name: "spike", tps: Math.round(TARGET * 1.5), durationSec: 120 },
+          { name: "cooldown", tps: Math.round(TARGET * 0.5), durationSec: 120 },
+        ],
+      };
+    case "C": // Soak (~4h): steady moderate load — slow leaks, state growth, drift.
+      return {
+        name: "C", mode: "phases", weights: "soak", concurrency: 200,
+        phases: [
+          { name: "ramp", fromTps: 5, toTps: SOAK, durationSec: 300 },
+          { name: "soak", tps: SOAK, durationSec: 14100 },
+        ],
+      };
+    default:
+      throw new Error(`unknown profile ${name} (use A|B|C)`);
+  }
+}

@@ -1,0 +1,7 @@
+.env
+wallets.json
+deployed.json
+logs/
+node_modules/
+contracts/out/
+contracts/cache/
