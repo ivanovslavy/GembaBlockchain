@@ -1,0 +1,56 @@
+:root {
+  --bg: #0a0b16; --card: #13152a; --card-2: #171a33; --border: #262a4d;
+  --text: #b7bad2; --text-dim: #7a7e9e; --heading: #f4f5fb;
+  --indigo: #6366f1; --cyan: #22d3ee; --grad: linear-gradient(120deg, #6366f1 0%, #22d3ee 100%);
+  --ok: #34d399; --bad: #f87171;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text); min-height: 100vh;
+  background-image: radial-gradient(60% 50% at 50% 0%, rgba(99,102,241,0.18), transparent 70%),
+                    radial-gradient(40% 40% at 85% 10%, rgba(34,211,238,0.12), transparent 70%);
+}
+a { color: var(--cyan); text-decoration: none; }
+.gradient { background: var(--grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; max-width: 1100px; margin: 0 auto; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: var(--heading); }
+.brand .dot { width: 26px; height: 26px; border-radius: 8px; background: var(--grad); }
+
+.wrap { max-width: 480px; margin: 36px auto 60px; padding: 0 16px; }
+.card { background: linear-gradient(180deg, var(--card-2), var(--card)); border: 1px solid var(--border); border-radius: 20px; padding: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.35); }
+h1 { color: var(--heading); font-size: 22px; margin: 0 0 4px; }
+.sub { color: var(--text-dim); font-size: 14px; margin: 0 0 18px; }
+
+.tokrow { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 6px; }
+.tokrow .lbl { font-size: 12px; color: var(--text-dim); display: flex; justify-content: space-between; margin-bottom: 8px; }
+.tokrow .line { display: flex; gap: 10px; align-items: center; }
+.amt { flex: 1; background: transparent; border: none; color: var(--heading); font-size: 26px; font-weight: 600; outline: none; width: 100%; }
+.amt::placeholder { color: #3c4063; }
+
+.tokbtn { display: flex; align-items: center; gap: 7px; background: var(--card-2); border: 1px solid var(--border); color: var(--heading); border-radius: 99px; padding: 7px 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.tokbtn:hover { border-color: var(--indigo); }
+
+.flip { display: flex; justify-content: center; margin: -2px 0; }
+.flip button { width: 36px; height: 36px; border-radius: 11px; background: var(--card-2); border: 1px solid var(--border); color: var(--cyan); cursor: pointer; font-size: 18px; }
+
+.btn { width: 100%; padding: 15px; border-radius: 14px; border: none; font-weight: 800; font-size: 16px; cursor: pointer; margin-top: 14px; color: #0a0b16; background: var(--grad); }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn.ghost { background: var(--card-2); color: var(--heading); border: 1px solid var(--border); }
+
+.meta { font-size: 13px; color: var(--text-dim); margin-top: 12px; display: grid; gap: 6px; }
+.meta .r { display: flex; justify-content: space-between; }
+.err { color: var(--bad); font-size: 13.5px; margin-top: 10px; }
+.ok { color: var(--ok); font-size: 13.5px; margin-top: 10px; }
+.mono { font-family: ui-monospace, "SF Mono", Consolas, monospace; }
+
+.modal { position: fixed; inset: 0; background: rgba(5,6,15,0.7); display: grid; place-items: center; z-index: 50; padding: 16px; }
+.modal .card { width: 380px; max-width: 94vw; }
+.tokopt { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 12px; cursor: pointer; }
+.tokopt:hover { background: var(--card-2); }
+input.addr { width: 100%; padding: 11px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; color: var(--heading); font-family: ui-monospace, monospace; font-size: 13px; }
+.pill { font-size: 12px; padding: 3px 9px; border-radius: 99px; border: 1px solid var(--border); color: var(--text-dim); }
+.foot { text-align: center; color: var(--text-dim); font-size: 13px; padding: 30px 16px; }
+.slip { display: flex; gap: 6px; align-items: center; }
+.slip input { width: 56px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--heading); padding: 5px; text-align: right; }
