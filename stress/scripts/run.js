@@ -129,19 +129,25 @@ async function runRamp() {
   let knee = null, bad = 0, bestMined = 0;
   while (running && Date.now() - t0 < profile.maxDurationSec * 1000) {
     target += profile.stepTps; rate.setRate(target);
+    // measure the TRUE average rate over the step from cumulative counters (robust to
+    // the block-scan collector's bursty per-block mined reporting).
+    const mStart = metrics.mined, sStart = metrics.submitted, tStart = Date.now();
     await sleep(profile.stepSec * 1000);
+    const dt = (Date.now() - tStart) / 1000;
+    const minedRate = (metrics.mined - mStart) / dt;
+    const submitRate = (metrics.submitted - sStart) / dt;
+    bestMined = Math.max(bestMined, minedRate);
     const s = global._last || metrics.snapshot(collector.size);
-    bestMined = Math.max(bestMined, s.minedTps);
-    const plateau = s.submitTps >= target * 0.8 && s.minedTps < s.submitTps * k.plateauRatio;
+    const plateau = submitRate >= target * 0.8 && minedRate < submitRate * k.plateauRatio;
     const cond = s.p95 > k.p95Ms || (s._errRate || 0) > k.errRate || plateau;
+    console.log(`\n  step target ${target}: submit ${submitRate.toFixed(1)} mined ${minedRate.toFixed(1)} | p95 ${s.p95}ms${cond ? `  ⟵ pressure (${s.p95 > k.p95Ms ? "p95" : plateau ? "plateau" : "errors"}) [${bad + 1}/2]` : ""}`);
     if (cond) {
       bad++;
-      console.log(`\n  · pressure at target ${target} (${s.p95 > k.p95Ms ? "p95" : plateau ? "plateau" : "errors"}); mined ${s.minedTps} [${bad}/2]`);
-      if (bad >= 2) { knee = { target, reason: s.p95 > k.p95Ms ? "p95" : plateau ? "plateau" : "errors", minedTps: s.minedTps, bestMined }; console.log(`\n  ● knee at target ${target} tps; sustained mined ≈ ${s.minedTps} (peak ${bestMined})`); break; }
+      if (bad >= 2) { knee = { target, reason: s.p95 > k.p95Ms ? "p95" : plateau ? "plateau" : "errors", minedTps: +minedRate.toFixed(1), bestMined: +bestMined.toFixed(1) }; console.log(`\n  ● knee at target ${target} tps; sustained mined ≈ ${minedRate.toFixed(1)} (peak ${bestMined.toFixed(1)})`); break; }
     } else bad = 0;
   }
-  if (knee) knee.bestMined = bestMined;
-  profile._knee = knee || { target, reason: "maxDuration", minedTps: (global._last || {}).minedTps };
+  if (!knee) profile._knee = { target, reason: "maxDuration", minedTps: +bestMined.toFixed(1), bestMined: +bestMined.toFixed(1) };
+  else profile._knee = knee;
 }
 
 const onSig = () => { console.log("\n  …draining"); running = false; };
