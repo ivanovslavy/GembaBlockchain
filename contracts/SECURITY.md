@@ -227,5 +227,7 @@ Reproduce: `git clone --depth 1 https://github.com/Uniswap/v2-core && diff -w <(
 ### Mythril (symbolic execution, 2026-06-08)
 
 `myth analyze` on the flattened fund-handling / DEX contracts (local solc 0.8.30,
-per-contract execution timeout): **`GembaOnRamp` → "No issues were detected."**
-`GembaNativePool` and `GembaTicketing` runs follow.
+per-contract execution timeout). **All clean:**
+- `GembaOnRamp` → "No issues were detected."
+- `GembaNativePool` → "No issues were detected."
+- `GembaTicketing` → "No issues were detected."
