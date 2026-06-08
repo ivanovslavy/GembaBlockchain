@@ -3,7 +3,9 @@ package valgate
 import (
 	"fmt"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/authz"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/ivanovslavy/GembaBlockchain/chain/x/valgate/keeper"
@@ -23,12 +25,39 @@ func NewMinSelfBondDecorator(k keeper.Keeper) MinSelfBondDecorator {
 // AnteHandle enforces the minimum self-bond at validator creation.
 func (d MinSelfBondDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
 	min := d.keeper.GetParams(ctx).MinSelfBond
-	for _, msg := range tx.GetMsgs() {
+	if err := checkMsgs(tx.GetMsgs(), min, 0); err != nil {
+		return ctx, err
+	}
+	return next(ctx, tx, simulate)
+}
+
+// maxAuthzDepth bounds recursion so a deeply nested MsgExec cannot grief the ante handler.
+const maxAuthzDepth = 6
+
+// checkMsgs walks the message tree, unwrapping authz MsgExec so a MsgCreateValidator nested
+// inside MsgExec (which authz routes AFTER the ante phase — the canonical Cosmos bypass,
+// audit finding #9) is still subject to the self-bond floor.
+func checkMsgs(msgs []sdk.Msg, min math.Int, depth int) error {
+	if depth > maxAuthzDepth {
+		return fmt.Errorf("authz MsgExec nesting too deep (max %d) — rejected by x/valgate", maxAuthzDepth)
+	}
+	for _, msg := range msgs {
 		if cv, ok := msg.(*stakingtypes.MsgCreateValidator); ok {
 			if cv.Value.Amount.LT(min) {
-				return ctx, fmt.Errorf("validator self-bond %s is below the minimum %s (governance-set, x/valgate)", cv.Value.Amount, min)
+				return fmt.Errorf("validator self-bond %s is below the minimum %s (governance-set, x/valgate)", cv.Value.Amount, min)
+			}
+		}
+		if exec, ok := msg.(*authz.MsgExec); ok {
+			inner, err := exec.GetMessages()
+			if err != nil {
+				// fail closed: if the nested messages can't be decoded, reject rather than
+				// let a CreateValidator slip through unchecked.
+				return fmt.Errorf("x/valgate: cannot decode authz MsgExec inner messages: %w", err)
+			}
+			if err := checkMsgs(inner, min, depth+1); err != nil {
+				return err
 			}
 		}
 	}
-	return next(ctx, tx, simulate)
+	return nil
 }

@@ -8,7 +8,8 @@ import (
 
 // Params configures the fee split. Stored as JSON (no protobuf dependency).
 type Params struct {
-	// Enabled turns the split on/off (governance-tunable).
+	// Enabled turns the split on/off. Set at genesis; changed via a coordinated node-operator
+	// upgrade (CLAUDE.md §7) — no on-chain MsgUpdateParams yet (audit finding #5, pre-mainnet TODO).
 	Enabled bool `json:"enabled"`
 	// FaucetFeeRatio is the fraction of collected fees routed to the faucet.
 	// CLAUDE.md §5.4: 40% to the faucet, 60% to validators/delegators.

@@ -17,7 +17,8 @@ const DefaultRewardDenom = "agmb"
 
 // Params configures the reward stream. Stored as JSON (no protobuf dependency).
 type Params struct {
-	// Enabled turns streaming on/off (governance-tunable).
+	// Enabled turns streaming on/off. Set at genesis; changed via a coordinated node-operator
+	// upgrade (CLAUDE.md §7) — no on-chain MsgUpdateParams yet (audit finding #5, pre-mainnet TODO).
 	Enabled bool `json:"enabled"`
 	// RewardDenom is the coin streamed (GMB base denom).
 	RewardDenom string `json:"reward_denom"`

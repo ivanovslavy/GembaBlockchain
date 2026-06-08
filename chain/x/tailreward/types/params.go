@@ -17,7 +17,8 @@ const DefaultRewardDenom = "agmb"
 // Params configures the tail reward. Stored as JSON (no protobuf dependency).
 type Params struct {
 	// Enabled turns the tail on/off. DEFAULT FALSE — the tail is dormant until
-	// governance activates it (post-reserve, to defend the bonded ratio, ADR-008).
+	// governance activates it via a coordinated upgrade (post-reserve, defends the bonded ratio,
+	// ADR-008) — no on-chain MsgUpdateParams yet (audit finding #5, pre-mainnet TODO).
 	Enabled bool `json:"enabled"`
 	// RewardDenom is the coin streamed (GMB base denom).
 	RewardDenom string `json:"reward_denom"`

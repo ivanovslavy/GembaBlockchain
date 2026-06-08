@@ -11,6 +11,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 	sdktestutil "github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/authz"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/stretchr/testify/require"
@@ -72,4 +73,26 @@ func TestGovernanceTunable(t *testing.T) {
 
 	_, err = d.AnteHandle(ctx, mockTx{[]sdk.Msg{cv(5000)}}, false, next)
 	require.NoError(t, err, "5000 accepted at the new floor")
+}
+
+// TestMinSelfBondThroughAuthzMsgExec: a MsgCreateValidator nested in an authz MsgExec must
+// still be subject to the floor — closes the audit finding #9 bypass.
+func TestMinSelfBondThroughAuthzMsgExec(t *testing.T) {
+	ctx, k := setupKeeper(t)
+	d := valgate.NewMinSelfBondDecorator(k)
+	grantee := sdk.AccAddress([]byte("grantee-------------"))
+
+	exec := authz.NewMsgExec(grantee, []sdk.Msg{cv(999)})
+	_, err := d.AnteHandle(ctx, mockTx{[]sdk.Msg{&exec}}, false, next)
+	require.Error(t, err, "below-floor CreateValidator nested in MsgExec must be rejected (finding #9)")
+
+	execOk := authz.NewMsgExec(grantee, []sdk.Msg{cv(1000)})
+	_, err = d.AnteHandle(ctx, mockTx{[]sdk.Msg{&execOk}}, false, next)
+	require.NoError(t, err, "at-floor CreateValidator nested in MsgExec must pass")
+
+	// doubly nested is also caught
+	inner := authz.NewMsgExec(grantee, []sdk.Msg{cv(999)})
+	outer := authz.NewMsgExec(grantee, []sdk.Msg{&inner})
+	_, err = d.AnteHandle(ctx, mockTx{[]sdk.Msg{&outer}}, false, next)
+	require.Error(t, err, "doubly-nested below-floor must be rejected")
 }
