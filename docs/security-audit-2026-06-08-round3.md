@@ -145,3 +145,22 @@ No critical/high issue, no fund-loss path, and no attacker-triggered consensus b
 - **Method:** Multi-agent review with an **adversarial verification pass** — every candidate finding was re-checked against source (and dependency code, e.g. `cosmos-sdk@v0.54.3` bank keeper, cosmos/evm `precompiles/staking`) to confirm exploitability and right-size severity. Several initial ratings were **downgraded** on verification (e.g. validator-floor bypass High→Medium; GDPR outbox Medium→Low), and unverifiable/refuted candidates were dropped. Only the 10 confirmed findings above are reported.
 - **Covered:** custom chain Go modules (`valgate`/ante, feesplit, rewardstreamer, tailreward) and their genesis/wiring; Solidity DEX, on-ramp, tickets/perks, treasury/governance, access contracts; backend services (access-control, testnet-faucet); stress harness; secret hygiene and committed config.
 - **Not covered / out of scope (tracked elsewhere as hard launch blockers):** the upstream **Cosmos EVM pre-v1 audit** (ADR-006) and the **long-term security-budget tail** review (ADR-008) remain the founder's separate, non-code launch gates and were not re-assessed here. No live-network penetration testing, no formal verification, and no economic/game-theoretic simulation of validator/governance incentives were performed. This review is a point-in-time source audit, not a guarantee of absence of all defects.
+
+---
+
+## Remediation status (2026-06-08)
+
+All 10 round-3 findings have been fixed and committed (`b5cab46`):
+- **#1 (MED)** min-self-bond enforced at the staking **hook** layer (valgate `AfterValidatorCreated`,
+  `MinSelfDelegation >= floor`) so it covers BOTH the Cosmos and EVM-precompile creation paths;
+  validated by a full `gembad` build (hook wired in `evmd/app.go` SetHooks).
+- **#2 (MED)** feesplit `BeginBlock` now `recover()`s from panics (not just errors); the same
+  fail-soft+recover applied to rewardstreamer + tailreward (#5).
+- **#3/#4** FoT-aware output / received-amount on NativePool + OnRamp; **#6** GDPR outbox retry
+  worker; **#7** faucet global daily cap + min-balance breaker; **#8** faucet nonce serialization;
+  **#9** live testnet drip mnemonic moved to env; **#10** `wallets.json` mode 0600.
+
+Tests: Foundry 99/99, Go `x/...` green, backend 13/13 + faucet 5/5.
+
+**A 4th multi-agent re-audit is running to verify these fixes (and check for regressions).**
+Results will be appended when it completes.
