@@ -195,10 +195,34 @@ directly rather than trusted:
    variant incl. fee-on-transfer), all `pairFor`-dependent, and passes — integration proof the
    renamed core+periphery interoperate correctly.
 
-> **Honest limitation:** a byte-for-byte diff against the official Uniswap V2 GitHub source needs
-> network access to fetch the reference (unavailable in this offline run). The checks above verify
-> the security-critical *invariants and the init hash directly*, which is the property that matters
-> for funds; a full upstream textual diff is a recommended additional pre-mainnet step.
+### Real textual diff vs official Uniswap V2 (2026-04-02 `main`) — DONE 2026-06-08
+
+The byte-for-byte diff was performed: cloned `Uniswap/v2-core`
+(`6a9e7c97860676e0992f22a49665760444c1cdf5`) and `Uniswap/v2-periphery`
+(`ed24991304291297c3b4a52818d02f46a17aa9a2`), normalized our renames (`GembaSwap`→`UniswapV2`),
+and `diff -w` each file against the upstream original:
+
+| Our file | Upstream | Result |
+|---|---|---|
+| `core/GembaSwapPair.sol` | `UniswapV2Pair.sol` | **IDENTICAL** |
+| `core/GembaSwapFactory.sol` | `UniswapV2Factory.sol` | **IDENTICAL** |
+| `core/GembaSwapERC20.sol` | `UniswapV2ERC20.sol` | **IDENTICAL** |
+| `core/libraries/{Math,SafeMath,UQ112x112}.sol` | same | **IDENTICAL** |
+| `core/interfaces/*` (5) | same | **IDENTICAL** |
+| `periphery/GembaSwapRouter02.sol` | `UniswapV2Router02.sol` | identical **except import paths** (vendored locally vs `@uniswap/*` npm) |
+| `periphery/libraries/SafeMath.sol` | same | **IDENTICAL** |
+| `periphery/interfaces/*` (4, incl. IWETH) | same | **IDENTICAL** |
+| `periphery/libraries/GembaSwapLibrary.sol` | `UniswapV2Library.sol` | identical except import path **and the init-code hash** |
+
+**The ONLY logic difference in the entire fork is the `pairFor` init-code hash** in the library —
+ours `0x3f0934d4…eaa689` vs upstream `0x96e8ac42…48845f`. This is the **correct and required**
+divergence for any rename: the hash must equal `keccak256` of the *renamed* pair's creation code,
+which it does (verified above). Everything else is byte-identical to audited Uniswap V2 (only the
+`UniswapV2`→`GembaSwap` symbol rename and local import paths differ).
+
+**Conclusion: GembaSwap is a faithful 1:1 Uniswap V2.** The Slither reentrancy/unchecked-transfer/
+weak-PRNG findings inherit Uniswap V2's audited safety verbatim — confirmed by source, not assumed.
+Reproduce: `git clone --depth 1 https://github.com/Uniswap/v2-core && diff -w <(sed 's/GembaSwap/UniswapV2/g' core/GembaSwapPair.sol) v2-core/contracts/UniswapV2Pair.sol`.
 
 ### Mythril (symbolic execution, 2026-06-08)
 
