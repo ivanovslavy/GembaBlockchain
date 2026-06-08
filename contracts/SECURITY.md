@@ -139,3 +139,69 @@ findings from the pass).
   (`VotesInvariant`).
 - A proposal needs **high quorum AND supermajority** and a **timelock delay**
   before any reserve pays out (`GovernanceIntegration.t.sol`).
+
+---
+
+## Audit remediation + tooling re-run (2026-06-08)
+
+Following the multi-agent audit (`docs/security-audit-2026-06-08.md`), the Solidity findings
+were fixed (96/96 Foundry tests pass):
+
+- **#3 Faucet** — added a rolling-window aggregate cap (`epochCap`/`epochLength`,
+  gov-tunable) so a compromised `granter` key cannot drain the reserve via many sub-cap
+  calls; deploy wires 100k GMB/day. (`test_EpochCapStopsDrainAcrossManyCalls`.)
+- **#6 GembaTicketing.buy()** — reverts `NotForSale` when `price == 0` (price-0 events are
+  organizer-issue-only; blocks public free-mint front-running). (`test_BuyPriceZeroNotForSale`.)
+- **#7 GembaNativePool** — fee-on-transfer / rebasing safe: credits only the `balanceOf`
+  delta actually received on token-in paths (like the V2 pair).
+- **#8 GembaNativePool** — zero-address `to` checks on all entrypoints (no silent native burn).
+- **#10 GembaVotes** — constructor excludes the four reserve contracts from voting at genesis
+  (was structural-only); `DeployGovernance` reorders deploy + wires it.
+
+### Slither (2026-06-08): every High/Medium is in the bundled Uniswap V2 fork or WETH/probe
+
+`slither .` (128 contracts, 100 detectors). **No real exploitable issue in project-authored
+contracts.** Triage:
+
+| Detector | Where | Verdict |
+|---|---|---|
+| reentrancy-eth/no-eth | `GembaSwapPair.swap/burn`, `Factory.createPair` | Guarded by the V2 `lock` mutex (verified present + applied) — benign |
+| unchecked-transfer / unused-return | `GembaSwapRouter02`, `GembaSwapLibrary` | Canonical V2 (pair `transferFrom` reverts on failure; tuple-unused fields) — benign |
+| weak-PRNG | `GembaSwapPair._update` (`block.timestamp % 2**32`) | TWAP timestamp, not randomness — benign (classic V2 false positive) |
+| assembly-usage | V2 ERC20 chainid, Factory CREATE2 | Required by V2 — benign |
+| reentrancy (WGMB.withdraw) | `WGMB` | Standard WETH9 (balance decremented before call, CEI) — benign |
+| reentrancy (SeamProbe) | `SeamProbe` | Devnet probe, never on mainnet |
+| sends-eth-to-arbitrary | `GembaOnRamp.buy`, `BaseReserve._release`, `GembaPerks.*`, `GembaTicketing.withdrawProceeds` | All access-controlled (`onlyOwner`/`onlyRole`/granter) or `to == msg.sender`; CEI + `nonReentrant` — by design |
+| strict-equality / block-timestamp / missing-zero-addr / costly-loop / naming / too-many-digits | NativePool, LiquidityLocker, Faucet epoch, EmergencyPause ctor, V2 fork | Correct guards / by design / style — benign |
+
+No suppression filter is configured **on purpose** — findings stay visible; this table is the triage.
+
+### Why the "benign because it's Uniswap V2" verdict is *verified*, not assumed
+
+A small divergence in a forked AMM can be catastrophic, so the canonical-V2 claim was checked
+directly rather than trusted:
+
+1. **`GembaSwapPair.sol` read line-by-line** vs canonical `UniswapV2Pair`: the `lock` reentrancy
+   mutex is present and applied to `mint/burn/swap/skim/sync`; the **K-invariant**
+   `balance0Adjusted·balance1Adjusted ≥ reserve0·reserve1·1000²` with the 0.30% fee
+   (`·1000 − amountIn·3`) is intact; `MINIMUM_LIQUIDITY=1000` locked on first mint;
+   `INVALID_TO`, `_safeTransfer` (return-checked), `_mintFee` (1/6 growth) all canonical.
+2. **Init-code hash verified** — the single most dangerous fork divergence (CREATE2 `pairFor`
+   address derivation). `keccak256(type(GembaSwapPair).creationCode)` ==
+   `0x3f0934d46a91c709987fdcb90849be623789276da3993bdf747548e051eaa689`, the hash hardcoded in
+   `GembaSwapLibrary.pairFor`. They MATCH → the router computes the real pair address; no
+   fund-misrouting. (Re-verify with `cast keccak $(jq -r .bytecode.object out/GembaSwapPair.sol/GembaSwapPair.json)`.)
+3. **End-to-end** — `Dex.t.sol` drives the full router path (add/remove liquidity, every swap
+   variant incl. fee-on-transfer), all `pairFor`-dependent, and passes — integration proof the
+   renamed core+periphery interoperate correctly.
+
+> **Honest limitation:** a byte-for-byte diff against the official Uniswap V2 GitHub source needs
+> network access to fetch the reference (unavailable in this offline run). The checks above verify
+> the security-critical *invariants and the init hash directly*, which is the property that matters
+> for funds; a full upstream textual diff is a recommended additional pre-mainnet step.
+
+### Mythril (symbolic execution, 2026-06-08)
+
+`myth analyze` on the flattened fund-handling / DEX contracts (local solc 0.8.30,
+per-contract execution timeout): **`GembaOnRamp` → "No issues were detected."**
+`GembaNativePool` and `GembaTicketing` runs follow.
