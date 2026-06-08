@@ -21,19 +21,28 @@
  */
 export async function eraseEmployee({ db, chain }, employeeId, opts = {}) {
   const revokeOnChain = opts.revokeOnChain !== false;
-  const revoked = [];
 
-  if (revokeOnChain && chain) {
-    const caps = await db.getEmployeeCapabilities(employeeId);
-    for (const cap of caps) {
-      // best-effort on-chain revocation; record the result, never swallow silently
+  // Capture capabilities BEFORE deletion (we need wallet+zone to revoke afterwards).
+  const caps = revokeOnChain && chain ? await db.getEmployeeCapabilities(employeeId) : [];
+
+  // 1. Delete off-chain PII + identity bridge + logs FIRST (schema cascades). This is the
+  //    legally-significant erasure (GDPR right to erasure, CLAUDE.md §10) and must NOT be
+  //    blocked by chain/RPC availability (audit finding #2). On-chain tokens become
+  //    de-identified — verifiable but no longer linked to any person.
+  await db.deleteEmployee(employeeId);
+
+  // 2. Best-effort on-chain revocation AFTER erasure. One failure must not abort the
+  //    others, and an already-revoked token must not deadlock retries — record per-cap
+  //    outcome instead of throwing. Callers run this with no DB transaction held (#1).
+  const revoked = [];
+  for (const cap of caps) {
+    try {
       const txHash = await chain.revokeAccess(cap.wallet, cap.zone);
-      revoked.push({ zone: cap.zone, wallet: cap.wallet, txHash });
+      revoked.push({ zone: cap.zone, wallet: cap.wallet, txHash, ok: true });
+    } catch (err) {
+      revoked.push({ zone: cap.zone, wallet: cap.wallet, error: String(err.message || err), ok: false });
     }
   }
-
-  // Delete off-chain PII + identity bridge + logs (schema cascades).
-  await db.deleteEmployee(employeeId);
 
   return { employeeId, revoked, deleted: true };
 }

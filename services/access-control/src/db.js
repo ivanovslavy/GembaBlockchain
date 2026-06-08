@@ -31,6 +31,26 @@ export async function withTenant(pool, tenantId, fn) {
   }
 }
 
+/**
+ * Tenant-scoped repository where EACH method runs in its OWN short RLS transaction.
+ * Use this in request handlers so an on-chain call (which awaits a block, ~seconds)
+ * is never made while a pooled DB connection is held open inside a transaction
+ * (audit finding #1 — pool-exhaustion DoS + on/off-chain divergence). Read in one
+ * short tx, do the chain call with no tx held, then write in another short tx.
+ */
+export function tenantRepo(pool, tenantId) {
+  const run = (fn) => withTenant(pool, tenantId, fn);
+  return {
+    createEmployee: (a) => run((db) => db.createEmployee(a)),
+    listEmployees: () => run((db) => db.listEmployees()),
+    getEmployeeWallet: (id) => run((db) => db.getEmployeeWallet(id)),
+    createCapability: (a) => run((db) => db.createCapability(a)),
+    getEmployeeCapabilities: (id) => run((db) => db.getEmployeeCapabilities(id)),
+    logAccess: (a) => run((db) => db.logAccess(a)),
+    deleteEmployee: (id) => run((db) => db.deleteEmployee(id)),
+  };
+}
+
 /** Tenant-scoped repository bound to a client inside a withTenant transaction. */
 export function repo(client, tenantId) {
   return {

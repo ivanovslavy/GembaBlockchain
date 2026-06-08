@@ -20,7 +20,11 @@ const byIp = new CooldownLimiter(COOLDOWN_MS);
 export function createApp() {
   const app = express();
   app.use(express.json());
-  app.set('trust proxy', true);
+  // Trust EXACTLY the number of reverse-proxy hops in front (default 1 = the documented
+  // Apache front-end), so req.ip is the real upstream peer and a client cannot spoof its
+  // rate-limit identity via a forged X-Forwarded-For header (audit finding #4). Run only
+  // behind the reverse proxy.
+  app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS || 1));
 
   app.get('/health', async (_req, res, next) => {
     try {
@@ -59,7 +63,11 @@ export function createApp() {
   });
 
   app.use((err, _req, res, _next) => {
-    res.status(500).json({ error: err.message || 'faucet error' });
+    // Don't leak internal error text (ethers/RPC errors include the configured RPC URL)
+    // to clients (audit finding #12). Log the detail server-side, return an opaque id.
+    const id = Math.random().toString(36).slice(2, 10);
+    console.error(`[faucet error ${id}]`, err);
+    res.status(500).json({ error: 'internal error', id });
   });
 
   return app;
