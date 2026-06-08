@@ -164,3 +164,5 @@ Tests: Foundry 99/99, Go `x/...` green, backend 13/13 + faucet 5/5.
 
 **A 4th multi-agent re-audit is running to verify these fixes (and check for regressions).**
 Results will be appended when it completes.
+
+**Round-4 re-audit complete:** 6 findings (0 critical, 1 HIGH ops/secret-rotation, 5 low) — see `docs/security-audit-2026-06-08-round4.md`. Trend across rounds: 12 → 9 → 10 → **6**.
