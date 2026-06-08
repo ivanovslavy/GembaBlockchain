@@ -10,6 +10,7 @@ const NET = {
   github: "https://github.com/ivanovslavy/GembaBlockchain",
   swap: "https://swap.gembachain.io",
   addresses: "https://addresses.gembachain.io",
+  gembait: "https://gembait.com",
   symbol: "GMB",
 };
 
@@ -77,7 +78,7 @@ function App() {
     <div className="page">
       <header className="nav">
         <a className="brand" href="/">
-          <img src="/gemba-symbol.svg" alt="" width="34" height="34" />
+          <img src="/gemba-animated.svg" alt="" width="34" height="34" />
           <span>
             Gemba<b>Blockchain</b>
           </span>
@@ -103,8 +104,8 @@ function App() {
 
       <main>
         <section className="hero">
-          <img className="hero-logo" src="/gemba-symbol.svg" alt="GembaBlockchain" />
-          <div className="badge">🇧🇬 Bulgaria's first blockchain · Live testnet</div>
+          <img className="hero-logo" src="/gemba-animated.svg" alt="GembaBlockchain" />
+          <div className="badge">Live testnet · Bulgaria's first blockchain</div>
           <h1>
             Bulgaria's first blockchain —
             <br />
@@ -121,24 +122,35 @@ function App() {
             services to their citizens and users.
           </p>
           <div className="cta">
-            <button className="btn" onClick={addToMetaMask}>
-              Add to MetaMask
-            </button>
-            <a className="btn" href={NET.swap} target="_blank" rel="noopener">
-              Open GembaSwap
-            </a>
-            <a className="btn" href={NET.explorer} target="_blank" rel="noopener">
-              Open GembaScan
-            </a>
-            <a className="btn" href={NET.github} target="_blank" rel="noopener">
-              View on GitHub
-            </a>
+            <button className="btn" onClick={addToMetaMask}>Add to MetaMask</button>
+            <a className="btn" href={NET.explorer} target="_blank" rel="noopener">Open GembaScan</a>
+            <a className="btn" href={NET.github} target="_blank" rel="noopener">View on GitHub</a>
           </div>
-          <p className="swapnote">
-            <strong>GembaSwap</strong> — our own swap app for the ecosystem. Wrap
-            <strong> GMB ↔ WGMB free (1:1)</strong> and swap ERC-20 tokens with
-            <strong> no platform fees</strong> — we take no cut. Gas is near-zero (~1 gwei, fractions of a cent).
-          </p>
+          <div className="credit">
+            Created by{" "}
+            <a href={NET.gembait} target="_blank" rel="noopener"><b>GembaIT studio</b></a>
+            <span className="role">Lead: Slavcho Ivanov — 20-year Linux engineer &amp; blockchain architect</span>
+          </div>
+        </section>
+
+        <section className="appblock">
+          <div className="txt">
+            <h2>GembaSwap — the ecosystem DEX</h2>
+            <p>
+              Our own app on GembaBlockchain: <strong>swap tokens</strong>, wrap{" "}
+              <strong>GMB ↔ WGMB (1:1)</strong>, <strong>add &amp; remove liquidity</strong>{" "}
+              (including fee-on-transfer tokens), and <strong>lock / unlock LP tokens</strong>. No
+              platform fees — we take no cut. Gas is near-zero (~1 gwei).
+            </p>
+            <div className="feats">
+              <span>Swap</span>
+              <span>Wrap / Unwrap</span>
+              <span>Add / Remove liquidity</span>
+              <span>Fee-on-transfer</span>
+              <span>Lock / Unlock LP</span>
+            </div>
+          </div>
+          <a className="btn" href={NET.swap} target="_blank" rel="noopener">Open GembaSwap →</a>
         </section>
 
         <section className="features">
@@ -188,7 +200,7 @@ function App() {
 
       <footer className="footer">
         <div className="footer-brand">
-          <img src="/gemba-symbol.svg" alt="" width="26" height="26" />
+          <img src="/gemba-animated.svg" alt="" width="26" height="26" />
           <span>
             Gemba<b>Blockchain</b>
           </span>

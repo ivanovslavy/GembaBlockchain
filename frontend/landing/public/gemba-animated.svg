@@ -1,0 +1,33 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="GembaBlockchain">
+  <defs>
+    <linearGradient id="gembaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5"><animate attributeName="stop-color" values="#4F46E5;#06B6D4;#4F46E5" dur="6s" repeatCount="indefinite"/></stop>
+      <stop offset="100%" stop-color="#06B6D4"><animate attributeName="stop-color" values="#06B6D4;#4F46E5;#06B6D4" dur="6s" repeatCount="indefinite"/></stop>
+    </linearGradient>
+  </defs>
+  <g>
+    <animateTransform attributeName="transform" type="rotate" from="0 256 256" to="360 256 256" dur="30s" repeatCount="indefinite"/>
+    <circle cx="256" cy="256" r="220" fill="none" stroke="url(#gembaGradient)" stroke-width="12" opacity="0.3"/>
+    <circle cx="256" cy="36" r="8" fill="#4F46E5"><animate attributeName="r" values="6;10;6" dur="2s" repeatCount="indefinite"/></circle>
+    <circle cx="411" cy="100" r="7" fill="#06B6D4"><animate attributeName="r" values="5;9;5" dur="2.3s" repeatCount="indefinite"/></circle>
+    <circle cx="476" cy="256" r="8" fill="#4F46E5"><animate attributeName="r" values="6;10;6" dur="1.8s" repeatCount="indefinite"/></circle>
+    <circle cx="411" cy="411" r="6" fill="#06B6D4"><animate attributeName="r" values="5;8;5" dur="2.5s" repeatCount="indefinite"/></circle>
+    <circle cx="256" cy="476" r="7" fill="#4F46E5"><animate attributeName="r" values="5;9;5" dur="2.1s" repeatCount="indefinite"/></circle>
+    <circle cx="100" cy="411" r="8" fill="#06B6D4"><animate attributeName="r" values="6;10;6" dur="1.9s" repeatCount="indefinite"/></circle>
+    <circle cx="36" cy="256" r="6" fill="#4F46E5"><animate attributeName="r" values="5;8;5" dur="2.4s" repeatCount="indefinite"/></circle>
+    <circle cx="100" cy="100" r="7" fill="#06B6D4"><animate attributeName="r" values="5;9;5" dur="2.2s" repeatCount="indefinite"/></circle>
+  </g>
+  <circle cx="256" cy="256" r="170" fill="none" stroke="url(#gembaGradient)" stroke-width="16"/>
+  <path d="M256 130 A126 126 0 1 0 382 256 L300 256" fill="none" stroke="url(#gembaGradient)" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="256" cy="130" r="12" fill="#4F46E5"><animate attributeName="r" values="10;14;10" dur="2s" repeatCount="indefinite"/></circle>
+  <circle cx="382" cy="256" r="12" fill="#06B6D4"><animate attributeName="r" values="10;14;10" dur="2.4s" repeatCount="indefinite"/></circle>
+  <circle cx="256" cy="382" r="12" fill="#4F46E5"><animate attributeName="r" values="10;14;10" dur="1.8s" repeatCount="indefinite"/></circle>
+  <circle cx="130" cy="256" r="12" fill="#06B6D4"><animate attributeName="r" values="10;14;10" dur="2.2s" repeatCount="indefinite"/></circle>
+  <circle cx="300" cy="256" r="10" fill="#6366F1"><animate attributeName="r" values="8;12;8" dur="1.6s" repeatCount="indefinite"/></circle>
+  <g opacity="0.15">
+    <line x1="256" y1="130" x2="382" y2="256" stroke="url(#gembaGradient)" stroke-width="2"/>
+    <line x1="382" y1="256" x2="256" y2="382" stroke="url(#gembaGradient)" stroke-width="2"/>
+    <line x1="256" y1="382" x2="130" y2="256" stroke="url(#gembaGradient)" stroke-width="2"/>
+    <line x1="130" y1="256" x2="256" y2="130" stroke="url(#gembaGradient)" stroke-width="2"/>
+  </g>
+</svg>
