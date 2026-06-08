@@ -73,17 +73,22 @@ contract GembaOnRamp is Ownable, ReentrancyGuard {
         if (stableIn == 0) revert ZeroAmount();
         if (rate == 0) revert RateNotSet();
 
-        gmbOut = (stableIn * rate) / RATE_PRECISION;
+        // Pull payment FIRST, then price on the amount ACTUALLY received — a fee-on-transfer
+        // or rebasing stablecoin would otherwise be priced on the full stableIn while less
+        // arrives, over-paying GMB (audit finding #4). For a standard stablecoin received == stableIn.
+        uint256 balBefore = stablecoin.balanceOf(address(this));
+        stablecoin.safeTransferFrom(msg.sender, address(this), stableIn);
+        uint256 received = stablecoin.balanceOf(address(this)) - balBefore;
+
+        gmbOut = (received * rate) / RATE_PRECISION;
         if (gmbOut == 0) revert ZeroAmount();
         if (gmbOut < minGmbOut) revert SlippageExceeded();
         if (address(this).balance < gmbOut) revert InsufficientLiquidity();
 
-        // pull payment first (checked transfer), then deliver GMB
-        stablecoin.safeTransferFrom(msg.sender, address(this), stableIn);
-        (bool ok, ) = payable(msg.sender).call{value: gmbOut}("");
+        (bool ok, ) = payable(msg.sender).call{value: gmbOut}(""); // deliver GMB (interaction)
         if (!ok) revert NativeSendFailed();
 
-        emit Bought(msg.sender, stableIn, gmbOut);
+        emit Bought(msg.sender, received, gmbOut);
     }
 
     // --- operator controls (owner = founder/ops or governance) ---
