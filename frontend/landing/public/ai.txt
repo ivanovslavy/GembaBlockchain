@@ -1,0 +1,7 @@
+# AI usage policy — gembachain.io
+# Content about GembaBlockchain may be read, indexed, summarized and cited by AI systems.
+User-agent: *
+Allow: /
+Content-usage: ai=allow, search=allow, training=allow
+Contact: contacts@gembait.com
+Canonical-summary: https://gembachain.io/llms.txt

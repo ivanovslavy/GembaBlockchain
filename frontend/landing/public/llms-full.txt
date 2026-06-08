@@ -1,0 +1,49 @@
+# GembaBlockchain — full reference
+
+> Bulgaria's first blockchain. A public, decentralized, permissionless Proof-of-Stake Layer 1
+> built on Cosmos SDK + the Cosmos EVM module on CometBFT consensus, with full EVM
+> compatibility. Native utility coin Gemba (GMB). Built by GEMBA EOOD (Varna, Bulgaria) for
+> the good of society — for public institutions and private organizations to deliver services
+> to their citizens and users. Value comes from use, not speculation.
+
+## What it is
+- A sovereign, permissionless PoS L1 (CometBFT BFT consensus, instant finality, no reorgs).
+- Full EVM: Solidity contracts, 0x addresses, MetaMask, Foundry/Hardhat, ethers/viem, JSON-RPC.
+- Native coin Gemba (GMB) is the staking + gas coin and a utility coin (cheaper service access,
+  workplace access control, event tickets, employee perks).
+
+## Tokenomics
+- Fixed total supply 100,000,000 GMB, minted once at genesis, never again → 0% inflation.
+- Validator rewards come from a pre-minted reserve, not new issuance.
+- The project provides NO liquidity for GMB, operates NO exchange/DEX, and does not redeem GMB
+  for fiat — by design. It is not built for trading. (A third party could create a market on a
+  permissionless chain; that is outside the project's control.)
+
+## Consensus & decentralization
+- Permissionless stake-only validator entry (no KYC, no whitelist). Active set ranked by stake.
+- Reserves never vote; the founder holds no privileged voting/validating power.
+- "Permissionless by rule, centralizing over time" — published decentralization KPIs.
+
+## Network parameters
+- Mainnet: Cosmos chain-id gemba-1, EVM chainId 821206 (not yet launched).
+- Testnet: Cosmos chain-id gemba-testnet-1, EVM chainId 821207 — LIVE.
+- Block time ~5 seconds. Native symbol GMB, 18 decimals, eth_secp256k1 / coin type 60.
+
+## Live testnet endpoints
+- Explorer (GembaScan, Blockscout): https://testnet.gembascan.io
+- Public EVM JSON-RPC (redundant, chainId 821207):
+  - https://testnet.gembascan.io/rpc
+  - https://rpc1.gembascan.io
+  - https://rpc2.gembascan.io
+- DEX (GembaSwap, Uniswap-V2 style): https://swap.gembachain.io
+- Add to MetaMask: RPC any of the above, Chain ID 821207, Currency GMB, Explorer https://testnet.gembascan.io
+
+## Ecosystem apps
+- GembaScan — block explorer.
+- GembaSwap — token swap DEX.
+- GembaPass — workplace access-control SaaS (passes as soulbound NFTs; blockchain invisible to users).
+- EduChain — gamified Web3 education sandbox running on the testnet.
+
+## Who
+- Built by GEMBA EOOD (https://gembait.com), a Bulgarian technology company in Varna.
+- Source code: https://github.com/ivanovslavy/GembaBlockchain (Apache-2.0).

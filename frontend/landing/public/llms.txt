@@ -1,0 +1,21 @@
+# GembaBlockchain
+
+> Bulgaria's first blockchain — a public, decentralized, permissionless Proof-of-Stake
+> Layer 1 (Cosmos SDK + Cosmos EVM on CometBFT) with full EVM compatibility, built for
+> society, not speculation. Native utility coin: Gemba (GMB). By GEMBA EOOD (Varna, Bulgaria).
+
+## Key facts
+- Type: public, permissionless PoS L1; instant finality (~5s blocks); full EVM (Solidity, MetaMask, ethers/viem, Foundry).
+- Native coin: Gemba (GMB) — a utility coin (cheaper service access, workplace access, tickets, perks), NOT for speculation. Fixed 100M supply, 0% inflation. No liquidity/DEX operated by the project; no fiat redemption.
+- Cosmos chain-id: gemba-1 (mainnet) / gemba-testnet-1 (testnet). EVM chainId: 821206 (mainnet) / 821207 (testnet).
+- Philosophy: built for public institutions and organizations to deliver services to citizens; founder holds no privileged power; decentralizing over time.
+
+## Live (testnet)
+- Explorer (GembaScan): https://testnet.gembascan.io
+- Public RPC: https://testnet.gembascan.io/rpc, https://rpc1.gembascan.io, https://rpc2.gembascan.io (chainId 821207, symbol GMB)
+- DEX (GembaSwap): https://swap.gembachain.io
+
+## Links
+- Site: https://gembachain.io
+- Builder / company: https://gembait.com (GEMBA EOOD)
+- Source: https://github.com/ivanovslavy/GembaBlockchain

@@ -1,17 +1,39 @@
 # Public RPC, archive & explorer topology — `gemba-testnet-1`
 
-Set up 2026-06-08. Adds redundant public EVM JSON-RPC on two validator nodes (behind a
-protected nginx proxy), alongside the existing archive/explorer endpoint.
+Set up 2026-06-08. Redundant public EVM JSON-RPC + a **dedicated explorer/archive box** so no
+validator carries the heavy serving load.
+
+## Update 2026-06-08 — explorer + archive moved off the validators
+The archive node + Blockscout explorer used to be co-hosted on the `.82` validator, which
+overloaded it (the stress-test lesson). They were **migrated to a dedicated Contabo box
+`13.140.148.137`** (6 vCPU / 12 GB / 200 GB, 12 GB swap). `.82` is now a **lean validator only**
+(RAM dropped ~7 GB → ~1.8 GB). The landing `gembachain.io` + the DEX `swap.gembachain.io` moved
+to `46.225.1.162` (gembait box). Explorer reads **locally** from its co-located archive
+(`host.docker.internal:8545`), no external API calls.
 
 ## Public endpoints (EVM JSON-RPC, chainId **821207**)
 | URL | Origin | Node type | Notes |
 |---|---|---|---|
 | `https://rpc1.gembascan.io` | .83 (gemba-tn-contabo-2) | **pruned** | nginx TLS + rate-limit, Cloudflare-only |
 | `https://rpc2.gembascan.io` | .84 (gemba-tn-contabo-3) | **pruned** | same |
-| `https://testnet.gembascan.io/rpc` | .82 `gembad-archive` | **archive** | behind Apache; also the explorer's source |
+| `https://testnet.gembascan.io/rpc` | **13.140.148.137** `gembad-archive` | **archive** | dedicated box; Apache; also the explorer's source |
 
-DNS: Cloudflare A records, **Proxied (orange)**, SSL **Full (strict)**. MetaMask works with
-any of them (chainId 821207, symbol GMB). Redundant: if one endpoint dies, the others serve.
+Web / explorer hosts:
+| Host | Box | Serves |
+|---|---|---|
+| `testnet.gembascan.io`, `gembascan.io`, `www` | **13.140.148.137** | GembaScan (Blockscout) + `/rpc` (archive) |
+| `gembachain.io`, `www` | **46.225.1.162** | landing site (Apache static, `/gembachain.io/dist`) |
+| `swap.gembachain.io` | **46.225.1.162** | GembaSwap DEX UI (`/swap.gembachain.io/dist`) |
+
+All Cloudflare A records, **Proxied (orange)**, SSL **Full (strict)** (`.137` uses the
+`*.gembascan.io` origin cert; `.162` uses the `*.gembachain.io` origin cert). MetaMask works with
+any RPC (chainId 821207, symbol GMB). Redundant: if one endpoint dies, the others serve.
+
+## SEO / AI discoverability (gembachain.io)
+The landing carries full SEO + AI metadata: canonical + OG/Twitter (absolute images) + robots
+directives; **JSON-LD** (Organization `GEMBA EOOD` + WebSite); `robots.txt` (allows all + explicit
+AI bots: GPTBot, ClaudeBot, PerplexityBot, Google-Extended, CCBot, Applebot-Extended…) + `sitemap.xml`;
+and `llms.txt` / `llms-full.txt` / `ai.txt` for AI systems (in `frontend/landing/public/`).
 
 ## Layered architecture (why this shape)
 - **Consensus** = 4 validators over P2P (`:26656`), independent of RPC. **If every public RPC
