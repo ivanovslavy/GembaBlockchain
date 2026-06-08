@@ -14,7 +14,7 @@ mkdirSync(artifacts, { recursive: true });
 console.log("forge build…");
 execSync("forge build", { cwd: contracts, stdio: "inherit" });
 
-const names = ["StressERC20", "StressERC721", "StressERC1155", "Storage", "GasBomb", "Disperse", "StressDex"];
+const names = ["StressERC20", "StressERC721", "StressERC1155", "Storage", "GasBomb", "Disperse", "StressDex", "StressNFT"];
 const outDir = join(contracts, "out", "Stress.sol");
 for (const n of names) {
   const j = JSON.parse(readFileSync(join(outDir, `${n}.json`), "utf8"));

@@ -40,11 +40,12 @@ const probe = new NodeProbe(env.COMETBFT_RPC, env.NODE_DATA_DIR, logger, { minFr
 // workload context
 const indexByAddr = new Map(records.map((r) => [r.address, r.index]));
 const ctx = {
-  iface: { erc20: new Interface(art("StressERC20").abi), erc721: new Interface(art("StressERC721").abi), erc1155: new Interface(art("StressERC1155").abi), storage: new Interface(art("Storage").abi), gasbomb: new Interface(art("GasBomb").abi), dex: new Interface(art("StressDex").abi) },
+  iface: { erc20: new Interface(art("StressERC20").abi), erc721: new Interface(art("StressERC721").abi), erc1155: new Interface(art("StressERC1155").abi), storage: new Interface(art("Storage").abi), gasbomb: new Interface(art("GasBomb").abi), dex: new Interface(art("StressDex").abi), nft2: new Interface(art("StressNFT").abi), wgmb: new Interface([{ name: "deposit", type: "function", stateMutability: "payable", inputs: [], outputs: [] }, { name: "withdraw", type: "function", stateMutability: "nonpayable", inputs: [{ type: "uint256" }], outputs: [] }]) },
   addr: dep.addresses,
   addresses: records.map((r) => r.address),
   indexOf: (a) => indexByAddr.get(a),
   nft: { count: 0 }, maxNft: Number(env.MAX_NFT_SUPPLY || 200000),
+  nftSeq: { v: 1 }, nftOwned: {}, wrapped: new Set(),
   liqProviders: new Set(), // wallets that have added DEX liquidity (gate removeLiquidity)
   deployBytecode: art("Storage").bytecode,
 };

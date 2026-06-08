@@ -131,3 +131,17 @@ contract StressDex {
         IERC20(tokenOut).transfer(msg.sender, out);
     }
 }
+
+// Caller-chosen-id NFT — lets the load generator mint deterministic ids to itself and
+// transfer the ones it owns (the auto-increment StressERC721 can't be transferred
+// reliably because the client can't know the assigned id pre-mine).
+contract StressNFT {
+    string public name = "Stress NFT2";
+    string public symbol = "SNFT2";
+    mapping(uint256 => address) public ownerOf;
+    mapping(address => uint256) public balanceOf;
+    mapping(uint256 => address) public getApproved;
+    event Transfer(address indexed from, address indexed to, uint256 indexed id);
+    function mint(address to, uint256 id) external { require(ownerOf[id] == address(0), "exists"); ownerOf[id] = to; balanceOf[to]++; emit Transfer(address(0), to, id); }
+    function transferFrom(address from, address to, uint256 id) public { require(ownerOf[id] == from, "own"); require(msg.sender == from || getApproved[id] == msg.sender, "auth"); ownerOf[id] = to; balanceOf[from]--; balanceOf[to]++; delete getApproved[id]; emit Transfer(from, to, id); }
+}

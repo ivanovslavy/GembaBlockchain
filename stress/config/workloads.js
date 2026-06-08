@@ -16,6 +16,12 @@ function defs(ctx) {
     erc1155Mint:    { gas: G(70000), build: (_, f) => ({ to: A.erc1155, data: I.erc1155.encodeFunctionData("mint", [f, G(ctx.indexOf(f) ?? 0), 1000000n]), gas: G(70000) }) },
     erc1155Transfer:{ gas: G(70000), build: (_, f) => ({ to: A.erc1155, data: I.erc1155.encodeFunctionData("safeTransferFrom", [f, randOf(pool), G(ctx.indexOf(f) ?? 0), 1n, "0x"]), gas: G(70000) }) },
     erc721Mint:     { gas: G(120000), build: (_, f) => (ctx.nft.count++ < ctx.maxNft ? { to: A.erc721, data: I.erc721.encodeFunctionData("mint", [randOf(pool)]), gas: G(120000) } : null) },
+    // NFT (caller-chosen id) — mint to self, then transfer owned ids (FIFO buffer so the id is mined first)
+    nftMint:        { gas: G(110000), build: (_, f) => { const id = ctx.nftSeq.v++; (ctx.nftOwned[f] ||= []).push(id); return { to: A.nft2, data: I.nft2.encodeFunctionData("mint", [f, BigInt(id)]), gas: G(110000) }; } },
+    nftTransfer:    { gas: G(90000), build: (_, f) => { const q = ctx.nftOwned[f]; if (!q || q.length < 3) return null; const id = q.shift(); return { to: A.nft2, data: I.nft2.encodeFunctionData("transferFrom", [f, randOf(pool), BigInt(id)]), gas: G(90000) }; } },
+    // wrap / unwrap native GMB <-> WGMB (standard ops, no pool needed)
+    wrapGMB:        { gas: G(55000), build: (_, f) => { ctx.wrapped.add(f); return { to: A.wgmb, data: I.wgmb.encodeFunctionData("deposit", []), value: 1000000000000000n, gas: G(55000) }; } },
+    unwrapGMB:      { gas: G(55000), build: (_, f) => ctx.wrapped.has(f) ? { to: A.wgmb, data: I.wgmb.encodeFunctionData("withdraw", [100000000000000n]), gas: G(55000) } : null },
     storageSet:     { gas: G(50000), build: (_, f) => ({ to: A.storage, data: I.storage.encodeFunctionData("set", [BigInt((Math.random() * 1e9) | 0), BigInt((Math.random() * 1e9) | 0)]), gas: G(50000) }) },
 
     // DEX
@@ -37,7 +43,7 @@ const SETS = {
   core: { nativeTransfer: 38, erc20Mint: 8, erc20Transfer: 25, erc20Approve: 5, erc1155Mint: 4, erc1155Transfer: 10, erc721Mint: 5, storageSet: 5 },
   all:  { nativeTransfer: 28, erc20Mint: 6, erc20Transfer: 18, erc20Approve: 5, erc1155Mint: 3, erc1155Transfer: 8, erc721Mint: 6, storageSet: 5,
           dexSwap: 12, dexAddLiq: 4, dexRemoveLiq: 2, storageLoop: 4, deploy: 2, gasBomb: 2, bigCalldata: 2, revertOp: 3 },
-  soak: { nativeTransfer: 32, erc20Mint: 5, erc20Transfer: 22, erc20Approve: 3, erc721Mint: 9, erc1155Mint: 3, erc1155Transfer: 10, dexSwap: 8, dexAddLiq: 2, storageSet: 4, storageLoop: 2 },
+  soak: { nativeTransfer: 24, erc20Mint: 5, erc20Transfer: 18, erc20Approve: 3, nftMint: 12, nftTransfer: 8, erc1155Mint: 3, erc1155Transfer: 8, wrapGMB: 6, unwrapGMB: 4, dexSwap: 5, dexAddLiq: 2, storageSet: 2 },
 };
 
 export function buildWorkloadSet(name, ctx) {
