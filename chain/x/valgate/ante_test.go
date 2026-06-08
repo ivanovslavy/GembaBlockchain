@@ -39,7 +39,8 @@ func setupKeeper(t *testing.T) (sdk.Context, keeper.Keeper) {
 }
 
 func cv(gmb int64) sdk.Msg {
-	return &stakingtypes.MsgCreateValidator{Value: sdk.NewCoin("agmb", math.NewInt(gmb).Mul(oneGmb))}
+	amt := math.NewInt(gmb).Mul(oneGmb)
+	return &stakingtypes.MsgCreateValidator{Value: sdk.NewCoin("agmb", amt), MinSelfDelegation: amt}
 }
 func next(ctx sdk.Context, _ sdk.Tx, _ bool) (sdk.Context, error) { return ctx, nil }
 
@@ -59,6 +60,19 @@ func TestMinSelfBondEnforced(t *testing.T) {
 
 	_, err = d.AnteHandle(ctx, mockTx{nil}, false, next)
 	require.NoError(t, err, "a tx without MsgCreateValidator must pass")
+}
+
+// TestMinSelfDelegationFloor: a creation at the floor but with MinSelfDelegation below it must
+// be rejected, so staking permanently enforces the floor (audit finding #4).
+func TestMinSelfDelegationFloor(t *testing.T) {
+	ctx, k := setupKeeper(t)
+	d := valgate.NewMinSelfBondDecorator(k)
+	msg := &stakingtypes.MsgCreateValidator{
+		Value:             sdk.NewCoin("agmb", math.NewInt(1000).Mul(oneGmb)), // at the floor
+		MinSelfDelegation: math.NewInt(1),                                     // but commits ~nothing
+	}
+	_, err := d.AnteHandle(ctx, mockTx{[]sdk.Msg{msg}}, false, next)
+	require.Error(t, err, "MinSelfDelegation below the floor must be rejected")
 }
 
 // TestGovernanceTunable: raising the param via SetParams (gov path) changes enforcement

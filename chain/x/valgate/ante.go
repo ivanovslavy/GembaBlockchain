@@ -46,6 +46,12 @@ func checkMsgs(msgs []sdk.Msg, min math.Int, depth int) error {
 			if cv.Value.Amount.LT(min) {
 				return fmt.Errorf("validator self-bond %s is below the minimum %s (governance-set, x/valgate)", cv.Value.Amount, min)
 			}
+			// Also require the committed MinSelfDelegation >= floor so staking PERMANENTLY
+			// enforces it: otherwise an operator creates at the floor then self-undelegates
+			// down to MinSelfDelegation, making the floor a one-time lockup (audit finding #4).
+			if cv.MinSelfDelegation.LT(min) {
+				return fmt.Errorf("validator min_self_delegation %s is below the minimum %s (governance-set, x/valgate)", cv.MinSelfDelegation, min)
+			}
 		}
 		if exec, ok := msg.(*authz.MsgExec); ok {
 			inner, err := exec.GetMessages()
