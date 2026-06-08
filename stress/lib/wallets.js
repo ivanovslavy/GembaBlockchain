@@ -9,7 +9,7 @@ export function generateWallets(n) {
     const w = Wallet.createRandom();
     wallets.push({ index: i, address: w.address, privateKey: w.privateKey });
   }
-  writeFileSync(FILE, JSON.stringify(wallets, null, 2));
+  writeFileSync(FILE, JSON.stringify(wallets, null, 2), { mode: 0o600 }); // 0600: throwaway keys, never world-readable (audit #10)
   return wallets;
 }
 

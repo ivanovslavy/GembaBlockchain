@@ -67,6 +67,8 @@ export function tenantRepo(pool, tenantId) {
     logAccess: (a) => run((db) => db.logAccess(a)),
     deleteEmployee: (id) => run((db) => db.deleteEmployee(id)),
     recordFailedRevocation: (a) => run((db) => db.recordFailedRevocation(a)),
+    listPendingRevocations: (limit) => run((db) => db.listPendingRevocations(limit)),
+    markRevocationRetried: (id) => run((db) => db.markRevocationRetried(id)),
   };
 }
 
@@ -132,5 +134,23 @@ export function repo(client, tenantId) {
         [tenantId, wallet, zone, reason ?? null]
       );
     },
+
+    // Outbox retry (audit finding #6): list not-yet-retried revocations, and mark one done.
+    async listPendingRevocations(limit = 100) {
+      const { rows } = await client.query(
+        `SELECT id, wallet, zone FROM revocation_outbox WHERE retried_at IS NULL ORDER BY created_at LIMIT $1`,
+        [limit]
+      );
+      return rows;
+    },
+    async markRevocationRetried(id) {
+      await client.query(`UPDATE revocation_outbox SET retried_at = now() WHERE id = $1`, [id]);
+    },
   };
+}
+
+/** All tenant ids (the tenants table is not RLS-scoped); used by the outbox retry worker. */
+export async function listTenantIds(pool) {
+  const { rows } = await pool.query('SELECT id FROM tenants');
+  return rows.map((r) => r.id);
 }

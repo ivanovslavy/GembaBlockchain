@@ -17,6 +17,27 @@ const faucet = createFaucet({ rpcUrl: RPC_URL, faucetKey: FAUCET_KEY, dripAmount
 const byAddress = new CooldownLimiter(COOLDOWN_MS);
 const byIp = new CooldownLimiter(COOLDOWN_MS);
 
+// Global drain protections (audit finding #7): the per-address cooldown is defeated by using a
+// fresh recipient address per request, so add a daily GLOBAL budget and a min-balance circuit
+// breaker on top.
+const DAILY_GLOBAL_MAX = Number(process.env.DRIP_DAILY_GLOBAL_MAX || 10000); // max drips/day, all requesters
+const MIN_BALANCE_WEI = BigInt(process.env.MIN_FAUCET_BALANCE_GMB || '1000') * 10n ** 18n; // refuse below this
+let dripDay = 0;
+let dripCountToday = 0;
+function globalBudgetAllow(now) {
+  const d = Math.floor(now / 86_400_000);
+  if (d !== dripDay) {
+    dripDay = d;
+    dripCountToday = 0;
+  }
+  if (dripCountToday >= DAILY_GLOBAL_MAX) return false;
+  dripCountToday++;
+  return true;
+}
+function globalBudgetRelease() {
+  if (dripCountToday > 0) dripCountToday--;
+}
+
 export function createApp() {
   const app = express();
   app.use(express.json());
@@ -46,15 +67,24 @@ export function createApp() {
       if (byIp.remaining(ip, now) > 0)
         return res.status(429).json({ error: 'ip on cooldown', retryAfterMs: byIp.remaining(ip, now) });
 
+      // global daily budget (defends against the fresh-address bypass) + balance circuit breaker
+      if (!globalBudgetAllow(now))
+        return res.status(429).json({ error: 'global daily drip budget reached, try tomorrow' });
+      if ((await faucet.balance()) < MIN_BALANCE_WEI) {
+        globalBudgetRelease();
+        return res.status(503).json({ error: 'faucet balance below floor; refill required' });
+      }
+
       byAddress.tryAcquire(to, now);
       byIp.tryAcquire(ip, now);
       try {
         const hash = await faucet.drip(to);
         res.json({ ok: true, to, amountGmb: DRIP_GMB, txHash: hash });
       } catch (sendErr) {
-        // roll back the cooldown so a failed send doesn't burn the user's window
+        // roll back the cooldown + global budget so a failed send doesn't burn the window/budget
         byAddress.release(to);
         byIp.release(ip);
+        globalBudgetRelease();
         throw sendErr;
       }
     } catch (e) {

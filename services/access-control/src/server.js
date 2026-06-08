@@ -5,6 +5,7 @@ import { createPool, assertSafeDbRole } from './db.js';
 import { createChainClient } from './chain.js';
 import { createApp } from './app.js';
 import { parseApiKeys } from './auth.js';
+import { startOutboxWorker } from './outbox.js';
 
 const pool = createPool(process.env.DATABASE_URL);
 const chain = createChainClient({
@@ -23,6 +24,7 @@ const port = process.env.ACCESS_API_PORT || 3001;
   if (apiKeys.size === 0) {
     throw new Error('refusing to start: ACCESS_API_KEYS is empty — set per-institution API keys (finding #1)');
   }
+  startOutboxWorker(pool, chain, Number(process.env.OUTBOX_RETRY_MS || 60_000)); // drain failed revokes (finding #6)
   createApp({ pool, chain, apiKeys }).listen(port, () => {
     console.log(`access-control API listening on :${port}`);
   });
