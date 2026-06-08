@@ -82,7 +82,7 @@ function App() {
           </span>
         </a>
         <nav className="nav-links">
-          <a className="btn btn-sm btn-primary" href={NET.swap} target="_blank" rel="noopener">
+          <a className="btn btn-sm" href={NET.swap} target="_blank" rel="noopener">
             Swap
           </a>
           <a href={NET.explorer} target="_blank" rel="noopener">
@@ -117,12 +117,12 @@ function App() {
             services to their citizens and users.
           </p>
           <div className="cta">
-            <a className="btn btn-primary" href={NET.swap} target="_blank" rel="noopener">
-              Open GembaSwap →
-            </a>
-            <button className="btn" onClick={addToMetaMask}>
+            <button className="btn btn-primary" onClick={addToMetaMask}>
               Add to MetaMask
             </button>
+            <a className="btn" href={NET.swap} target="_blank" rel="noopener">
+              Open GembaSwap
+            </a>
             <a className="btn" href={NET.explorer} target="_blank" rel="noopener">
               Open GembaScan
             </a>
