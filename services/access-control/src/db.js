@@ -12,6 +12,24 @@ export function createPool(connectionString) {
 }
 
 /**
+ * Refuse to run on a DB role that bypasses RLS (audit finding #3). A PostgreSQL superuser
+ * (or a role with BYPASSRLS) ignores RLS entirely, silently collapsing all tenant isolation.
+ * Call this at startup and abort if the connected role is unsafe — fail loud, never silent.
+ */
+export async function assertSafeDbRole(pool) {
+  const { rows } = await pool.query(
+    "SELECT current_setting('is_superuser') = 'on' AS is_superuser, " +
+      'COALESCE((SELECT rolbypassrls FROM pg_roles WHERE rolname = current_user), false) AS bypassrls'
+  );
+  const r = rows[0];
+  if (r.is_superuser || r.bypassrls) {
+    throw new Error(
+      'refusing to start: DB role is a superuser or has BYPASSRLS — RLS tenant isolation would be bypassed (set DATABASE_URL to the non-privileged gemba_app role)'
+    );
+  }
+}
+
+/**
  * Run `fn(client)` in a transaction with `app.current_tenant` set, so RLS applies.
  * SET LOCAL is transaction-scoped; the tenant id is bound as a parameter.
  */
@@ -48,6 +66,7 @@ export function tenantRepo(pool, tenantId) {
     getEmployeeCapabilities: (id) => run((db) => db.getEmployeeCapabilities(id)),
     logAccess: (a) => run((db) => db.logAccess(a)),
     deleteEmployee: (id) => run((db) => db.deleteEmployee(id)),
+    recordFailedRevocation: (a) => run((db) => db.recordFailedRevocation(a)),
   };
 }
 
@@ -103,6 +122,15 @@ export function repo(client, tenantId) {
     // GDPR erasure: cascades remove capabilities and null log references.
     async deleteEmployee(employeeId) {
       await client.query(`DELETE FROM employees WHERE id = $1`, [employeeId]);
+    },
+
+    // Durable record of an on-chain revoke that failed during erasure (audit finding #2),
+    // so it can be retried later. Holds no PII — only wallet + zone.
+    async recordFailedRevocation({ wallet, zone, reason }) {
+      await client.query(
+        `INSERT INTO revocation_outbox (tenant_id, wallet, zone, reason) VALUES ($1, $2, $3, $4)`,
+        [tenantId, wallet, zone, reason ?? null]
+      );
     },
   };
 }

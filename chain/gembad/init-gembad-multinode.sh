@@ -19,7 +19,7 @@ RS_RESERVE_ADDR="cosmos1s32mhm7c0eest48njscsr5fnn2c42mr9w8cnqe"
 FAUCET_ADDR="cosmos17s95c5jpc6x2l3edwh4dm8yhac68yru7cre47d"
 
 VAL_MNEMONICS=(
-  "***REMOVED-DEVNET-MNEMONIC***"
+  "${DEV0_MNEMONIC:?set DEV0_MNEMONIC — see chain/.env.example}"
   "***REMOVED-DEVNET-MNEMONIC***"
   "***REMOVED-ROTATED-FAUCET-MNEMONIC***"
   "***REMOVED-DEVNET-MNEMONIC***"

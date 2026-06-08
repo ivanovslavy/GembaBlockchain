@@ -24,7 +24,7 @@
 # =============================================================================
 set -uo pipefail
 RPC="${RPC:-http://localhost:8545}"
-PK="${DEV0_PK:-0xREMOVED_DEVNET_TEST_KEY}" # DEVNET key
+PK="${DEV0_PK:?set DEV0_PK — see chain/.env.example}"
 DEV0=0xC6Fe5D33615a1C52c08018c47E8Bc53646A0E101
 DEV1=0x963EBDf2e1f8DB8707D05FC75bfeFFBa1B5BaC17
 N="${N:-250}" # number of transfers to blast

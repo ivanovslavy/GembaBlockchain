@@ -25,9 +25,9 @@ FAUCET_ADDR="cosmos17s95c5jpc6x2l3edwh4dm8yhac68yru7cre47d"      # faucet
 
 HOME_DIR="${HOME_DIR:-$HOME/.gembad-devnet}"
 MONIKER="${MONIKER:-gembad-devnet-0}"
-VAL_MNEMONIC="***REMOVED-DEVNET-MNEMONIC***"
-DEV0_MNEMONIC="***REMOVED-DEVNET-MNEMONIC***"
-DEV1_MNEMONIC="***REMOVED-DEVNET-MNEMONIC***"
+VAL_MNEMONIC="${VAL_MNEMONIC:?set VAL_MNEMONIC — see chain/.env.example}"
+DEV0_MNEMONIC="${DEV0_MNEMONIC:?set DEV0_MNEMONIC — see chain/.env.example}"
+DEV1_MNEMONIC="${DEV1_MNEMONIC:?set DEV1_MNEMONIC — see chain/.env.example}"
 
 echo ">> wiping $HOME_DIR"
 rm -rf "$HOME_DIR"

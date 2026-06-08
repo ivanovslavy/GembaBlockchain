@@ -8,6 +8,7 @@
 import express from 'express';
 import { tenantRepo } from './db.js';
 import { eraseEmployee } from './gdpr.js';
+import { apiKeyAuth } from './auth.js';
 import {
   ValidationError,
   requireUuid,
@@ -17,19 +18,14 @@ import {
   optionalEmail,
 } from './validation.js';
 
-export function createApp({ pool, chain }) {
+export function createApp({ pool, chain, apiKeys }) {
   const app = express();
   app.use(express.json());
 
-  // Tenant context (drives RLS). Fail loud if missing/malformed.
-  app.use((req, _res, next) => {
-    try {
-      req.tenantId = requireUuid('x-tenant-id', req.header('x-tenant-id'));
-      next();
-    } catch (err) {
-      next(err);
-    }
-  });
+  // Authentication: derive the tenant from the API key server-side — the client-supplied
+  // x-tenant-id is NOT trusted (audit finding #1). RLS keys off this tenant id, so it must
+  // come from an authenticated credential, never a header anyone can set.
+  app.use(apiKeyAuth(apiKeys));
 
   const h = (fn) => (req, res, next) => fn(req, res, next).catch(next);
 

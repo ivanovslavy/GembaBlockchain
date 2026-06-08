@@ -18,7 +18,7 @@ N=4
 
 # 4 distinct, well-known devnet validator mnemonics (cosmos/evm dev0..dev3).
 VAL_MNEMONICS=(
-  "***REMOVED-DEVNET-MNEMONIC***"
+  "${DEV0_MNEMONIC:?set DEV0_MNEMONIC — see chain/.env.example}"
   "***REMOVED-DEVNET-MNEMONIC***"
   "***REMOVED-ROTATED-FAUCET-MNEMONIC***"
   "***REMOVED-DEVNET-MNEMONIC***"

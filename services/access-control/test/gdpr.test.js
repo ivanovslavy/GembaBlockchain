@@ -30,6 +30,7 @@ test('eraseEmployee deletes off-chain PII FIRST, then best-effort revokes on-cha
 
 test('eraseEmployee still deletes PII when an on-chain revoke fails (finding #2)', async () => {
   let deleted = false;
+  const outbox = [];
   const db = {
     getEmployeeCapabilities: async () => [
       { zone: 7, wallet: '0xabc' },
@@ -38,6 +39,7 @@ test('eraseEmployee still deletes PII when an on-chain revoke fails (finding #2)
     deleteEmployee: async () => {
       deleted = true;
     },
+    recordFailedRevocation: async (r) => outbox.push(r), // durable retry queue
   };
   const chain = {
     revokeAccess: async (_wallet, zone) => {
@@ -53,6 +55,10 @@ test('eraseEmployee still deletes PII when an on-chain revoke fails (finding #2)
   assert.equal(res.revoked.length, 2);
   assert.equal(res.revoked[0].ok, false); // zone 7 failed, recorded not thrown
   assert.equal(res.revoked[1].ok, true); // zone 9 still attempted + succeeded
+  // the failed revoke is durably queued for retry (no PII — just wallet+zone)
+  assert.equal(outbox.length, 1);
+  assert.equal(outbox[0].zone, 7);
+  assert.equal(outbox[0].wallet, '0xabc');
 });
 
 test('eraseEmployee can skip on-chain revocation (off-chain erasure only)', async () => {

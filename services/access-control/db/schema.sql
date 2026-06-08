@@ -63,6 +63,19 @@ CREATE TABLE IF NOT EXISTS access_logs (
   occurred_at  timestamptz NOT NULL DEFAULT now()
 );
 
+-- --- Revocation outbox: on-chain revokes that FAILED during GDPR erasure, kept for
+-- durable retry (audit finding #2). PII is already deleted by then; this row holds only
+-- the pseudonymous wallet + zone, never identity. ---
+CREATE TABLE IF NOT EXISTS revocation_outbox (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id    uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  wallet       text NOT NULL,
+  zone         bigint NOT NULL,
+  reason       text,
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  retried_at   timestamptz
+);
+
 -- =============================================================================
 -- Row-Level Security: each request runs with app.current_tenant set; a tenant
 -- can only see/modify its own rows. FORCE so even the table owner is bound.
@@ -70,7 +83,7 @@ CREATE TABLE IF NOT EXISTS access_logs (
 DO $$
 DECLARE t text;
 BEGIN
-  FOREACH t IN ARRAY ARRAY['employees','capabilities','access_logs'] LOOP
+  FOREACH t IN ARRAY ARRAY['employees','capabilities','access_logs','revocation_outbox'] LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
     EXECUTE format($f$
@@ -81,7 +94,7 @@ BEGIN
   END LOOP;
 END $$;
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON employees, capabilities, access_logs TO gemba_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON employees, capabilities, access_logs, revocation_outbox TO gemba_app;
 GRANT SELECT, INSERT ON tenants TO gemba_app;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO gemba_app;
 

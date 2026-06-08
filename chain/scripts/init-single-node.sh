@@ -17,11 +17,11 @@ HOME_DIR="${HOME_DIR:-$HOME/.gemba-devnet}"
 MONIKER="${MONIKER:-gemba-devnet-0}"
 
 # Public, well-known devnet test mnemonics (cosmos/evm local_node defaults).
-VAL_MNEMONIC="***REMOVED-DEVNET-MNEMONIC***"
+VAL_MNEMONIC="${VAL_MNEMONIC:?set VAL_MNEMONIC — see chain/.env.example}"
 # dev0 -> 0xC6Fe5D33615a1C52c08018c47E8Bc53646A0E101  (the MetaMask/Foundry demo account)
-DEV0_MNEMONIC="***REMOVED-DEVNET-MNEMONIC***"
+DEV0_MNEMONIC="${DEV0_MNEMONIC:?set DEV0_MNEMONIC — see chain/.env.example}"
 # dev1 -> 0x963EBDf2e1f8DB8707D05FC75bfeFFBa1B5BaC17  (transfer recipient)
-DEV1_MNEMONIC="***REMOVED-DEVNET-MNEMONIC***"
+DEV1_MNEMONIC="${DEV1_MNEMONIC:?set DEV1_MNEMONIC — see chain/.env.example}"
 
 echo ">> wiping $HOME_DIR"
 rm -rf "$HOME_DIR"

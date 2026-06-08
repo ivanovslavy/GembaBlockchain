@@ -40,7 +40,18 @@ export async function eraseEmployee({ db, chain }, employeeId, opts = {}) {
       const txHash = await chain.revokeAccess(cap.wallet, cap.zone);
       revoked.push({ zone: cap.zone, wallet: cap.wallet, txHash, ok: true });
     } catch (err) {
-      revoked.push({ zone: cap.zone, wallet: cap.wallet, error: String(err.message || err), ok: false });
+      const reason = String(err.message || err);
+      revoked.push({ zone: cap.zone, wallet: cap.wallet, error: reason, ok: false });
+      // durably record the still-valid on-chain capability so it can be retried — the
+      // PII (and its cascade) is already gone, so the HTTP response is the only other
+      // trace; the outbox row holds no PII, just wallet+zone (audit finding #2).
+      if (db.recordFailedRevocation) {
+        try {
+          await db.recordFailedRevocation({ wallet: cap.wallet, zone: cap.zone, reason });
+        } catch (_e) {
+          /* outbox best-effort; never let it block erasure */
+        }
+      }
     }
   }
 

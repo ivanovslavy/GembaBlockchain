@@ -16,7 +16,7 @@ GEMBAD="${GEMBAD:-/tmp/gembad}"
 RS=cosmos1s32mhm7c0eest48njscsr5fnn2c42mr9w8cnqe   # rewardstreamer reserve
 FA=cosmos17s95c5jpc6x2l3edwh4dm8yhac68yru7cre47d   # faucet
 VALOPER="$("$GEMBAD" q staking validators --home "$HOME_DIR" -o json 2>/dev/null | jq -r '.validators[0].operator_address')"
-DEV0_PK=0xREMOVED_DEVNET_TEST_KEY  # DEVNET test key
+DEV0_PK="${DEV0_PK:?set DEV0_PK — see chain/.env.example}"
 DEV1=0x963EBDf2e1f8DB8707D05FC75bfeFFBa1B5BaC17
 
 bal(){ curl -s "$REST/cosmos/bank/v1beta1/balances/$1/by_denom?denom=agmb" | jq -r '.balance.amount // "0"'; }
