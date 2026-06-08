@@ -37,7 +37,7 @@ const SETS = {
   core: { nativeTransfer: 38, erc20Mint: 8, erc20Transfer: 25, erc20Approve: 5, erc1155Mint: 4, erc1155Transfer: 10, erc721Mint: 5, storageSet: 5 },
   all:  { nativeTransfer: 28, erc20Mint: 6, erc20Transfer: 18, erc20Approve: 5, erc1155Mint: 3, erc1155Transfer: 8, erc721Mint: 6, storageSet: 5,
           dexSwap: 12, dexAddLiq: 4, dexRemoveLiq: 2, storageLoop: 4, deploy: 2, gasBomb: 2, bigCalldata: 2, revertOp: 3 },
-  soak: { nativeTransfer: 48, erc20Mint: 4, erc20Transfer: 26, erc1155Mint: 2, erc1155Transfer: 12, dexSwap: 6, storageSet: 2 },
+  soak: { nativeTransfer: 32, erc20Mint: 5, erc20Transfer: 22, erc20Approve: 3, erc721Mint: 9, erc1155Mint: 3, erc1155Transfer: 10, dexSwap: 8, dexAddLiq: 2, storageSet: 4, storageLoop: 2 },
 };
 
 export function buildWorkloadSet(name, ctx) {
