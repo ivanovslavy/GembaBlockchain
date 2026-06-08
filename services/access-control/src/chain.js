@@ -16,16 +16,30 @@ export function createChainClient({ rpcUrl, issuerKey, contractAddress }) {
   const signer = new ethers.Wallet(issuerKey, provider);
   const nft = new ethers.Contract(contractAddress, ABI, signer);
 
+  // Serialize sends from the single ISSUER wallet so concurrent grants/revokes (or a grant
+  // racing the outbox retry worker) can't read the same pending nonce and collide (audit L-4;
+  // same fix as the faucet's finding #8).
+  let queue = Promise.resolve();
+  function serialize(fn) {
+    const run = queue.then(fn, fn);
+    queue = run.then(() => {}, () => {});
+    return run;
+  }
+
   return {
     async grantAccess(wallet, zone) {
-      const tx = await nft.grantAccess(wallet, zone);
-      const receipt = await tx.wait();
-      return receipt.hash;
+      return serialize(async () => {
+        const tx = await nft.grantAccess(wallet, zone);
+        const receipt = await tx.wait();
+        return receipt.hash;
+      });
     },
     async revokeAccess(wallet, zone) {
-      const tx = await nft.revokeAccess(wallet, zone);
-      const receipt = await tx.wait();
-      return receipt.hash;
+      return serialize(async () => {
+        const tx = await nft.revokeAccess(wallet, zone);
+        const receipt = await tx.wait();
+        return receipt.hash;
+      });
     },
     async hasAccess(wallet, zone) {
       return nft.hasAccess(wallet, zone);

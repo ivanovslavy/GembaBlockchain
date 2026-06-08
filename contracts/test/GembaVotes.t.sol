@@ -64,6 +64,25 @@ contract GembaVotesTest is Test {
         votes.setExcluded(reserve, true);
     }
 
+    // audit L-1: excluding an address that already holds + delegated vGMB must strip its
+    // delegated-out voting weight and block it from re-delegating to a proxy.
+    function test_ExcludeAfterHoldingStripsDelegatedOutVotes() public {
+        address proxy = address(0xCAFE);
+        vm.startPrank(alice);
+        votes.depositFor{value: 100 ether}(alice);
+        votes.delegate(proxy); // alice delegates her weight to a proxy she controls
+        vm.stopPrank();
+        assertEq(votes.getVotes(proxy), 100 ether, "proxy initially carries alice's weight");
+
+        vm.prank(governance);
+        votes.setExcluded(alice, true); // exclude alice after she acquired + delegated units
+        assertEq(votes.getVotes(proxy), 0, "exclusion strips alice's delegated-out weight (L-1)");
+
+        vm.prank(alice);
+        vm.expectRevert(GembaVotes.Excluded.selector);
+        votes.delegate(proxy); // and she can't re-delegate while excluded
+    }
+
     function testFuzz_WrapUnwrapConservesNative(uint96 amount) public {
         vm.assume(amount > 0 && amount <= 1000 ether);
         vm.startPrank(alice);

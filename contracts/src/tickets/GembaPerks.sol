@@ -17,6 +17,10 @@ interface IGembaTicketing {
 /// per-bonus cap, fail loud.
 contract GembaPerks is AccessControl, ReentrancyGuard {
     bytes32 public constant DISTRIBUTOR_ROLE = keccak256("DISTRIBUTOR_ROLE");
+    /// @notice Gas forwarded to each recipient in payBonusBatch — enough for an EOA (and a simple
+    /// receive), but not enough for a malicious contract to burn the batch's gas (audit L-2).
+    /// Contract recipients needing more should be paid via single payBonus (uncapped).
+    uint256 private constant BONUS_GAS_STIPEND = 2300;
 
     /// @notice the ticketing contract used to grant perk tickets. This contract
     /// must hold ORGANIZER_ROLE on it (granted by the ticketing admin).
@@ -85,7 +89,8 @@ contract GembaPerks is AccessControl, ReentrancyGuard {
             emit BonusFailed(employee, amount, msg.sender);
             return false;
         }
-        (bool ok, ) = payable(employee).call{value: amount}("");
+        // bounded gas: a malicious contract recipient can't burn the rest of the batch (L-2)
+        (bool ok, ) = payable(employee).call{value: amount, gas: BONUS_GAS_STIPEND}("");
         if (!ok) {
             emit BonusFailed(employee, amount, msg.sender);
             return false;

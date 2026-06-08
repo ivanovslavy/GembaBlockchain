@@ -62,21 +62,29 @@ export function createApp() {
 
       const ip = req.ip;
       const now = Date.now();
-      if (byAddress.remaining(to, now) > 0)
-        return res.status(429).json({ error: 'address on cooldown', retryAfterMs: byAddress.remaining(to, now) });
-      if (byIp.remaining(ip, now) > 0)
-        return res.status(429).json({ error: 'ip on cooldown', retryAfterMs: byIp.remaining(ip, now) });
 
+      // Acquire the cooldowns ATOMICALLY (honoring tryAcquire's return) BEFORE any await, so
+      // concurrent same-address requests can't all pass a separate remaining() gate and then
+      // drip — closing the TOCTOU race (audit L-3).
+      if (!byAddress.tryAcquire(to, now))
+        return res.status(429).json({ error: 'address on cooldown', retryAfterMs: byAddress.remaining(to, now) });
+      if (!byIp.tryAcquire(ip, now)) {
+        byAddress.release(to);
+        return res.status(429).json({ error: 'ip on cooldown', retryAfterMs: byIp.remaining(ip, now) });
+      }
       // global daily budget (defends against the fresh-address bypass) + balance circuit breaker
-      if (!globalBudgetAllow(now))
+      if (!globalBudgetAllow(now)) {
+        byAddress.release(to);
+        byIp.release(ip);
         return res.status(429).json({ error: 'global daily drip budget reached, try tomorrow' });
+      }
       if ((await faucet.balance()) < MIN_BALANCE_WEI) {
+        byAddress.release(to);
+        byIp.release(ip);
         globalBudgetRelease();
         return res.status(503).json({ error: 'faucet balance below floor; refill required' });
       }
 
-      byAddress.tryAcquire(to, now);
-      byIp.tryAcquire(ip, now);
       try {
         const hash = await faucet.drip(to);
         res.json({ ok: true, to, amountGmb: DRIP_GMB, txHash: hash });

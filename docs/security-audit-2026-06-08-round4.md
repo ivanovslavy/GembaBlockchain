@@ -127,3 +127,25 @@ The following strengths were observed and verified during the audit:
 - **Not covered / limitations:** No live mainnet deployment, no formal verification, no full economic/game-theory modeling of tokenomics, no penetration testing of deployed infrastructure (reverse proxy, hosts), and no audit of upstream Cosmos EVM (its pre-v1 upstream audit remains a separate, documented launch blocker — ADR-006). Findings are based on static review of the working tree as of 2026-06-07.
 
 **Recommended action order:** H-1 (rotate the PAT) immediately; L-5 (`chmod`) and L-3 (one-line `tryAcquire` fix) are quick wins; L-1, L-2, L-4 are defense-in-depth/robustness improvements to schedule before mainnet.
+
+---
+
+## Risk acceptance & remediation (2026-06-08)
+
+**H-1 (GitHub PAT) — ACCEPTED, not a leak, no action taken.** The "transcript" is a local
+**Linux console / CLI session on the operator's own machine**, NOT a browser chat or any
+external/third-party service. The token never left the operator's host: `.env` is gitignored,
+untracked, and never committed (verified — no repo leak), and there is no external transmission
+channel. There is therefore **no exposure to rotate against**. The token stays as-is.
+
+**Code findings — FIXED:**
+- **L-1** GembaVotes: excluded accounts can no longer delegate out — `_delegate` reverts for an
+  excluded delegator, and `setExcluded(true)` strips any existing delegation (force-delegate to 0).
+- **L-2** GembaPerks.payBonusBatch: per-recipient `call` now forwards a bounded gas stipend, so a
+  malicious contract recipient can't burn the batch's gas (single `payBonus` stays uncapped).
+- **L-3** testnet-faucet `/drip`: cooldowns acquired atomically (honoring `tryAcquire`'s return)
+  BEFORE any `await`, closing the TOCTOU race.
+- **L-4** access-control `chain.js`: `grantAccess`/`revokeAccess` now serialize sends (ported the
+  faucet's nonce-serialization fix), preventing nonce collisions from the single ISSUER wallet.
+- **L-5** `wallet-backup/` permissions tightened (`chmod 700` dir, `600` files); testnet keys only,
+  to be regenerated for mainnet.

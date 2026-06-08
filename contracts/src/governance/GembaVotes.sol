@@ -77,6 +77,12 @@ contract GembaVotes is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     function setExcluded(address account, bool isExcluded) external {
         if (msg.sender != governance) revert OnlyGovernance();
         excluded[account] = isExcluded;
+        // Strip any voting weight the account already delegated out, so excluding an address that
+        // already holds vGMB immediately removes its (and its delegatee's) power — not just its
+        // own getVotes (audit finding L-1). super._delegate bypasses the _delegate guard below.
+        if (isExcluded) {
+            super._delegate(account, address(0));
+        }
         emit ExclusionSet(account, isExcluded);
     }
 
@@ -86,6 +92,14 @@ contract GembaVotes is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     function _update(address from, address to, uint256 value) internal override(ERC20, ERC20Votes) {
         if (to != address(0) && excluded[to]) revert Excluded();
         super._update(from, to, value);
+    }
+
+    /// @dev An excluded account cannot delegate its weight to a proxy to vote on its behalf
+    /// (closes the exclude-after-holding bypass, audit finding L-1). It may still un-delegate
+    /// (delegate to address(0)).
+    function _delegate(address account, address delegatee) internal override {
+        if (excluded[account] && delegatee != address(0)) revert Excluded();
+        super._delegate(account, delegatee);
     }
 
     /// @dev Excluded addresses carry zero current voting power (defense in depth).
