@@ -73,3 +73,43 @@ specific validator. For per-validator attribution, point the generator at all no
 
 ## Open (owner)
 - Decide where to relocate the explorer (the single heaviest component) for mainnet.
+
+---
+
+# Soak test (profile C) — 2026-06-08
+
+Run from the RPi (`192.168.100.11`) **directly against the validators' RPCs** (node2 LAN +
+.83/.84 raw :8545), `SOAK_TPS=20`, ~4 hours, with a **rich routine-tx mix** (no adversarial ops).
+
+## Result
+| | |
+|---|---|
+| Submitted | **284,649** |
+| Mined OK | **281,950 (99.05%)** |
+| Reverted | **0** |
+| Failed submit | **0** |
+| Timed out | 2,699 (0.95%) |
+| Latency | p50 3.9s · p95 6.3s · p99 6.8s (~1 block) — **stable for the full 4 h** |
+| Sustained TPS | ~20, no degradation |
+
+## Workload diversity (all 0-revert)
+native transfer 68k · ERC20 transfer 51k · **NFT mint 34k** · ERC1155 transfer 23k ·
+**NFT transfer 22k** · **wrap GMB→WGMB 17k** · DEX swap 14k · ERC20 mint 14k ·
+**unwrap 11k** · ERC20 approve 8.5k · ERC1155 mint 8.5k · DEX addLiquidity 5.7k · storage 5.7k.
+
+Added a `StressNFT` (caller-chosen-id) contract so NFT *transfer* is valid (the auto-increment
+StressERC721 can't be transferred reliably client-side); wrap/unwrap via the real WGMB.
+
+## Node health after 4 h
+- **Validators barely loaded:** .82/.83/.84/node2 loadavg **0.13–0.46**, none `catching_up`.
+  Consensus is cheap; RPC ingestion is light. Validator data-dirs ~2.5–2.7 GB.
+- **Explorer box (.137) carried the indexing:** loadavg ~5.6, RAM 7.9/12 GB (+12 GB swap),
+  172 GB disk free — kept up indexing the whole soak. (Confirms: isolate explorer from validators.)
+
+## Verdict
+The chain is **rock-solid under sustained, diverse, routine load** — 282k txs, 99% mined, zero
+reverts across 13 tx types, ~1-block latency with no drift, zero validator stress.
+
+## Cleanup
+1,473 GMB swept back to `tnfaucet`; .83/.84 raw RPC reverted to 127.0.0.1 + ufw rules removed
+(rpc1/rpc2 keep serving via nginx) → validators "naked" again.
