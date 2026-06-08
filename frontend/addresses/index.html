@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a0b16" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="canonical" href="https://addresses.gembachain.io/" />
+  <meta name="robots" content="index, follow, max-image-preview:large" />
+  <meta name="description" content="Official GembaBlockchain contract & genesis addresses — testnet and mainnet. Reserves, governance (Governor/Timelock), DEX (GembaSwap Router V2, WGMB, Factory), validators. Verified on GembaScan." />
+  <meta property="og:title" content="GembaBlockchain — official addresses" />
+  <meta property="og:description" content="All important GembaBlockchain addresses (testnet + mainnet): reserves, governance, DEX router/WGMB, validators." />
+  <meta property="og:url" content="https://addresses.gembachain.io/" />
+  <meta property="og:image" content="https://gembachain.io/gemba-icon.png" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="GembaBlockchain — official addresses" />
+  <meta name="twitter:image" content="https://gembachain.io/gemba-icon.png" />
+  <title>GembaBlockchain — official addresses (testnet & mainnet)</title>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"WebPage","name":"GembaBlockchain official addresses","url":"https://addresses.gembachain.io/","description":"Official GembaBlockchain contract and genesis addresses for testnet and mainnet.","publisher":{"@type":"Organization","name":"GembaBlockchain","legalName":"GEMBA EOOD","url":"https://gembachain.io/"}}
+  </script>
+  <style>
+    :root{--bg:#0a0b16;--card:#13152a;--card2:#171a33;--border:#262a4d;--text:#b7bad2;--dim:#7a7e9e;--head:#f4f5fb;--indigo:#6366f1;--cyan:#22d3ee;--grad:linear-gradient(120deg,#6366f1,#22d3ee);--ok:#34d399}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+      background-image:radial-gradient(60% 50% at 50% 0%,rgba(99,102,241,.18),transparent 70%),radial-gradient(40% 40% at 85% 10%,rgba(34,211,238,.12),transparent 70%)}
+    a{color:var(--cyan);text-decoration:none}
+    .wrap{max-width:980px;margin:0 auto;padding:0 18px 70px}
+    .top{display:flex;align-items:center;justify-content:space-between;padding:18px 0}
+    .brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:19px;color:var(--head)}
+    .brand .d{width:24px;height:24px;border-radius:7px;background:var(--grad)}
+    h1{color:var(--head);font-size:clamp(24px,4vw,34px);margin:18px 0 4px}
+    .sub{color:var(--dim);font-size:15px;margin:0 0 22px;max-width:680px}
+    .tabs{display:flex;gap:8px;margin-bottom:20px}
+    .tab{padding:9px 18px;border-radius:11px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-weight:700;cursor:pointer}
+    .tab.on{background:var(--grad);color:#0a0b16;border-color:transparent}
+    .net{display:flex;flex-wrap:wrap;gap:10px 26px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 18px;margin-bottom:22px;font-size:14px}
+    .net b{color:var(--head)}
+    .grp{margin-bottom:26px}
+    .grp h2{color:var(--head);font-size:17px;margin:0 0 10px}
+    table{width:100%;border-collapse:collapse}
+    td{padding:11px 8px;border-bottom:1px solid var(--border);font-size:14px;vertical-align:top}
+    td.name{color:var(--head);font-weight:600;white-space:nowrap}
+    td.note{color:var(--dim);font-size:12.5px}
+    .addr{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .mono{font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:12.5px;color:var(--text);word-break:break-all}
+    .ico{cursor:pointer;border:1px solid var(--border);background:var(--card2);color:var(--cyan);border-radius:7px;padding:3px 8px;font-size:12px}
+    .ico:hover{border-color:var(--indigo)}
+    .notlive{background:var(--card);border:1px dashed var(--border);border-radius:14px;padding:26px;text-align:center;color:var(--dim)}
+    .foot{color:var(--dim);font-size:13px;padding:28px 0;border-top:1px solid var(--border);margin-top:20px}
+    @media(max-width:620px){td.name{white-space:normal}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="brand" href="https://gembachain.io"><span class="d"></span>Gemba<b style="font-weight:800">Chain</b></a>
+      <a href="https://gembachain.io">gembachain.io →</a>
+    </div>
+    <h1>Official addresses</h1>
+    <p class="sub">All important GembaBlockchain addresses — genesis reserves, governance, the GembaSwap DEX (Router V2, WGMB, Factory) and validators. Every contract is verified on GembaScan. Always confirm an address here before interacting.</p>
+    <div class="tabs">
+      <button class="tab on" data-net="testnet" onclick="sel('testnet')">Testnet</button>
+      <button class="tab" data-net="mainnet" onclick="sel('mainnet')">Mainnet</button>
+    </div>
+    <div id="content"></div>
+    <div class="foot">Source of truth: this page + GembaScan verification. Built by <a href="https://gembait.com">GEMBA EOOD</a>. PII / private keys are never published — addresses are public on-chain identifiers.</div>
+  </div>
+
+  <script>
+    const DATA = {
+      testnet: {
+        chain: { name: "GembaBlockchain Testnet", cosmos: "gemba-testnet-1", evm: 821207, symbol: "GMB" },
+        explorer: "https://testnet.gembascan.io",
+        groups: [
+          { title: "Genesis reserves (token-holding)", rows: [
+            ["Faucet — Public / Municipal Reserve", "0x0C6b72AC9ee4CBd132DF181468F7d905C6FD3a66", "30,000,000 GMB · Governor + Timelock custody"],
+            ["FoundationTreasury", "0x06Cb10aCe5BdB3B6dF301d3B4af4c78A42896f7F", "15,000,000 GMB"],
+            ["DAOReserve", "0x7E00f38DB8F01d442447b0C90Eea315329B0Abb8", "10,000,000 GMB"],
+            ["ContingencyReserve", "0xb5dEc9867a89c041345B56cE1a339415B5BE4696", "10,000,000 GMB"],
+            ["Founder (deployer, non-voting)", "0x5578c75F22dE0bf1caA4BdD46BA28406C696a5dC", "5,000,000 GMB"],
+            ["tnfaucet (drip faucet service)", "0x40a0cb1C63e026A81B55EE1308586E21eec1eFa9", "2,000,000 GMB"],
+          ] },
+          { title: "Governance", rows: [
+            ["GembaGovernor", "0x3DF48Ce0331b3322970deF66a6a116927059B4e7", "supermajority 66%, quorum 50%"],
+            ["GembaTimelock", "0x4117ae45e76A77D1d54af57642aefD02A184cf90", "execution delay"],
+            ["GembaVotes", "0xbD40Df2b3aEFFAc672A8B34B2615f4639c1C4b49", "1 GMB = 1 vote · reserves excluded"],
+            ["EmergencyPause", "0x2429828C0538328e87a96418E5C1cF68057d7dBD", "2-of-3 guardian, pause-only"],
+          ] },
+          { title: "DEX & ecosystem", rows: [
+            ["GembaSwapRouter02", "0x53D78A64D01fC38A7Cc3436b6ec81DB203836D65", "Uniswap V2 router (full ABI)"],
+            ["GembaSwapFactory", "0x61224Ee338C3c62e1050838AB75c76A7cd6f95ed", "Uniswap V2 factory"],
+            ["WGMB — wrapped GMB", "0x68b735671C0b6ab1a6B8Fe4eaBd532B8736E68b4", "wrapped native coin"],
+            ["GembaNativePoolFactory", "0x432c733005Fb389b32B7813260c33c27745aDA2b", "native-GMB pools"],
+            ["LiquidityLocker", "0x88CB73797FFA34d6D469e855ea19A7bB28Ba1020", "LP lock"],
+            ["DemoToken (DEMO)", "0xD172E25ac8fAC629a171aF8dcf50FEb49e369592", "example dev token"],
+            ["DemoFeeToken (FEEDEMO)", "0x91CE1f91A845801db29568337A48075CDA6191F9", "5% fee-on-transfer demo"],
+          ] },
+          { title: "Validators (operators)", rows: [
+            ["Validator 0", "0xE685734337FD4Dd6d0AcFA778e62EcF3C36efb4b", "1,000 GMB self-bond"],
+            ["Validator 1", "0x2D15EfA53C6B4B833DE158E88bb0c825C190219A", "1,000 GMB"],
+            ["Validator 2", "0x6748152eB8292003A468C7543bFFB8bC5c62718C", "1,000 GMB"],
+            ["Validator 3", "0x7b75ca2344eae5D0317CEB0bB6878Cc4354dBc84", "1,000 GMB"],
+          ] },
+        ],
+      },
+      mainnet: {
+        chain: { name: "GembaBlockchain (mainnet)", cosmos: "gemba-1", evm: 821206, symbol: "GMB" },
+        explorer: "https://gembascan.io",
+        notLive: true,
+      },
+    };
+
+    function netCard(c) {
+      return `<div class="net"><span>Network: <b>${c.name}</b></span><span>Cosmos chain-id: <b>${c.cosmos}</b></span><span>EVM chainId: <b>${c.evm}</b></span><span>Symbol: <b>${c.symbol}</b></span></div>`;
+    }
+    function row(name, addr, note, explorer) {
+      return `<tr><td class="name">${name}</td><td><div class="addr"><span class="mono">${addr}</span>` +
+        `<button class="ico" onclick="cp('${addr}',this)">copy</button>` +
+        `<a class="ico" href="${explorer}/address/${addr}" target="_blank" rel="noopener">view ↗</a></div>` +
+        `<div class="note">${note || ""}</div></td></tr>`;
+    }
+    function render(net) {
+      const d = DATA[net];
+      let html = netCard(d.chain);
+      if (d.notLive) {
+        html += `<div class="notlive"><b style="color:var(--head)">Mainnet is not launched yet.</b><br>The official mainnet addresses (reserves, governance, DEX) will be published here at mainnet genesis. EVM chainId ${d.chain.evm}.</div>`;
+      } else {
+        for (const g of d.groups) {
+          html += `<div class="grp"><h2>${g.title}</h2><table>`;
+          for (const [n, a, note] of g.rows) html += row(n, a, note, d.explorer);
+          html += `</table></div>`;
+        }
+      }
+      document.getElementById("content").innerHTML = html;
+    }
+    function sel(net) {
+      document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("on", t.dataset.net === net));
+      render(net);
+      history.replaceState({}, "", "#" + net);
+    }
+    function cp(a, el) { navigator.clipboard?.writeText(a); const o = el.textContent; el.textContent = "✓"; setTimeout(() => (el.textContent = o), 1200); }
+    sel(location.hash === "#mainnet" ? "mainnet" : "testnet");
+  </script>
+</body>
+</html>

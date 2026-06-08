@@ -18,4 +18,5 @@
 ## Links
 - Site: https://gembachain.io
 - Builder / company: https://gembait.com (GEMBA EOOD)
+- Official addresses (testnet+mainnet): https://addresses.gembachain.io
 - Source: https://github.com/ivanovslavy/GembaBlockchain

@@ -36,6 +36,7 @@
   - https://rpc1.gembascan.io
   - https://rpc2.gembascan.io
 - DEX (GembaSwap, Uniswap-V2 style): https://swap.gembachain.io
+- Official addresses (all important contracts + genesis reserves, testnet+mainnet): https://addresses.gembachain.io
 - Add to MetaMask: RPC any of the above, Chain ID 821207, Currency GMB, Explorer https://testnet.gembascan.io
 
 ## Ecosystem apps
