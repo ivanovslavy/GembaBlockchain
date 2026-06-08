@@ -85,4 +85,28 @@ contract PerksTest is Test {
         perks.withdraw(admin, 1000 ether);
         assertEq(admin.balance, 1000 ether);
     }
+
+    // audit finding #8: one reverting recipient must not block the rest of the batch
+    function test_BatchSkipsRevertingRecipient() public {
+        RevertingReceiver bad = new RevertingReceiver();
+        address[] memory emps = new address[](3);
+        emps[0] = employee;
+        emps[1] = address(bad);
+        emps[2] = other;
+        uint256[] memory amts = new uint256[](3);
+        amts[0] = 100 ether;
+        amts[1] = 100 ether;
+        amts[2] = 100 ether;
+        vm.prank(distributor);
+        perks.payBonusBatch(emps, amts); // does NOT revert despite the bad middle entry
+        assertEq(employee.balance, 100 ether, "good recipient before the bad one paid");
+        assertEq(other.balance, 100 ether, "good recipient after the bad one still paid");
+        assertEq(address(bad).balance, 0, "reverting recipient skipped, not paid");
+    }
+}
+
+contract RevertingReceiver {
+    receive() external payable {
+        revert("nope");
+    }
 }

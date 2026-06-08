@@ -47,6 +47,7 @@ contract Faucet is BaseReserve {
     error OnlyGranter();
     error AboveCap();
     error AboveEpochCap();
+    error InvalidEpochConfig();
 
     /// @param owner_ Timelock. @param pauser_ EmergencyPause. @param granter_ formula actor.
     /// @param perGrantCap_ max per capped grant. @param epochCap_ max per rolling window
@@ -59,6 +60,8 @@ contract Faucet is BaseReserve {
         uint256 epochCap_,
         uint256 epochLength_
     ) external initializer {
+        // a non-zero cap with a zero window would reset every call and silently void the cap
+        if (epochCap_ != 0 && epochLength_ == 0) revert InvalidEpochConfig(); // audit finding #6
         __BaseReserve_init(owner_, pauser_);
         granter = granter_;
         perGrantCap = perGrantCap_;
@@ -89,6 +92,7 @@ contract Faucet is BaseReserve {
 
     /// @notice Governance tunes the rolling-window aggregate cap (the real drain bound).
     function setEpochLimit(uint256 newCap, uint256 newLength) external onlyOwner {
+        if (newCap != 0 && newLength == 0) revert InvalidEpochConfig(); // audit finding #6
         epochCap = newCap;
         epochLength = newLength;
         epochStart = block.timestamp;

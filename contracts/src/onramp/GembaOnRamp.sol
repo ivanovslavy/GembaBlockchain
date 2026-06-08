@@ -56,6 +56,7 @@ contract GembaOnRamp is Ownable, ReentrancyGuard {
     error RateNotSet();
     error InsufficientLiquidity();
     error NativeSendFailed();
+    error SlippageExceeded();
 
     constructor(address owner_, IERC20 stablecoin_) Ownable(owner_) {
         if (owner_ == address(0) || address(stablecoin_) == address(0)) revert ZeroAddress();
@@ -63,14 +64,18 @@ contract GembaOnRamp is Ownable, ReentrancyGuard {
     }
 
     /// @notice Buy native GMB with `stableIn` of the stablecoin at the current rate.
+    /// @param minGmbOut slippage floor — revert if the (operator-set, mutable) rate would
+    /// deliver less than this, so the owner cannot lower the rate between approve and buy
+    /// (audit finding #7). Pass 0 to opt out.
     /// @dev CEI: validate, pull stablecoin (effect), then send GMB; `nonReentrant`.
-    function buy(uint256 stableIn) external nonReentrant returns (uint256 gmbOut) {
+    function buy(uint256 stableIn, uint256 minGmbOut) external nonReentrant returns (uint256 gmbOut) {
         if (!publicSaleEnabled) revert PublicSaleDisabled(); // MiCA gate (ADR-009)
         if (stableIn == 0) revert ZeroAmount();
         if (rate == 0) revert RateNotSet();
 
         gmbOut = (stableIn * rate) / RATE_PRECISION;
         if (gmbOut == 0) revert ZeroAmount();
+        if (gmbOut < minGmbOut) revert SlippageExceeded();
         if (address(this).balance < gmbOut) revert InsufficientLiquidity();
 
         // pull payment first (checked transfer), then deliver GMB

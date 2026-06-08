@@ -39,7 +39,7 @@ contract OnRampDemo is Script {
         // Buyer swaps 50 stablecoin -> 500 GMB.
         vm.startBroadcast(buyerPk);
         stable.approve(address(ramp), type(uint256).max);
-        uint256 out = ramp.buy(50 ether);
+        uint256 out = ramp.buy(50 ether, 0);
         vm.stopBroadcast();
 
         console.log("stablecoin paid (mUSD):", (stableBefore - stable.balanceOf(buyer)) / 1e18);

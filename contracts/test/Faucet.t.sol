@@ -119,4 +119,11 @@ contract FaucetTest is Test {
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, attacker));
         faucet.setEpochLimit(1, 1);
     }
+
+    // audit finding #6: a non-zero cap with a zero window would void the aggregate bound
+    function test_InvalidEpochConfigReverts() public {
+        vm.prank(timelock);
+        vm.expectRevert(Faucet.InvalidEpochConfig.selector);
+        faucet.setEpochLimit(1000 ether, 0);
+    }
 }

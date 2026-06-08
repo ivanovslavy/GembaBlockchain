@@ -26,6 +26,7 @@ contract GembaPerks is AccessControl, ReentrancyGuard {
     uint256 public maxBonus;
 
     event BonusPaid(address indexed employee, uint256 amount, address indexed by);
+    event BonusFailed(address indexed employee, uint256 amount, address indexed by);
     event PerkGranted(address indexed employee, uint256 indexed eventId, address indexed by);
     event MaxBonusSet(uint256 maxBonus);
     event Funded(address indexed from, uint256 amount);
@@ -57,8 +58,11 @@ contract GembaPerks is AccessControl, ReentrancyGuard {
         nonReentrant
     {
         if (employees.length != amounts.length) revert LengthMismatch();
+        // Isolate per-recipient failures: a single reverting recipient must NOT block bonuses
+        // for everyone else in the batch (audit finding #8). Failures emit BonusFailed; the
+        // distributor re-runs the failed ones (or uses single payBonus).
         for (uint256 i = 0; i < employees.length; i++) {
-            _payBonus(employees[i], amounts[i]);
+            _tryPayBonus(employees[i], amounts[i]);
         }
     }
 
@@ -70,6 +74,24 @@ contract GembaPerks is AccessControl, ReentrancyGuard {
         (bool ok, ) = payable(employee).call{value: amount}("");
         if (!ok) revert NativeSendFailed();
         emit BonusPaid(employee, amount, msg.sender);
+    }
+
+    /// @dev Batch-safe variant: validates + pays, but on ANY failure emits BonusFailed and
+    /// returns false instead of reverting, so one bad recipient can't DoS the whole batch
+    /// (audit finding #8). Re-reads balance each call (decreases as payouts succeed). The
+    /// caller (payBonusBatch) is nonReentrant, so a reverting recipient cannot reenter.
+    function _tryPayBonus(address employee, uint256 amount) internal returns (bool) {
+        if (employee == address(0) || amount == 0 || amount > maxBonus || address(this).balance < amount) {
+            emit BonusFailed(employee, amount, msg.sender);
+            return false;
+        }
+        (bool ok, ) = payable(employee).call{value: amount}("");
+        if (!ok) {
+            emit BonusFailed(employee, amount, msg.sender);
+            return false;
+        }
+        emit BonusPaid(employee, amount, msg.sender);
+        return true;
     }
 
     /// @notice Grant an employee a perk ticket for `eventId`. Distributor only.

@@ -21,13 +21,13 @@ contract OnRampReentrant {
     function attack(uint256 amount) external {
         stable.approve(address(ramp), type(uint256).max);
         armed = true;
-        ramp.buy(amount);
+        ramp.buy(amount, 0);
     }
 
     receive() external payable {
         if (armed) {
             armed = false;
-            ramp.buy(1); // blocked by nonReentrant
+            ramp.buy(1, 0); // blocked by nonReentrant
         }
     }
 }
@@ -56,7 +56,7 @@ contract OnRampTest is Test {
         stable.approve(address(ramp), type(uint256).max);
         vm.prank(buyer);
         vm.expectRevert(GembaOnRamp.PublicSaleDisabled.selector);
-        ramp.buy(5 ether);
+        ramp.buy(5 ether, 0);
     }
 
     function test_OnlyOwnerEnablesPublicSale() public {
@@ -73,7 +73,7 @@ contract OnRampTest is Test {
 
         vm.startPrank(buyer);
         stable.approve(address(ramp), type(uint256).max);
-        uint256 out = ramp.buy(5 ether); // 5 mUSD -> 50 GMB
+        uint256 out = ramp.buy(5 ether, 0); // 5 mUSD -> 50 GMB
         vm.stopPrank();
 
         assertEq(out, 50 ether);
@@ -87,7 +87,22 @@ contract OnRampTest is Test {
         ramp.setPublicSaleEnabled(true);
         vm.prank(buyer);
         vm.expectRevert(GembaOnRamp.ZeroAmount.selector);
-        ramp.buy(0);
+        ramp.buy(0, 0);
+    }
+
+    // audit finding #7: slippage floor protects the buyer if the rate moves under them
+    function test_BuySlippageFloorReverts() public {
+        vm.prank(operator);
+        ramp.setPublicSaleEnabled(true);
+        vm.startPrank(buyer);
+        stable.approve(address(ramp), type(uint256).max);
+        // 5 mUSD yields 50 GMB; demanding >50 must revert rather than shortchange
+        vm.expectRevert(GembaOnRamp.SlippageExceeded.selector);
+        ramp.buy(5 ether, 51 ether);
+        // at-or-below the real output it succeeds
+        uint256 out = ramp.buy(5 ether, 50 ether);
+        assertEq(out, 50 ether);
+        vm.stopPrank();
     }
 
     function test_RateNotSetReverts() public {
@@ -99,7 +114,7 @@ contract OnRampTest is Test {
         vm.startPrank(buyer);
         stable.approve(address(fresh), type(uint256).max);
         vm.expectRevert(GembaOnRamp.RateNotSet.selector);
-        fresh.buy(1 ether);
+        fresh.buy(1 ether, 0);
         vm.stopPrank();
     }
 
@@ -113,7 +128,7 @@ contract OnRampTest is Test {
         vm.startPrank(buyer);
         stable.approve(address(dry), type(uint256).max);
         vm.expectRevert(GembaOnRamp.InsufficientLiquidity.selector);
-        dry.buy(1 ether);
+        dry.buy(1 ether, 0);
         vm.stopPrank();
     }
 
@@ -122,7 +137,7 @@ contract OnRampTest is Test {
         ramp.setPublicSaleEnabled(true);
         vm.startPrank(buyer);
         stable.approve(address(ramp), type(uint256).max);
-        ramp.buy(10 ether);
+        ramp.buy(10 ether, 0);
         vm.stopPrank();
 
         vm.prank(operator);
