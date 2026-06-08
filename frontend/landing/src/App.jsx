@@ -167,7 +167,7 @@ function App() {
                 ))}
               </tbody>
             </table>
-            <button className="btn btn-primary" onClick={addToMetaMask}>
+            <button className="btn" onClick={addToMetaMask}>
               Add GembaBlockchain to MetaMask
             </button>
           </div>
