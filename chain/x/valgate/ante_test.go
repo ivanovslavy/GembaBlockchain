@@ -1,6 +1,7 @@
 package valgate_test
 
 import (
+	"context"
 	"testing"
 
 	"cosmossdk.io/math"
@@ -60,6 +61,30 @@ func TestMinSelfBondEnforced(t *testing.T) {
 
 	_, err = d.AnteHandle(ctx, mockTx{nil}, false, next)
 	require.NoError(t, err, "a tx without MsgCreateValidator must pass")
+}
+
+type mockStaking struct{ msd math.Int }
+
+func (m mockStaking) GetValidator(_ context.Context, _ sdk.ValAddress) (stakingtypes.Validator, error) {
+	return stakingtypes.Validator{MinSelfDelegation: m.msd}, nil
+}
+
+// TestHookEnforcesMinSelfDelegation: the staking hook rejects a below-floor MinSelfDelegation
+// regardless of the creation path — this is what covers the EVM staking precompile, which the
+// ante decorator cannot see (audit finding #1).
+func TestHookEnforcesMinSelfDelegation(t *testing.T) {
+	key := storetypes.NewKVStoreKey(types.StoreKey)
+	tkey := storetypes.NewTransientStoreKey("transient_valgate")
+	ctx := sdktestutil.DefaultContext(key, tkey)
+	cdc := codec.NewProtoCodec(codectypes.NewInterfaceRegistry())
+
+	low := keeper.NewKeeper(cdc, key, "gov").WithStakingKeeper(mockStaking{msd: math.NewInt(1)})
+	require.NoError(t, low.SetParams(ctx, types.DefaultParams())) // 1000 GMB floor
+	require.Error(t, low.Hooks().AfterValidatorCreated(ctx, sdk.ValAddress("validator-address-x")),
+		"below-floor MinSelfDelegation must be rejected at the staking hook (covers the precompile path)")
+
+	ok := keeper.NewKeeper(cdc, key, "gov").WithStakingKeeper(mockStaking{msd: math.NewInt(1000).Mul(oneGmb)})
+	require.NoError(t, ok.Hooks().AfterValidatorCreated(ctx, sdk.ValAddress("validator-address-x")))
 }
 
 // TestMinSelfDelegationFloor: a creation at the floor but with MinSelfDelegation below it must

@@ -14,8 +14,9 @@ TN_VALIDATORS=4
 TN_SELF_BOND_GMB="1000"          # 1,000 test GMB self-bonded per validator (= min self-bond, faucet-reachable in 10 days)
 
 # --- testnet drip faucet account (the faucet SERVICE controls this key) ---
-# DEVNET/TESTNET-ONLY well-known key — valueless tokens. dev2 from cosmos/evm.
-TN_FAUCET_MNEMONIC="***REMOVED-ROTATED-FAUCET-MNEMONIC***"
+# The LIVE drip account must use a FRESH operator-generated key kept in the secret store —
+# NOT a public well-known mnemonic (audit finding #9). Sourced from env; no committed fallback.
+TN_FAUCET_MNEMONIC="${TN_FAUCET_MNEMONIC:?set TN_FAUCET_MNEMONIC in your env/secret store (fresh key for the live drip account)}"
 TN_FAUCET_ADDR_0X="0x40a0cb1C63e026A81B55EE1308586E21eec1eFa9"  # dev2
 TN_FAUCET_ALLOC="2000000"       # 2,000,000 drip (carved from circulation); the 30M faucet reserve lives in the Faucet contract
 

@@ -12,7 +12,18 @@ import (
 // the fee collector when distribution allocates it to validators):
 //
 //	feesplit  ->  rewardstreamer  ->  distribution
-func (k Keeper) BeginBlock(ctx sdk.Context) error {
-	_, err := k.StreamRewards(ctx)
-	return err
+func (k Keeper) BeginBlock(ctx sdk.Context) (err error) {
+	// Fail soft like x/feesplit (audit finding #5): a bank error/panic must never halt the
+	// chain — skipping one block's reward is supply-safe. recover() also catches panics
+	// (e.g. an unexpected SendRestriction), not just returned errors.
+	defer func() {
+		if r := recover(); r != nil {
+			ctx.Logger().Error("rewardstreamer: StreamRewards panicked; skipping this block", "panic", r)
+			err = nil
+		}
+	}()
+	if _, e := k.StreamRewards(ctx); e != nil {
+		ctx.Logger().Error("rewardstreamer: StreamRewards failed; skipping this block", "err", e)
+	}
+	return nil
 }

@@ -25,7 +25,7 @@ rm -rf "$BUILD_DIR"
 git clone -q --depth 1 --branch "$EVM_VERSION" https://github.com/cosmos/evm "$BUILD_DIR"
 
 echo ">> applying gembad wiring patch (evmd/app.go + evmd/config/permissions.go)"
-git -C "$BUILD_DIR" apply "$HERE/gembad-wiring.patch"
+git -C "$BUILD_DIR" apply --recount "$HERE/gembad-wiring.patch"
 
 echo ">> pointing evmd at the local gemba chain module ($CHAIN_DIR)"
 cd "$BUILD_DIR/evmd"

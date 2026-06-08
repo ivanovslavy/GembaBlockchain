@@ -1,25 +1,44 @@
 package keeper
 
 import (
+	"context"
+
 	"cosmossdk.io/log/v2"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/ivanovslavy/GembaBlockchain/chain/x/valgate/types"
 )
 
+// StakingKeeper is the read-only slice of the staking keeper the valgate hook needs to read a
+// just-created validator's committed MinSelfDelegation.
+type StakingKeeper interface {
+	GetValidator(ctx context.Context, addr sdk.ValAddress) (stakingtypes.Validator, error)
+}
+
 // Keeper stores the governance-tunable validator-gate params.
 type Keeper struct {
-	cdc       codec.BinaryCodec
-	storeKey  storetypes.StoreKey
-	authority string // the gov module account; only it may UpdateParams
+	cdc           codec.BinaryCodec
+	storeKey      storetypes.StoreKey
+	authority     string // the gov module account; only it may UpdateParams
+	stakingKeeper StakingKeeper
 }
 
 // NewKeeper builds the valgate keeper.
 func NewKeeper(cdc codec.BinaryCodec, storeKey storetypes.StoreKey, authority string) Keeper {
 	return Keeper{cdc: cdc, storeKey: storeKey, authority: authority}
+}
+
+// WithStakingKeeper injects the read-only staking keeper used by the AfterValidatorCreated hook
+// (which enforces the §5.2 floor on BOTH the Cosmos and EVM-precompile creation paths — audit
+// finding #1). Called by the app AFTER the staking keeper exists and BEFORE SetHooks. valgate's
+// other features (params, ante, msg server) don't need it, so NewKeeper stays minimal.
+func (k Keeper) WithStakingKeeper(sk StakingKeeper) Keeper {
+	k.stakingKeeper = sk
+	return k
 }
 
 // GetAuthority returns the gov authority address.

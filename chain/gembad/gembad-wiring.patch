@@ -63,6 +63,19 @@ index 204345c..c081d7f 100644
  	// optional: enable sign mode textual by overwriting the default tx config (after setting the bank keeper)
  	enabledSignModes := append(authtx.DefaultSignModes, signingtypes.SignMode_SIGN_MODE_TEXTUAL) //nolint:gocritic
  	txConfigOpts := authtx.ConfigOptions{
+@@ -365,7 +398,10 @@ func NewExampleApp(
+ 	app.FeeGrantKeeper = feegrantkeeper.NewKeeper(appCodec, runtime.NewKVStoreService(keys[feegrant.StoreKey]), app.AccountKeeper)
+ 
++	// valgate: inject the staking keeper (read-only) for the AfterValidatorCreated floor hook,
++	// enforcing the §5.2 min-self-bond on BOTH the Cosmos and EVM-precompile paths (audit #1).
++	app.ValgateKeeper = app.ValgateKeeper.WithStakingKeeper(app.StakingKeeper)
++
+ 	// register the staking hooks
+ 	// NOTE: stakingKeeper above is passed by reference, so that it will contain these hooks
+ 	app.StakingKeeper.SetHooks(
+-		stakingtypes.NewMultiStakingHooks(app.DistrKeeper.Hooks(), app.SlashingKeeper.Hooks()),
++		stakingtypes.NewMultiStakingHooks(app.DistrKeeper.Hooks(), app.SlashingKeeper.Hooks(), app.ValgateKeeper.Hooks()),
+ 	)
 @@ -583,6 +616,11 @@ func NewExampleApp(
  		vmModule,
  		feemarket.NewAppModule(app.FeeMarketKeeper),
