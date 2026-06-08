@@ -32,12 +32,12 @@ persistent_peers = "<peer_id>@peer1:26656,<peer_id2>@peer2:26656"
 
 ## Pruning (CLAUDE.md §11)
 
-State growth is continuous (~2s blocks), so **validators prune**. In `app.toml`:
+State growth is continuous (~5s blocks), so **validators prune**. In `app.toml`:
 
 ```toml
 # --- validator / full node: prune, keep a recent window ---
 pruning = "custom"
-pruning-keep-recent = "100000"   # ~ a few days of state at 2s blocks
+pruning-keep-recent = "100000"   # ~ a few days of state at 5s blocks
 pruning-interval = "10"
 # (or pruning = "default" for the SDK's sensible default)
 ```

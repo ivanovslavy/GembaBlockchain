@@ -63,13 +63,13 @@
 | Network name | **GembaBlockchain** |
 | Native coin | **Gemba**, ticker **GMB** (also the staking + gas coin) |
 | Framework | **Cosmos SDK + Cosmos EVM module** (`github.com/cosmos/evm`), reference impl `evmd` |
-| Consensus | **CometBFT** (BFT Proof-of-Stake), instant finality (~2 s), no reorgs |
+| Consensus | **CometBFT** (BFT Proof-of-Stake), instant finality, no reorgs (~5 s blocks live; ~2 s is the tunable target) |
 | Permissionless | Yes — anyone with stake ≥ threshold can validate; anyone can hold/send GMB |
 | EVM-compatible | Full EVM: Solidity, `0x...` addresses, MetaMask, Foundry/Hardhat, ethers/viem, JSON-RPC |
 | Cosmos chain-id | `gemba-1` (string) |
 | EVM chainId | **821206** (EIP-155 integer; verified free on chainlist.org — 123321 was taken) |
 | Account type | `eth_secp256k1`, SLIP-0044 coin type **60** (Ethereum standard → `0x` + MetaMask) |
-| Block time | ~2 s (CometBFT `timeout_commit`) |
+| Block time | ~5 s live (CometBFT `timeout_commit`; ~2 s target, governance/upgrade-tunable) |
 | Total supply | **fixed**, minted once at genesis, **never again** → 0% inflation |
 | Gas / fees | real fees in GMB (EIP-1559); **low but non-zero, scaling with usage** — cheap per-tx, but aggregate fees are the long-run security budget (§16.8) |
 | Block explorer | **Blockscout** self-hosted ("GembaScan"); optional Cosmos-side explorer (e.g. ping.pub) |
@@ -427,7 +427,7 @@ treasuries and app logic live in **Solidity**.
 - Put public-facing RPC/JSON-RPC **behind Apache reverse proxy + Let's Encrypt =
   HTTPS** (existing DevOps stack). Permissionless networking ≠ unprotected: rate-limit
   and TLS-terminate the public endpoints.
-- **State growth:** continuous ~2 s blocks ⇒ configure Cosmos **pruning** (e.g.
+- **State growth:** continuous ~5 s blocks ⇒ configure Cosmos **pruning** (e.g.
   `pruning = "custom"` with sane keep-recent/interval) and document archive vs
   pruned node disk needs for institutions running a node.
 
@@ -464,7 +464,7 @@ the box.
 - **Phase 0 — Scaffolding.** Monorepo (section 14), `.env.example`, `.gitignore`,
   `README.md`, `/docs`. No secrets committed.
 - **Phase 1 — Local devnet.** Build from `evmd`/`cosmos/evm`: set `gemba-1` +
-  EVM chainId **821206**, eth_secp256k1 / coin type 60, ~2 s blocks, **mint
+  EVM chainId **821206**, eth_secp256k1 / coin type 60, ~5 s blocks (2 s target), **mint
   inflation = 0**, native GMB genesis alloc per section 4.1. Single node first, then
   a 4-validator local multi-node. Verify MetaMask connects and a GMB transfer + a
   Solidity deploy work.

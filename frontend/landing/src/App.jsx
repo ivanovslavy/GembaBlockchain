@@ -39,7 +39,7 @@ async function addToMetaMask() {
 const FEATURES = [
   {
     title: "Permissionless PoS",
-    body: "CometBFT BFT Proof-of-Stake with ~2s instant finality. Anyone with enough stake can validate — no operator approves participants, no KYC, no whitelist.",
+    body: "CometBFT BFT Proof-of-Stake — ~5s blocks with instant finality (no reorgs). Anyone with enough stake can validate — no operator approves participants, no KYC, no whitelist.",
   },
   {
     title: "Full EVM",
@@ -137,7 +137,7 @@ function App() {
           <p className="swapnote">
             <strong>GembaSwap</strong> — our own swap app for the ecosystem. Wrap
             <strong> GMB ↔ WGMB free (1:1)</strong> and swap ERC-20 tokens with
-            <strong> no platform fees</strong> — we take no cut. Gas is free on the testnet.
+            <strong> no platform fees</strong> — we take no cut. Gas is near-zero (~1 gwei, fractions of a cent).
           </p>
         </section>
 

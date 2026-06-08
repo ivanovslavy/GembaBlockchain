@@ -17,7 +17,7 @@
 | Cosmos chain-id | `gemba-testnet-1` |
 | EVM chainId | `821207` (EIP-155; distinct from mainnet's `821206`) |
 | Native coin | Gemba (GMB) — **test GMB, no value** |
-| Consensus | CometBFT BFT PoS, ~2 s blocks, instant finality |
+| Consensus | CometBFT BFT PoS, ~5 s blocks, instant finality |
 | Explorer (public) | **https://testnet.gembascan.io** (GembaScan / Blockscout) |
 | EVM JSON-RPC (public) | **https://testnet.gembascan.io/rpc** |
 | Active validators | 4 (3 on public cloud hosts + 1 operator node), each 1,000,000 GMB |
@@ -26,7 +26,7 @@
 
 The test chain is producing blocks and the full EVM surface is live:
 
-- **Block production** — continuous ~2 s blocks (instant finality, no reorgs).
+- **Block production** — continuous ~5 s blocks (instant finality, no reorgs).
 - **EVM JSON-RPC** — the geth-compatible endpoint serves blocks, receipts,
   historical account state, and `debug_trace*` (the data the explorer indexes).
 - **MetaMask** — connects out of the box (chainId `821207`, `0x` addresses,

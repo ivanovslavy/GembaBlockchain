@@ -99,17 +99,17 @@ port-forward required; A1-style CGNAT often blocks inbound anyway).
 is the current testnet explorer/RPC. When mainnet launches it gets its own
 (mainnet-pointed) explorer + archive instance on `gembascan.io`.
 
-## 7. Gas tracker shows 0 — explained (testnet runs gas FREE, by choice)
+## 7. Gas pricing — ~1 gwei (low but non-zero), NOT free
 
-The GembaScan gas tracker (and `eth_gasPrice`) reads **0** on the testnet. This is
-**not an explorer bug** — the chain itself returns 0:
+> **CORRECTION (2026-06-08):** the live testnet runs with the **1 gwei base-fee floor** (per
+> CLAUDE.md Phase 4 / §16.8 "low but non-zero"), same model as mainnet. A real transfer pays
+> ~0.000021 GMB (21,000 gas × 1 gwei) — fractions of a cent, but **not zero**. Block time is
+> **~5 s** (not 2 s). All public copy must say "near-zero / ~1 gwei", never "free", and "~5 s
+> blocks", never "2 s". The earlier (2026-06-06) "gas free" experiment below is superseded.
 
-- `x/feemarket` has **`min_gas_price = 0`**, so under near-zero load the EIP-1559
-  base fee decays to ~0 (`gembad q feemarket params` → `base_fee ≈ 7e-18`,
-  `eth_gasPrice → 0`). Transactions go through paying ~1 wei.
-- This is a **conscious testnet choice (2026-06-06): leave gas free** so test usage
-  is frictionless. It diverges from CLAUDE.md Phase 4 / §16.8 ("1 gwei floor, low but
-  non-zero"), which still governs **mainnet**.
+Earlier the testnet briefly ran `x/feemarket` with `min_gas_price = 0`, so the EIP-1559 base fee
+decayed to ~0 and `eth_gasPrice` read 0 (txs paid ~1 wei). It has since been set to the 1 gwei
+floor. The toggle instructions below remain valid if a zero-gas testnet is ever wanted again.
 
 **To restore the 1 gwei floor later** (mainnet, or if a non-zero testnet is wanted),
 it is a governance change to `x/feemarket` (authority = the gov module account),
