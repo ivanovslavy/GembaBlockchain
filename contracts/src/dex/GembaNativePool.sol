@@ -167,6 +167,7 @@ contract GembaNativePool is ERC20, ReentrancyGuard {
     {
         if (to == address(0)) revert ZeroAddress();
         amountOut = getAmountOut(msg.value, reserveNative, reserveToken);
+        if (amountOut == 0) revert InsufficientOutputAmount(); // fail loud on dust/rounding-to-zero (audit L-2)
         _update(reserveToken - amountOut, reserveNative + msg.value); // effects (K preserved: reserve drops by gross amountOut)
         uint256 balBefore = token.balanceOf(to);
         token.safeTransfer(to, amountOut); // interaction
@@ -191,6 +192,7 @@ contract GembaNativePool is ERC20, ReentrancyGuard {
         token.safeTransferFrom(msg.sender, address(this), amountIn); // pull input
         uint256 received = token.balanceOf(address(this)) - balBefore;
         amountOut = getAmountOut(received, reserveToken, reserveNative);
+        if (amountOut == 0) revert InsufficientOutputAmount(); // fail loud on dust/rounding-to-zero (audit L-2)
         if (amountOut < amountOutMin) revert InsufficientOutputAmount();
         _update(reserveToken + received, reserveNative - amountOut); // effects
         _sendNative(to, amountOut); // interaction

@@ -27,9 +27,12 @@ contract Faucet is BaseReserve {
     uint256 public totalGranted;
 
     // --- rolling window cap (defence in depth: a single per-call cap does NOT bound a
-    // compromised granter who calls grant() repeatedly; this caps the *aggregate* flow
-    // per time window, so even a stolen granter key cannot drain the reserve — only the
-    // owner/Timelock can raise the limit). epochCap == 0 disables the window cap. ---
+    // compromised granter who calls grant() repeatedly; this caps the *aggregate* flow per
+    // time window). NOTE (audit L-1): this bounds the RATE, not the lifetime total — a
+    // granter key compromised and left undetected could still slow-drain at epochCap/window.
+    // It is NOT drain-proof; the real responses to a stolen granter are setGranter (owner,
+    // instant revoke), EmergencyPause (2-of-3, halt all grants), and setEpochLimit. Accepted
+    // trade-off per CLAUDE.md §16.5. epochCap == 0 disables the window cap. ---
     /// @notice max cumulative GMB grantable within one rolling window (0 = no window cap).
     uint256 public epochCap;
     /// @notice rolling window length in seconds.

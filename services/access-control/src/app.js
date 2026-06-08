@@ -58,7 +58,11 @@ export function createApp({ pool, chain, apiKeys }) {
     const employeeId = requireUuid('employee_id', req.body.employee_id);
     const zone = requireZone('zone', req.body.zone);
     if (typeof req.body.granted !== 'boolean') throw new ValidationError('granted', 'must be a boolean');
-    await tenantRepo(pool, req.tenantId).logAccess({ employeeId, zone, granted: req.body.granted });
+    const db = tenantRepo(pool, req.tenantId);
+    // Verify the employee belongs to THIS tenant before logging (consistent with /capabilities;
+    // RLS-scoped lookup returns null for another tenant's id) — audit I-1.
+    if (!(await db.getEmployeeWallet(employeeId))) throw new ValidationError('employee_id', 'unknown employee');
+    await db.logAccess({ employeeId, zone, granted: req.body.granted });
     res.status(201).json({ ok: true });
   }));
 
