@@ -14,22 +14,6 @@ const DefaultBlocksPerYear uint64 = 15_778_476
 // DefaultRewardDenom is atto-GMB.
 const DefaultRewardDenom = "agmb"
 
-// Params configures the tail reward. Stored as JSON (no protobuf dependency).
-type Params struct {
-	// Enabled turns the tail on/off. DEFAULT FALSE — the tail is dormant until
-	// governance activates it via a coordinated upgrade (post-reserve, defends the bonded ratio,
-	// ADR-008) — no on-chain MsgUpdateParams yet (audit finding #5, pre-mainnet TODO).
-	Enabled bool `json:"enabled"`
-	// RewardDenom is the coin streamed (GMB base denom).
-	RewardDenom string `json:"reward_denom"`
-	// AnnualReward is the total amount (base units) recirculated per year once
-	// enabled. Governance sizes this to the recirculated-fee throughput; it is
-	// bounded by the module account's balance, so it can never out-spend the
-	// recirculation buffer (no mint, no deficit).
-	AnnualReward math.Int `json:"annual_reward"`
-	// BlocksPerYear divides AnnualReward into a per-block amount.
-	BlocksPerYear uint64 `json:"blocks_per_year"`
-}
 
 // DefaultParams returns a DISABLED tail with sane shape; governance enables and
 // sizes it when the reserve nears depletion.

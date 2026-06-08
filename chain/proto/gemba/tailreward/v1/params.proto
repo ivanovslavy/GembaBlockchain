@@ -1,0 +1,19 @@
+syntax = "proto3";
+package gemba.tailreward.v1;
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+import "amino/amino.proto";
+option go_package = "github.com/ivanovslavy/GembaBlockchain/chain/x/tailreward/types";
+
+// Params configures the tailreward stream.
+message Params {
+  bool enabled = 1;
+  string reward_denom = 2;
+  string annual_reward = 3 [
+    (cosmos_proto.scalar) = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+  uint64 blocks_per_year = 4;
+}

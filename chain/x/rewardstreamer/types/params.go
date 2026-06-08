@@ -15,19 +15,6 @@ const DefaultBlocksPerYear uint64 = 15_778_476
 // DefaultRewardDenom is atto-GMB (the EVM/bank base denom, 18 decimals).
 const DefaultRewardDenom = "agmb"
 
-// Params configures the reward stream. Stored as JSON (no protobuf dependency).
-type Params struct {
-	// Enabled turns streaming on/off. Set at genesis; changed via a coordinated node-operator
-	// upgrade (CLAUDE.md §7) — no on-chain MsgUpdateParams yet (audit finding #5, pre-mainnet TODO).
-	Enabled bool `json:"enabled"`
-	// RewardDenom is the coin streamed (GMB base denom).
-	RewardDenom string `json:"reward_denom"`
-	// AnnualReward is the total amount (in RewardDenom base units) streamed per
-	// year. CLAUDE.md §4.3: ~2,000,000 GMB/yr for ~10 yrs from the 20M reserve.
-	AnnualReward math.Int `json:"annual_reward"`
-	// BlocksPerYear divides AnnualReward into a per-block amount.
-	BlocksPerYear uint64 `json:"blocks_per_year"`
-}
 
 // DefaultParams returns the spec defaults: 2,000,000 GMB/year (CLAUDE.md §4.3).
 func DefaultParams() Params {

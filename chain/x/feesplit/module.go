@@ -41,9 +41,11 @@ func NewAppModule(k keeper.Keeper) AppModule { return AppModule{keeper: k} }
 
 func (AppModule) Name() string                                                { return types.ModuleName }
 func (AppModule) RegisterLegacyAminoCodec(*codec.LegacyAmino)                 {}
-func (AppModule) RegisterInterfaces(codectypes.InterfaceRegistry)             {}
+func (AppModule) RegisterInterfaces(reg codectypes.InterfaceRegistry) { types.RegisterInterfaces(reg) }
 func (AppModule) RegisterGRPCGatewayRoutes(client.Context, *runtime.ServeMux) {}
-func (AppModule) RegisterServices(module.Configurator)                        {}
+func (am AppModule) RegisterServices(cfg module.Configurator) {
+	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
+}
 func (AppModule) ConsensusVersion() uint64                                    { return consensusVersion }
 func (AppModule) IsAppModule()                                                {}
 func (AppModule) IsOnePerModuleType()                                         {}

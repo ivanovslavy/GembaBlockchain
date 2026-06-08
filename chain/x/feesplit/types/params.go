@@ -6,17 +6,10 @@ import (
 	"cosmossdk.io/math"
 )
 
-// Params configures the fee split. Stored as JSON (no protobuf dependency).
-type Params struct {
-	// Enabled turns the split on/off. Set at genesis; changed via a coordinated node-operator
-	// upgrade (CLAUDE.md §7) — no on-chain MsgUpdateParams yet (audit finding #5, pre-mainnet TODO).
-	Enabled bool `json:"enabled"`
-	// FaucetFeeRatio is the fraction of collected fees routed to the faucet.
-	// CLAUDE.md §5.4: 40% to the faucet, 60% to validators/delegators.
-	FaucetFeeRatio math.LegacyDec `json:"faucet_fee_ratio"`
-	// FaucetAccount is the module account that receives the faucet share.
-	FaucetAccount string `json:"faucet_account"`
-}
+// Params is the proto-generated type (params.pb.go), governance-tunable via
+// MsgUpdateParams (audit finding #5 — see tx.proto + keeper/msg_server.go). Fields:
+// Enabled, FaucetFeeRatio (LegacyDec), FaucetAccount. Stored JSON-encoded by the keeper;
+// the generated json tags (enabled/faucet_fee_ratio/faucet_account) match the prior layout.
 
 // DefaultParams returns the spec default 60/40 split (CLAUDE.md §5.4).
 func DefaultParams() Params {
