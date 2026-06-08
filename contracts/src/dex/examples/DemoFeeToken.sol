@@ -12,10 +12,12 @@ contract DemoFeeToken is ERC20 {
     address public immutable feeSink;
     address public immutable deployer;
     error NotDeployer();
+    error ZeroFeeSink();
 
     constructor(string memory name_, string memory symbol_, uint256 feeBps_, address feeSink_, uint256 initialSupply)
         ERC20(name_, symbol_)
     {
+        if (feeSink_ == address(0)) revert ZeroFeeSink(); // fees would otherwise burn to address(0)
         deployer = msg.sender;
         feeBps = feeBps_;
         feeSink = feeSink_;

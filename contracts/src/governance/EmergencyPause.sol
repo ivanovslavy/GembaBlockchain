@@ -58,15 +58,17 @@ contract EmergencyPause is ReentrancyGuard {
     constructor(address governance_, address[] memory guardians_, uint256 threshold_) {
         if (governance_ == address(0)) revert ZeroAddress();
         governance = governance_;
+        uint256 count; // accumulate in memory, write the storage var once (no SSTORE in loop)
         for (uint256 i = 0; i < guardians_.length; i++) {
             address g = guardians_[i];
             if (g == address(0)) revert ZeroAddress();
             if (!isGuardian[g]) {
                 isGuardian[g] = true;
-                guardianCount++;
+                count++;
                 emit GuardianSet(g, true);
             }
         }
+        guardianCount = count;
         if (threshold_ == 0 || threshold_ > guardianCount) revert BadThreshold();
         threshold = threshold_;
         emit ThresholdSet(threshold_);
