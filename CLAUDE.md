@@ -46,6 +46,13 @@
     zero-address/zero-amount/bounds validation at the function start; explicit
     access control on sensitive functions; checked, safe external calls. This is
     mandatory for new contracts and enforced retroactively on existing ones.
+12. **Keep discoverability current.** After any change to a public web property
+    (gembachain.io, swap.gembachain.io, explorer, dApps, new pages/links/products),
+    **update SEO + AI metadata in the same change**: page `<meta>` (description, canonical,
+    OG/Twitter with absolute images), JSON-LD structured data, `robots.txt`, and the AI
+    files (`llms.txt`, `llms-full.txt`, `ai.txt`). **Always check whether `sitemap.xml`
+    needs updating** (new/removed URLs, `lastmod`) and update it if so. The goal is
+    professional, top-tier discoverability from search engines and AI systems.
 
 ---
 

@@ -8,6 +8,7 @@ const NET = {
   rpc: "https://testnet.gembascan.io/rpc",
   explorer: "https://testnet.gembascan.io",
   github: "https://github.com/ivanovslavy/GembaBlockchain",
+  swap: "https://swap.gembachain.io",
   symbol: "GMB",
 };
 
@@ -81,6 +82,9 @@ function App() {
           </span>
         </a>
         <nav className="nav-links">
+          <a className="btn btn-sm btn-primary" href={NET.swap} target="_blank" rel="noopener">
+            Swap
+          </a>
           <a href={NET.explorer} target="_blank" rel="noopener">
             Explorer
           </a>
@@ -113,7 +117,10 @@ function App() {
             services to their citizens and users.
           </p>
           <div className="cta">
-            <button className="btn btn-primary" onClick={addToMetaMask}>
+            <a className="btn btn-primary" href={NET.swap} target="_blank" rel="noopener">
+              Open GembaSwap →
+            </a>
+            <button className="btn" onClick={addToMetaMask}>
               Add to MetaMask
             </button>
             <a className="btn" href={NET.explorer} target="_blank" rel="noopener">
@@ -123,6 +130,11 @@ function App() {
               View on GitHub
             </a>
           </div>
+          <p className="swapnote">
+            <strong>GembaSwap</strong> — our own swap app for the ecosystem. Wrap
+            <strong> GMB ↔ WGMB free (1:1)</strong> and swap ERC-20 tokens with
+            <strong> no platform fees</strong> — we take no cut. Gas is free on the testnet.
+          </p>
         </section>
 
         <section className="features">
@@ -178,6 +190,9 @@ function App() {
           </span>
         </div>
         <nav className="footer-links">
+          <a href={NET.swap} target="_blank" rel="noopener">
+            Swap
+          </a>
           <a href={NET.explorer} target="_blank" rel="noopener">
             Explorer
           </a>
