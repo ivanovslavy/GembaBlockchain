@@ -26,7 +26,9 @@ contract DeployGovernance is Script {
     uint256 constant PROPOSAL_THRESHOLD = 0; // any vGMB holder may propose
     uint256 constant QUORUM = 50;            // 50% of vGMB (treasury bar)
     uint256 constant SUPERMAJORITY = 66;     // 66% to pass (§7)
-    uint256 constant PER_GRANT_CAP = 1000 ether; // faucet per-grant cap
+    uint256 constant PER_GRANT_CAP = 1000 ether;          // faucet per-grant cap
+    uint256 constant FAUCET_EPOCH_CAP = 100_000 ether;    // faucet aggregate cap per window (drain bound)
+    uint256 constant FAUCET_EPOCH_LENGTH = 1 days;        // rolling window length
 
     function run() external {
         uint256 founderPk = vm.envUint("FOUNDER_PK");
@@ -40,17 +42,6 @@ contract DeployGovernance is Script {
         executors[0] = address(0); // open execution: anyone executes after the delay
         GembaTimelock timelock = new GembaTimelock(MIN_DELAY, proposers, executors, deployer);
 
-        GembaVotes votes = new GembaVotes(address(timelock));
-        GembaGovernor governor = new GembaGovernor(
-            IVotes(address(votes)), timelock, VOTING_DELAY, VOTING_PERIOD, PROPOSAL_THRESHOLD, QUORUM, SUPERMAJORITY
-        );
-
-        // wire: Governor proposes/cancels; the deployer renounces the timelock admin so
-        // only governance (propose -> vote -> queue -> anyone executes) controls it.
-        timelock.grantRole(timelock.PROPOSER_ROLE(), address(governor));
-        timelock.grantRole(timelock.CANCELLER_ROLE(), address(governor));
-        timelock.renounceRole(timelock.DEFAULT_ADMIN_ROLE(), deployer);
-
         // EmergencyPause: 3 governance-elected guardians, 2-of-3 to pause (pause-only).
         address[] memory guardians = new address[](3);
         guardians[0] = vm.envAddress("GUARDIAN1");
@@ -58,11 +49,15 @@ contract DeployGovernance is Script {
         guardians[2] = vm.envAddress("GUARDIAN3");
         EmergencyPause pause = new EmergencyPause(address(timelock), guardians, 2);
 
-        // reserves: UUPS proxies, owner = Timelock, pauser = EmergencyPause
+        // reserves: UUPS proxies, owner = Timelock, pauser = EmergencyPause.
+        // Deployed BEFORE GembaVotes so their addresses can be excluded at genesis (finding #10).
         address faucet = address(
             new ERC1967Proxy(
                 address(new Faucet()),
-                abi.encodeCall(Faucet.initialize, (address(timelock), address(pause), deployer, PER_GRANT_CAP))
+                abi.encodeCall(
+                    Faucet.initialize,
+                    (address(timelock), address(pause), deployer, PER_GRANT_CAP, FAUCET_EPOCH_CAP, FAUCET_EPOCH_LENGTH)
+                )
             )
         );
         address foundation = address(
@@ -83,6 +78,25 @@ contract DeployGovernance is Script {
                 abi.encodeCall(ContingencyReserve.initialize, (address(timelock), address(pause)))
             )
         );
+
+        // Votes: exclude the four reserve contracts from voting at genesis (finding #10).
+        address[] memory excludedReserves = new address[](4);
+        excludedReserves[0] = faucet;
+        excludedReserves[1] = foundation;
+        excludedReserves[2] = dao;
+        excludedReserves[3] = contingency;
+        GembaVotes votes = new GembaVotes(address(timelock), excludedReserves);
+
+        GembaGovernor governor = new GembaGovernor(
+            IVotes(address(votes)), timelock, VOTING_DELAY, VOTING_PERIOD, PROPOSAL_THRESHOLD, QUORUM, SUPERMAJORITY
+        );
+
+        // wire: Governor proposes/cancels; the deployer renounces the timelock admin so
+        // only governance (propose -> vote -> queue -> anyone executes) controls it.
+        timelock.grantRole(timelock.PROPOSER_ROLE(), address(governor));
+        timelock.grantRole(timelock.CANCELLER_ROLE(), address(governor));
+        timelock.renounceRole(timelock.DEFAULT_ADMIN_ROLE(), deployer);
+
         vm.stopBroadcast();
 
         // --- fund each reserve to its exact §4.1 amount, from the matching genesis EOA ---

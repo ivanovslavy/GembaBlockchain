@@ -33,9 +33,23 @@ contract GembaVotes is ERC20, ERC20Permit, ERC20Votes, ReentrancyGuard {
     error ZeroAddress();
     error ZeroAmount();
 
-    constructor(address _governance) ERC20("Gemba Vote", "vGMB") ERC20Permit("Gemba Vote") {
+    /// @param _governance the Timelock (only address that may later change exclusions).
+    /// @param initialExcluded reserve/treasury addresses to exclude from voting at genesis
+    /// (audit finding #10 — wire the §3.4/§7 "reserves never vote" invariant at deploy,
+    /// not just structurally). Governance can still add/remove later via `setExcluded`.
+    constructor(address _governance, address[] memory initialExcluded)
+        ERC20("Gemba Vote", "vGMB")
+        ERC20Permit("Gemba Vote")
+    {
         if (_governance == address(0)) revert ZeroAddress();
         governance = _governance;
+        for (uint256 i = 0; i < initialExcluded.length; i++) {
+            address a = initialExcluded[i];
+            if (a != address(0)) {
+                excluded[a] = true;
+                emit ExclusionSet(a, true);
+            }
+        }
     }
 
     /// @notice Wrap native GMB into vGMB voting power credited to `to`.

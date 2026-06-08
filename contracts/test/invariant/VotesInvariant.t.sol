@@ -56,7 +56,7 @@ contract VotesInvariantTest is Test {
 
     function setUp() public {
         address governance = makeAddr("governance");
-        votes = new GembaVotes(governance);
+        votes = new GembaVotes(governance, new address[](0));
         vm.prank(governance);
         votes.setExcluded(excluded, true);
 

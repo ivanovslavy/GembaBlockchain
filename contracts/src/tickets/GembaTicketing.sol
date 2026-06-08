@@ -47,6 +47,7 @@ contract GembaTicketing is ERC1155, AccessControl, ReentrancyGuard {
     error NativeSendFailed();
     error NotTicketHolder();
     error DirectPaymentNotAllowed();
+    error NotForSale();
 
     constructor(address admin) ERC1155("") {
         if (admin == address(0)) revert ZeroAddress();
@@ -84,6 +85,9 @@ contract GembaTicketing is ERC1155, AccessControl, ReentrancyGuard {
         if (!e.exists) revert NoSuchEvent();
         if (!e.active) revert EventInactive();
         if (amount == 0) revert ZeroAmount();
+        // price == 0 means "not for sale" (comp/perk events are issue-only, organizer-gated);
+        // without this guard anyone could front-run and mint the whole free supply via buy().
+        if (e.price == 0) revert NotForSale();
         uint256 cost = e.price * amount;
         if (msg.value != cost) revert WrongPayment();
 

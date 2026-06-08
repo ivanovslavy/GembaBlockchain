@@ -33,7 +33,7 @@ contract GovernanceIntegrationTest is Test {
         open[0] = address(0); // anyone can execute
         timelock = new GembaTimelock(MIN_DELAY, empty, open, address(this));
 
-        votes = new GembaVotes(address(timelock));
+        votes = new GembaVotes(address(timelock), new address[](0));
         gov = new GembaGovernor(votes, timelock, VOTING_DELAY, VOTING_PERIOD, 0, QUORUM, SUPERMAJORITY);
 
         // Wire roles: governor proposes/cancels; then drop the admin so no EOA rules.

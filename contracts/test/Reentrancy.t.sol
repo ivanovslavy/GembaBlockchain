@@ -81,7 +81,7 @@ contract PausableReentrant {
 
 contract ReentrancyTest is Test {
     function test_VotesWithdrawReentrancyBlocked() public {
-        GembaVotes votes = new GembaVotes(makeAddr("gov"));
+        GembaVotes votes = new GembaVotes(makeAddr("gov"), new address[](0));
         VotesReentrant attacker = new VotesReentrant(votes);
         vm.deal(address(attacker), 10 ether);
 
@@ -96,7 +96,7 @@ contract ReentrancyTest is Test {
         GranterReentrant attacker = new GranterReentrant();
         Faucet impl = new Faucet();
         bytes memory data =
-            abi.encodeCall(Faucet.initialize, (makeAddr("timelock"), makeAddr("pauser"), address(attacker), 1000 ether));
+            abi.encodeCall(Faucet.initialize, (makeAddr("timelock"), makeAddr("pauser"), address(attacker), 1000 ether, 0, 0));
         Faucet faucet = Faucet(payable(address(new ERC1967Proxy(address(impl), data))));
         attacker.setFaucet(faucet);
         vm.deal(address(faucet), 100000 ether);

@@ -74,6 +74,20 @@ contract TicketingTest is Test {
         t.buy{value: PRICE}(EVENT, 1);
     }
 
+    // --- audit finding #6: price-0 ("not for sale") events are issue-only, not buyable ---
+    function test_BuyPriceZeroNotForSale() public {
+        uint256 freeEvent = 2;
+        vm.prank(organizer);
+        t.createEvent(freeEvent, 50, 0); // price 0 = comp/perk event
+        vm.prank(alice);
+        vm.expectRevert(GembaTicketing.NotForSale.selector);
+        t.buy(freeEvent, 5); // anyone front-running to grab the free supply is blocked
+        // organizer can still issue comp tickets directly
+        vm.prank(organizer);
+        t.issue(alice, freeEvent, 5);
+        assertEq(t.balanceOf(alice, freeEvent), 5);
+    }
+
     function test_SelfRedeem() public {
         vm.prank(organizer);
         t.issue(alice, EVENT, 1);

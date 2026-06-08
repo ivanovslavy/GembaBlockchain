@@ -90,14 +90,14 @@ contract GembaNativePool is ERC20, ReentrancyGuard {
         address to,
         uint256 deadline
     ) external payable nonReentrant ensure(deadline) returns (uint256 amountToken, uint256 amountNative, uint256 liquidity) {
+        if (to == address(0)) revert ZeroAddress();
         uint256 nativeIn = msg.value;
         if (nativeIn == 0 || amountTokenDesired == 0) revert ZeroAmount();
         uint256 supply = totalSupply();
 
+        // decide the token/native amounts to use at the optimal ratio (slippage-checked)
         if (supply == 0) {
             (amountToken, amountNative) = (amountTokenDesired, nativeIn);
-            liquidity = Math.sqrt(amountToken * amountNative) - MINIMUM_LIQUIDITY;
-            _mint(address(0xdead), MINIMUM_LIQUIDITY);
         } else {
             uint256 nativeOptimal = quote(amountTokenDesired, reserveToken, reserveNative);
             if (nativeOptimal <= nativeIn) {
@@ -108,11 +108,23 @@ contract GembaNativePool is ERC20, ReentrancyGuard {
                 if (tokenOptimal < amountTokenMin) revert InsufficientTokenAmount();
                 (amountToken, amountNative) = (tokenOptimal, nativeIn);
             }
+        }
+
+        // pull the token and credit ONLY what actually arrived — fee-on-transfer / rebasing
+        // safe, matching the Uniswap V2 pair's balanceOf-delta accounting (audit finding #7).
+        uint256 balBefore = token.balanceOf(address(this));
+        token.safeTransferFrom(msg.sender, address(this), amountToken);
+        amountToken = token.balanceOf(address(this)) - balBefore;
+        if (amountToken == 0) revert ZeroAmount();
+
+        if (supply == 0) {
+            liquidity = Math.sqrt(amountToken * amountNative) - MINIMUM_LIQUIDITY;
+            _mint(address(0xdead), MINIMUM_LIQUIDITY);
+        } else {
             liquidity = Math.min((amountToken * supply) / reserveToken, (amountNative * supply) / reserveNative);
         }
         if (liquidity == 0) revert InsufficientLiquidityMinted();
 
-        token.safeTransferFrom(msg.sender, address(this), amountToken);
         _update(reserveToken + amountToken, reserveNative + amountNative);
         _mint(to, liquidity);
         if (nativeIn > amountNative) _sendNative(msg.sender, nativeIn - amountNative); // refund dust
@@ -127,6 +139,7 @@ contract GembaNativePool is ERC20, ReentrancyGuard {
         address to,
         uint256 deadline
     ) external nonReentrant ensure(deadline) returns (uint256 amountToken, uint256 amountNative) {
+        if (to == address(0)) revert ZeroAddress();
         if (liquidity == 0) revert ZeroAmount();
         uint256 supply = totalSupply();
         amountToken = (liquidity * reserveToken) / supply;
@@ -152,6 +165,7 @@ contract GembaNativePool is ERC20, ReentrancyGuard {
         ensure(deadline)
         returns (uint256 amountOut)
     {
+        if (to == address(0)) revert ZeroAddress();
         amountOut = getAmountOut(msg.value, reserveNative, reserveToken);
         if (amountOut < amountOutMin) revert InsufficientOutputAmount();
         _update(reserveToken - amountOut, reserveNative + msg.value); // effects
@@ -166,12 +180,16 @@ contract GembaNativePool is ERC20, ReentrancyGuard {
         ensure(deadline)
         returns (uint256 amountOut)
     {
+        if (to == address(0)) revert ZeroAddress();
         if (amountIn == 0) revert ZeroAmount();
-        amountOut = getAmountOut(amountIn, reserveToken, reserveNative);
-        if (amountOut < amountOutMin) revert InsufficientOutputAmount();
+        // pull input first, then size the swap from what ACTUALLY arrived (FoT/rebasing safe, finding #7)
+        uint256 balBefore = token.balanceOf(address(this));
         token.safeTransferFrom(msg.sender, address(this), amountIn); // pull input
-        _update(reserveToken + amountIn, reserveNative - amountOut); // effects
+        uint256 received = token.balanceOf(address(this)) - balBefore;
+        amountOut = getAmountOut(received, reserveToken, reserveNative);
+        if (amountOut < amountOutMin) revert InsufficientOutputAmount();
+        _update(reserveToken + received, reserveNative - amountOut); // effects
         _sendNative(to, amountOut); // interaction
-        emit Swap(msg.sender, false, amountIn, amountOut, to);
+        emit Swap(msg.sender, false, received, amountOut, to);
     }
 }

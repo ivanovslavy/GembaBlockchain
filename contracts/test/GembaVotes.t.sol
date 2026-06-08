@@ -11,7 +11,7 @@ contract GembaVotesTest is Test {
     address reserve = address(0xBEEF); // a "reserve" contract, to be excluded
 
     function setUp() public {
-        votes = new GembaVotes(governance);
+        votes = new GembaVotes(governance, new address[](0));
         vm.deal(alice, 1000 ether);
     }
 

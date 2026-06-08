@@ -66,7 +66,7 @@ contract FaucetInvariantTest is Test {
         address timelock = makeAddr("timelock");
         address granter = makeAddr("granter");
         Faucet impl = new Faucet();
-        bytes memory data = abi.encodeCall(Faucet.initialize, (timelock, makeAddr("pauser"), granter, 1000 ether));
+        bytes memory data = abi.encodeCall(Faucet.initialize, (timelock, makeAddr("pauser"), granter, 1000 ether, 0, 0));
         faucet = Faucet(payable(address(new ERC1967Proxy(address(impl), data))));
         vm.deal(address(faucet), INITIAL);
 

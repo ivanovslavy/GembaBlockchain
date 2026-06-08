@@ -26,29 +26,74 @@ contract Faucet is BaseReserve {
     /// @notice cumulative GMB granted via `grant` (telemetry / off-chain formulas).
     uint256 public totalGranted;
 
+    // --- rolling window cap (defence in depth: a single per-call cap does NOT bound a
+    // compromised granter who calls grant() repeatedly; this caps the *aggregate* flow
+    // per time window, so even a stolen granter key cannot drain the reserve — only the
+    // owner/Timelock can raise the limit). epochCap == 0 disables the window cap. ---
+    /// @notice max cumulative GMB grantable within one rolling window (0 = no window cap).
+    uint256 public epochCap;
+    /// @notice rolling window length in seconds.
+    uint256 public epochLength;
+    /// @notice timestamp the current window started.
+    uint256 public epochStart;
+    /// @notice GMB granted so far in the current window.
+    uint256 public epochSpent;
+
     event Granted(address indexed to, uint256 amount);
     event GranterUpdated(address indexed previous, address indexed current);
     event PerGrantCapUpdated(uint256 previous, uint256 current);
+    event EpochLimitUpdated(uint256 cap, uint256 length);
 
     error OnlyGranter();
     error AboveCap();
+    error AboveEpochCap();
 
     /// @param owner_ Timelock. @param pauser_ EmergencyPause. @param granter_ formula actor.
-    /// @param perGrantCap_ max per capped grant.
-    function initialize(address owner_, address pauser_, address granter_, uint256 perGrantCap_) external initializer {
+    /// @param perGrantCap_ max per capped grant. @param epochCap_ max per rolling window
+    /// (0 = disabled). @param epochLength_ window length in seconds.
+    function initialize(
+        address owner_,
+        address pauser_,
+        address granter_,
+        uint256 perGrantCap_,
+        uint256 epochCap_,
+        uint256 epochLength_
+    ) external initializer {
         __BaseReserve_init(owner_, pauser_);
         granter = granter_;
         perGrantCap = perGrantCap_;
+        epochCap = epochCap_;
+        epochLength = epochLength_;
+        epochStart = block.timestamp;
     }
 
     /// @notice Rate-limited grant by the formula actor (or governance). Capped per
-    /// call; blocked while paused. Above the cap, governance uses `release`.
+    /// call AND per rolling window; blocked while paused. Above either cap, governance
+    /// uses `release` (owner/Timelock, uncapped) or raises the limits.
     function grant(address payable to, uint256 amount) external whenNotPaused nonReentrant {
         if (msg.sender != granter && msg.sender != owner()) revert OnlyGranter();
         if (amount > perGrantCap) revert AboveCap();
+        // rolling-window aggregate cap (effects-before-interaction: state updated first)
+        if (epochCap != 0) {
+            if (block.timestamp >= epochStart + epochLength) {
+                epochStart = block.timestamp;
+                epochSpent = 0;
+            }
+            if (epochSpent + amount > epochCap) revert AboveEpochCap();
+            epochSpent += amount;
+        }
         totalGranted += amount;
         _release(to, amount);
         emit Granted(to, amount);
+    }
+
+    /// @notice Governance tunes the rolling-window aggregate cap (the real drain bound).
+    function setEpochLimit(uint256 newCap, uint256 newLength) external onlyOwner {
+        epochCap = newCap;
+        epochLength = newLength;
+        epochStart = block.timestamp;
+        epochSpent = 0;
+        emit EpochLimitUpdated(newCap, newLength);
     }
 
     /// @notice Governance appoints/revokes the formula actor.
