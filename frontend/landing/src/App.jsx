@@ -121,7 +121,7 @@ function App() {
             services to their citizens and users.
           </p>
           <div className="cta">
-            <button className="btn btn-primary" onClick={addToMetaMask}>
+            <button className="btn" onClick={addToMetaMask}>
               Add to MetaMask
             </button>
             <a className="btn" href={NET.swap} target="_blank" rel="noopener">
@@ -130,7 +130,7 @@ function App() {
             <a className="btn" href={NET.explorer} target="_blank" rel="noopener">
               Open GembaScan
             </a>
-            <a className="btn btn-ghost" href={NET.github} target="_blank" rel="noopener">
+            <a className="btn" href={NET.github} target="_blank" rel="noopener">
               View on GitHub
             </a>
           </div>
