@@ -9,6 +9,7 @@ const NET = {
   explorer: "https://testnet.gembascan.io",
   github: "https://github.com/ivanovslavy/GembaBlockchain",
   swap: "https://swap.gembachain.io",
+  addresses: "https://addresses.gembachain.io",
   symbol: "GMB",
 };
 
@@ -87,6 +88,9 @@ function App() {
           </a>
           <a href={NET.explorer} target="_blank" rel="noopener">
             Explorer
+          </a>
+          <a href={NET.addresses} target="_blank" rel="noopener">
+            Addresses
           </a>
           <a href={NET.github} target="_blank" rel="noopener">
             GitHub
@@ -198,6 +202,9 @@ function App() {
           </a>
           <a href={`${NET.explorer}/rpc`} target="_blank" rel="noopener">
             RPC
+          </a>
+          <a href={NET.addresses} target="_blank" rel="noopener">
+            Addresses
           </a>
           <a href={NET.github} target="_blank" rel="noopener">
             GitHub

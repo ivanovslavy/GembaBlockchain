@@ -24,6 +24,7 @@ Web / explorer hosts:
 | `testnet.gembascan.io`, `gembascan.io`, `www` | **13.140.148.137** | GembaScan (Blockscout) + `/rpc` (archive) |
 | `gembachain.io`, `www` | **46.225.1.162** | landing site (Apache static, `/gembachain.io/dist`) |
 | `swap.gembachain.io` | **46.225.1.162** | GembaSwap DEX UI (`/swap.gembachain.io/dist`) — our own swap app, **no platform fees**; GMB↔WGMB wrap/unwrap is free (1:1); ERC-20 swaps via GembaSwap V2. Linked prominently from gembachain.io (nav + hero + footer). |
+| `addresses.gembachain.io` | **46.225.1.162** | official address directory (`/addresses.gembachain.io`, static) — testnet/mainnet tabs; genesis reserves, governance, DEX (Router V2/WGMB/Factory), validators; copy + GembaScan links. Linked from gembachain.io (nav + footer). |
 
 All Cloudflare A records, **Proxied (orange)**, SSL **Full (strict)** (`.137` uses the
 `*.gembascan.io` origin cert; `.162` uses the `*.gembachain.io` origin cert). MetaMask works with
