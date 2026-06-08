@@ -78,4 +78,9 @@ export const ERC20_ABI = [
   { name: "approve", type: "function", stateMutability: "nonpayable", inputs: [{ type: "address" }, { type: "uint256" }], outputs: [{ type: "bool" }] },
 ];
 
+export const WGMB_ABI = [
+  { name: "deposit", type: "function", stateMutability: "payable", inputs: [], outputs: [] },
+  { name: "withdraw", type: "function", stateMutability: "nonpayable", inputs: [{ type: "uint256" }], outputs: [] },
+];
+
 export const NATIVE = { address: "native", symbol: "GMB", name: "Gemba", decimals: 18, isNative: true };

@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useAccount, useChainId, useBalance, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { readContracts } from "wagmi/actions";
 import { parseUnits, formatUnits, isAddress, getAddress, maxUint256 } from "viem";
-import { DEX, NATIVE, ROUTER_ABI, ERC20_ABI, wagmiConfig, DEFAULT_CHAIN_ID } from "../config/chains.js";
+import { DEX, NATIVE, ROUTER_ABI, ERC20_ABI, WGMB_ABI, wagmiConfig, DEFAULT_CHAIN_ID } from "../config/chains.js";
 import ConnectButton from "./ConnectButton.jsx";
 
 const fmt = (v, d, p = 6) => { try { const n = Number(formatUnits(v, d)); return n.toLocaleString(undefined, { maximumFractionDigits: p }); } catch { return "0"; } };
@@ -30,16 +30,22 @@ export default function SwapForm() {
     if (tOut.isNative) return [wrapAddr(tIn), getAddress(dex.wgmb)];
     return [wrapAddr(tIn), wrapAddr(tOut)];
   }, [tIn, tOut]);
-  const samePair = wrapAddr(tIn).toLowerCase() === wrapAddr(tOut).toLowerCase();
+  const wgmbLower = dex.wgmb.toLowerCase();
+  // GMB <-> WGMB is wrap/unwrap (1:1 via the WGMB contract), NOT a router swap.
+  const isWrap = tIn.isNative && !tOut.isNative && tOut.address?.toLowerCase() === wgmbLower;
+  const isUnwrap = !tIn.isNative && tIn.address?.toLowerCase() === wgmbLower && tOut.isNative;
+  const isWrapUnwrap = isWrap || isUnwrap;
+  const samePair = (tIn.isNative && tOut.isNative) || (!tIn.isNative && !tOut.isNative && tIn.address?.toLowerCase() === tOut.address?.toLowerCase());
 
-  // quote
+  // quote (router) — skipped for wrap/unwrap (1:1)
   const { data: amountsOut, isError: quoteErr } = useReadContract({
     address: dex.router, abi: ROUTER_ABI, functionName: "getAmountsOut", args: [amountIn, path],
-    query: { enabled: !!address && amountIn > 0n && !samePair, refetchInterval: 8000 },
+    query: { enabled: !!address && amountIn > 0n && !samePair && !isWrapUnwrap, refetchInterval: 8000 },
   });
-  const out = amountsOut ? amountsOut[amountsOut.length - 1] : 0n;
+  const routerOut = amountsOut ? amountsOut[amountsOut.length - 1] : 0n;
+  const out = isWrapUnwrap ? amountIn : routerOut;
   const slipBps = BigInt(Math.round(Number(slip || "0.5") * 100));
-  const minOut = out - (out * slipBps) / 10000n;
+  const minOut = isWrapUnwrap ? amountIn : routerOut - (routerOut * slipBps) / 10000n;
 
   // balances
   const { data: balNative } = useBalance({ address, query: { enabled: !!address && tIn.isNative } });
@@ -48,7 +54,7 @@ export default function SwapForm() {
 
   // allowance (erc20 in)
   const { data: allowance, refetch: refetchAllow } = useReadContract({ address: tIn.isNative ? undefined : tIn.address, abi: ERC20_ABI, functionName: "allowance", args: [address, dex.router], query: { enabled: !!address && !tIn.isNative } });
-  const needApprove = !tIn.isNative && amountIn > 0n && (allowance ?? 0n) < amountIn;
+  const needApprove = !tIn.isNative && !isUnwrap && amountIn > 0n && (allowance ?? 0n) < amountIn;
 
   const { writeContractAsync, isPending } = useWriteContract();
   const { isLoading: mining, isSuccess: mined } = useWaitForTransactionReceipt({ hash: txHash, query: { enabled: !!txHash } });
@@ -79,7 +85,9 @@ export default function SwapForm() {
     const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
     try {
       let h;
-      if (tIn.isNative) h = await writeContractAsync({ address: dex.router, abi: ROUTER_ABI, functionName: "swapExactETHForTokens", args: [minOut, path, address, deadline], value: amountIn });
+      if (isWrap) h = await writeContractAsync({ address: dex.wgmb, abi: WGMB_ABI, functionName: "deposit", value: amountIn });
+      else if (isUnwrap) h = await writeContractAsync({ address: dex.wgmb, abi: WGMB_ABI, functionName: "withdraw", args: [amountIn] });
+      else if (tIn.isNative) h = await writeContractAsync({ address: dex.router, abi: ROUTER_ABI, functionName: "swapExactETHForTokens", args: [minOut, path, address, deadline], value: amountIn });
       else if (tOut.isNative) h = await writeContractAsync({ address: dex.router, abi: ROUTER_ABI, functionName: "swapExactTokensForETH", args: [amountIn, minOut, path, address, deadline] });
       else h = await writeContractAsync({ address: dex.router, abi: ROUTER_ABI, functionName: "swapExactTokensForTokens", args: [amountIn, minOut, path, address, deadline] });
       setTxHash(h); setAmount("");
@@ -114,7 +122,8 @@ export default function SwapForm() {
         <div className="meta">
           <div className="r"><span>Rate</span><span>1 {tIn.symbol} ≈ {rate.toLocaleString(undefined, { maximumFractionDigits: 6 })} {tOut.symbol}</span></div>
           <div className="r"><span>Min received</span><span>{fmt(minOut, tOut.decimals)} {tOut.symbol}</span></div>
-          <div className="r"><span>Slippage</span><span className="slip"><input value={slip} onChange={(e) => setSlip(e.target.value.replace(/[^0-9.]/g, ""))} />%</span></div>
+          {!isWrapUnwrap && <div className="r"><span>Slippage</span><span className="slip"><input value={slip} onChange={(e) => setSlip(e.target.value.replace(/[^0-9.]/g, ""))} />%</span></div>}
+          {isWrapUnwrap && <div className="r"><span>{isWrap ? "Wrap" : "Unwrap"}</span><span>1:1 · no fee</span></div>}
         </div>
       )}
 
@@ -123,9 +132,9 @@ export default function SwapForm() {
         : samePair ? <button className="btn" disabled>Select two different tokens</button>
         : insufficient ? <button className="btn" disabled>Insufficient {tIn.symbol}</button>
         : amountIn === 0n ? <button className="btn" disabled>Enter an amount</button>
-        : quoteErr || out === 0n ? <button className="btn" disabled>No liquidity for this pair</button>
+        : !isWrapUnwrap && (quoteErr || out === 0n) ? <button className="btn" disabled>No liquidity for this pair</button>
         : needApprove ? <button className="btn" disabled={isPending || mining} onClick={doApprove}>{isPending || mining ? "Approving…" : `Approve ${tIn.symbol}`}</button>
-        : <button className="btn" disabled={isPending || mining} onClick={doSwap}>{isPending ? "Confirm in wallet…" : mining ? "Swapping…" : "Swap"}</button>}
+        : <button className="btn" disabled={isPending || mining} onClick={doSwap}>{isPending ? "Confirm in wallet…" : mining ? "Processing…" : isWrap ? "Wrap" : isUnwrap ? "Unwrap" : "Swap"}</button>}
 
       {err && <div className="err">{err}</div>}
       {mined && txHash && <div className="ok">✓ Swap confirmed. <a href={`https://testnet.gembascan.io/tx/${txHash}`} target="_blank" rel="noreferrer">View</a></div>}
