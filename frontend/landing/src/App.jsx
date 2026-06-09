@@ -182,6 +182,40 @@ function App() {
             <button className="btn" onClick={addToMetaMask}>
               Add GembaBlockchain to MetaMask
             </button>
+
+            <div className="registries">
+              <p className="muted">
+                Listed in the public chain registries that wallets and explorers
+                read — both pull requests merged. The <strong>testnet</strong> is
+                recognized network-wide, so{" "}
+                <a href="https://chainlist.org" target="_blank" rel="noopener">
+                  chainlist.org
+                </a>{" "}
+                adds it to MetaMask in one click:
+              </p>
+              <div className="registry-badges">
+                <a
+                  className="btn btn-sm"
+                  href="https://github.com/ethereum-lists/chains/pull/8413"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  ethereum-lists/chains ↗
+                </a>
+                <a
+                  className="btn btn-sm"
+                  href="https://github.com/blockscout/chainscout/pull/241"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  Blockscout chainscout ↗
+                </a>
+              </div>
+              <p className="muted registries-note">
+                Testnet listing (EVM chainId 821207). Mainnet (821206) is not yet
+                launched and gets its own registry entries later.
+              </p>
+            </div>
           </div>
         </section>
 

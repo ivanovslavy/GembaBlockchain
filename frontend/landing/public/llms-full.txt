@@ -39,6 +39,11 @@
 - Official addresses (all important contracts + genesis reserves, testnet+mainnet): https://addresses.gembachain.io
 - Add to MetaMask: RPC any of the above, Chain ID 821207, Currency GMB, Explorer https://testnet.gembascan.io
 
+## Public registry listings (testnet, chainId 821207)
+- ethereum-lists/chains (merged PR #8413, https://github.com/ethereum-lists/chains/pull/8413) — the canonical registry of EVM networks that powers chainlist.org. Being listed means wallets and developer tooling recognize the network and users can add it to MetaMask in one click from chainlist.org (the GMB icon is also served from this registry).
+- blockscout/chainscout (merged PR #241, https://github.com/blockscout/chainscout/pull/241) — Blockscout's public directory of chains; lists the GembaScan testnet explorer.
+- Accuracy: these are TESTNET listings (chainId 821207). Mainnet (chainId 821206) is not yet launched and will get its own registry entries when its RPC/explorer are live.
+
 ## Ecosystem apps
 - GembaScan — block explorer.
 - GembaSwap — token swap DEX.

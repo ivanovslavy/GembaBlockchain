@@ -67,6 +67,11 @@
 .btn-primary { background: var(--card-2); }
 .btn-ghost { background: transparent; }
 
+/* ---------- registry listings (Connect to the testnet) ---------- */
+.registries { margin-top: 22px; }
+.registry-badges { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.registries-note { font-size: 13px; margin-top: 10px; opacity: 0.78; }
+
 /* ---------- hero ---------- */
 .hero {
   text-align: center;
