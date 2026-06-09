@@ -101,17 +101,25 @@ is the current testnet explorer/RPC. When mainnet launches it gets its own
 
 ## 7. Gas pricing — ~1 gwei (low but non-zero), NOT free
 
-> **CORRECTION (2026-06-08):** the live testnet runs with the **1 gwei base-fee floor** (per
-> CLAUDE.md Phase 4 / §16.8 "low but non-zero"), same model as mainnet. A real transfer pays
-> ~0.000021 GMB (21,000 gas × 1 gwei) — fractions of a cent, but **not zero**. Block time is
-> **~5 s** (not 2 s). All public copy must say "near-zero / ~1 gwei", never "free", and "~5 s
-> blocks", never "2 s". The earlier (2026-06-06) "gas free" experiment below is superseded.
+> **EXECUTED (2026-06-09):** the 1 gwei floor is now live as a **consensus `x/feemarket`
+> param**, applied by an actual on-chain governance round (proposal **#2**, PASSED). A real
+> transfer pays ~0.000021 GMB (21,000 gas × 1 gwei) — fractions of a cent, but **not zero**.
+> Block time is **~5 s** (not 2 s). All public copy must say "near-zero / ~1 gwei", never
+> "free", and "~5 s blocks", never "2 s".
+>
+> **Correction to the earlier (2026-06-08) note:** that note claimed the floor was already
+> live, but only the **node-level** `--minimum-gas-prices 1000000000agmb` start flag had been
+> set — a *local mempool filter on each validator*, **not** the chain's consensus param. The
+> `x/feemarket` `min_gas_price` was still **`0`** (and `base_fee` had decayed to ~`7e-18`),
+> so `eth_gasPrice` could still read ~0 from any node not enforcing the flag. The governance
+> change below is what actually moved the **consensus** param to 1 gwei.
 
-Earlier the testnet briefly ran `x/feemarket` with `min_gas_price = 0`, so the EIP-1559 base fee
-decayed to ~0 and `eth_gasPrice` read 0 (txs paid ~1 wei). It has since been set to the 1 gwei
-floor. The toggle instructions below remain valid if a zero-gas testnet is ever wanted again.
+Earlier (2026-06-06) the testnet ran `x/feemarket` with `min_gas_price = 0`, so the EIP-1559
+base fee decayed to ~0 and `eth_gasPrice` read 0 (txs paid ~1 wei). The toggle instructions
+below remain valid if a zero-gas testnet is ever wanted again (submit the same proposal with
+`base_fee`/`min_gas_price` set back to `"0.000000000000000000"`).
 
-**To restore the 1 gwei floor later** (mainnet, or if a non-zero testnet is wanted),
+**To restore the 1 gwei floor** (done on testnet 2026-06-09; same recipe for mainnet),
 it is a governance change to `x/feemarket` (authority = the gov module account),
 **not** an explorer setting. Voting period on testnet is ~30 s. Recipe:
 
@@ -138,6 +146,38 @@ it is a governance change to `x/feemarket` (authority = the gov module account),
 Submit + deposit, then vote with bonded validators (quorum 33.4%, threshold 50%);
 the validator operator keys (`val0..val3`) live in the re-genesis keyring backup.
 Type URL `/cosmos.evm.feemarket.v1.MsgUpdateParams` verified against the live binary.
+
+### Executed run — 2026-06-09 (gov-flow rehearsal, proposal #2)
+
+Ran the full flow end-to-end to (a) rehearse the governance path on testnet and (b) make the
+live consensus param match the "~1 gwei" policy. Verified result:
+
+- **Before:** `min_gas_price = 0`, `base_fee = 0.000000000000000007` (decayed to ~0).
+- **After (PASSED):** `min_gas_price = base_fee = 1000000000.000000000000000000` (1 gwei).
+  Public RPC confirms: block `baseFeePerGas = 0x3b9aca00` (1.0 gwei), `eth_gasPrice` ≈ 1.125 gwei.
+- Tally: 3 validators voted YES = 3000 GMB of 3990 bonded → **75 % turnout** (> 33.4 % quorum),
+  100 % yes (> 50 % threshold). One ~30 s voting round; whole flow ≈ 1.5 min.
+
+**Mechanics used (keys stay on the laptop — never copied to a server):**
+
+- Operator/voting keys = `wallet-backup/tmp-regenesis/node{0,1,2,3}/keyring-test` → `val0..val3`
+  (`~/.gemba-testnet` is the *stale pre-regenesis* keyring — do NOT use it). Each operator
+  account carries a large liquid balance, so it self-funds gas + the 20000000agmb deposit.
+- `.82` CometBFT RPC is bound to `127.0.0.1:26657` (not public), so broadcast from the laptop
+  through an SSH local-forward: `ssh -i ~/.ssh/gemba_claude -N -L 26657:127.0.0.1:26657 root@13.140.139.82`.
+- Common tx flags: `--chain-id gemba-testnet-1 --node tcp://127.0.0.1:26657 --keyring-backend
+  test --gas auto --gas-adjustment 1.4 --gas-prices 1000000000agmb -y`.
+- **Timing gotcha:** the testnet voting period is only **30 s**. Submit, then `sleep ~9` (one
+  block, so the proposal is created and the proposer's sequence increments), then cast all
+  votes back-to-back **in one uninterrupted script** — interactive round-trips between submit
+  and vote will blow past the 30 s window (the proposal then fails quorum and you re-submit).
+
+> **MAINNET "dead time" caveat.** The 30 s `voting_period` is a **testnet-only convenience** for
+> fast iteration. **On `gemba-1` (mainnet) the real designed delay applies** — the full
+> governance voting period **plus** the Timelock execution delay (the deliberate "dead time" so
+> the community can see and block a change before it executes, per CLAUDE.md §7). Do **not**
+> ship mainnet with a shortened voting period; a feemarket change there takes days, by design,
+> not ~1.5 min.
 
 ## 8. RESOLVED — browser HTTP 500 on search / Tokens (was a version mismatch)
 
