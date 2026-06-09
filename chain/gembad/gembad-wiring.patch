@@ -21,6 +21,7 @@ index 204345c..c081d7f 100644
 +	valgate "github.com/ivanovslavy/GembaBlockchain/chain/x/valgate"
 +	valgatekeeper "github.com/ivanovslavy/GembaBlockchain/chain/x/valgate/keeper"
 +	valgatetypes "github.com/ivanovslavy/GembaBlockchain/chain/x/valgate/types"
++	slashfunds "github.com/ivanovslavy/GembaBlockchain/chain/x/slashfunds"
 +
  	ibccallbackskeeper "github.com/cosmos/evm/x/ibc/callbacks/keeper"
  	"github.com/cosmos/evm/x/vm"
@@ -63,6 +64,22 @@ index 204345c..c081d7f 100644
  	// optional: enable sign mode textual by overwriting the default tx config (after setting the bank keeper)
  	enabledSignModes := append(authtx.DefaultSignModes, signingtypes.SignMode_SIGN_MODE_TEXTUAL) //nolint:gocritic
  	txConfigOpts := authtx.ConfigOptions{
+@@ -327,9 +360,14 @@ func NewExampleApp(
+ 	app.StakingKeeper = stakingkeeper.NewKeeper(
+ 		appCodec,
+ 		runtime.NewKVStoreService(keys[stakingtypes.StoreKey]),
+ 		app.AccountKeeper,
+-		app.BankKeeper,
++		// GembaBlockchain: redirect slashed stake to the faucet reserve instead of
++		// burning it, so total supply stays fixed at 100M (CLAUDE.md §3.1, §5.6;
++		// ADR-013). The wrapper intercepts ONLY BurnCoins from the staking bonded /
++		// not-bonded pools (= slashing) and SendCoinsFromModuleToModule it to the
++		// faucet; every other bank call passes through. Zero-burn, like x/feesplit.
++		slashfunds.NewBankKeeper(app.BankKeeper, feesplittypes.DefaultFaucetAccount),
+ 		authAddr,
+ 		evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
+ 		evmaddress.NewEvmCodec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
+ 	)
 @@ -365,7 +398,10 @@ func NewExampleApp(
  	app.FeeGrantKeeper = feegrantkeeper.NewKeeper(appCodec, runtime.NewKVStoreService(keys[feegrant.StoreKey]), app.AccountKeeper)
  

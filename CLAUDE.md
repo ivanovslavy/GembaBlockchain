@@ -264,8 +264,19 @@ Validators earn from two sources, **neither of which mints new GMB**:
 | Downtime / liveness | minor slash + jail | objective |
 | Censorship | **not** auto-slashable | not objectively provable on-chain → governance/social layer |
 
-**Slashed stake → the faucet** (the public reserve). Never promise automatic
-punishment for anything not deterministically provable on-chain.
+**Slashed stake → the faucet** (the public reserve), **never burned**. Slashing
+punishes the validator by **loss of its bonded stake**, not by destroying supply:
+the forfeited GMB is redirected to the faucet, so total supply stays fixed at
+100M (§3.1, §4.2). Default Cosmos slashing *burns* slashed tokens — that would
+break the fixed-supply invariant (it already cost the testnet 10 GMB once, a 1%
+downtime slash of val-3, before this was fixed). We override it with
+**`chain/x/slashfunds`**, a thin decorator on the bank keeper handed to
+`x/staking` that intercepts the slash burn (`BurnCoins` from the bonded /
+not-bonded pools) and `SendCoinsFromModuleToModule`s it to the faucet instead —
+the same zero-burn principle as `x/feesplit`. Covered by a supply-invariance test
+(slash → supply unchanged, coins appear in the faucet). See ADR-013.
+Never promise automatic punishment for anything not deterministically provable
+on-chain.
 
 ### 5.7 Power separation
 

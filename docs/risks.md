@@ -362,6 +362,53 @@
 
 ---
 
+## ADR-013 — Slashing must redirect slashed stake to the faucet, not burn it (fixed-supply)
+
+- **Status:** Fixed in code (`chain/x/slashfunds`, wired via `gembad-wiring.patch`) for new
+  genesis; the live testnet already burned 10 GMB once (accepted — it predates the fix).
+- **Context (found 2026-06-09 investigating a Blockscout "Burnt fees" label):** querying
+  `bank total` on the live testnet showed supply at **99,999,990 GMB**, not 100,000,000.
+  Comparing supply across heights on the archive node isolated a **one-time 10 GMB drop in
+  the first ~1,000 blocks** (supply flat ever since, including after the 1-gwei fee floor —
+  so it is **not** a base-fee burn; `x/feesplit` correctly recirculates fees, ADR-008).
+  Root cause: **default Cosmos slashing BURNS the slashed stake.** `x/staking`'s `Slash`
+  calls `BankKeeper.BurnCoins` on the bonded / not-bonded pools, destroying the coins and
+  lowering total supply. `val-3` took a **1% downtime slash** of its 1,000 GMB self-bond =
+  exactly **10 GMB** (val-3 reads 990 GMB vs 1,000 for the others). The "Burnt fees" label
+  itself is a cosmetic Ethereum-explorer artifact (base fee is collected + split, not burned);
+  the real burn was slashing.
+- **The contradiction:** burning slashed stake breaks **§3.1 (fixed supply, never mint after
+  genesis)** and **§4.2 (no burn)**, and it diverges from **§5.6 ("slashed stake → the
+  faucet")**, which was design-only and never implemented. Supply would drift downward forever
+  as validators are slashed — exactly the kind of silent invariant erosion §3 forbids.
+- **Decision — preserve supply; redirect slashed stake to the faucet reserve.** This is the
+  *conscious* architectural choice (not an automatic bug-fix): GembaBlockchain's entire thesis
+  is a fixed 100M, zero-inflation, **zero-burn**, recirculating utility coin (§2, §4.2, §16.8).
+  Slashing's job is to **punish the misbehaving validator by making it forfeit bonded stake** and
+  to deter attacks — that deterrent is identical whether the forfeited GMB is burned or moved.
+  Burning adds nothing but supply decay; redirecting to the **faucet (public/municipal reserve)**
+  turns a validator's loss into a public good and keeps supply whole. The only argument for
+  accepting the burn is "it's the SDK default / less custom code" — outweighed here by the core
+  invariant, and mitigated by keeping the change a tiny, isolated, tested decorator.
+- **Mechanism:** `chain/x/slashfunds` is a thin decorator over the bank keeper passed to
+  `x/staking`. It satisfies `stakingtypes.BankKeeper` by embedding and overrides **only**
+  `BurnCoins`: a burn from the bonded / not-bonded pool (i.e. a slash) is
+  `SendCoinsFromModuleToModule`'d to the faucet; every other bank call passes through. It has
+  **no mint/burn power of its own** — same zero-burn discipline as `x/feesplit` /
+  `x/rewardstreamer`. Wired by replacing the staking keeper's bank-keeper argument in
+  `gembad-wiring.patch` (one line + comment).
+- **Tests:** `chain/x/slashfunds` carries a **supply-invariance test** — slash from the bonded
+  (and not-bonded) pool ⇒ total supply unchanged, slashed coins appear in the faucet — plus a
+  canary proving a raw burn *does* reduce supply (so the invariant test is meaningful) and a
+  pass-through test for non-staking burns. `BankFake` (`chain/testutil`) gained `BurnCoins` to
+  model the supply-reducing path.
+- **Consequences:** new genesis (mainnet) keeps supply at exactly 100M across all slashing.
+  The live testnet's one-time 10 GMB shortfall is **accepted** (it predates the fix; a re-genesis
+  is out of scope) — what matters is the mechanism being correct for mainnet genesis. Slashing
+  remains fully punitive; only the destination of forfeited stake changes (→ faucet).
+
+---
+
 ## Cross-reference: hard launch blockers (must clear before public launch)
 
 | ADR | Blocker | Clears when |
