@@ -1,5 +1,9 @@
 # Chain registry submission (MetaMask / chainlist.org icons)
 
+> ✅ **Testnet (821207) MERGED** — [`ethereum-lists/chains` #8413](https://github.com/ethereum-lists/chains/pull/8413).
+> GembaBlockchain testnet is now in the registry that powers chainlist.org (add-to-MetaMask in one click).
+> Mainnet (`eip155-821206.json`) is still **pending** — submit only after the mainnet RPC is live.
+
 MetaMask and [chainlist.org](https://chainlist.org) read network metadata + icons
 from the public **[`ethereum-lists/chains`](https://github.com/ethereum-lists/chains)**
 repository — **not** from our explorer. To get the GembaBlockchain network (and its

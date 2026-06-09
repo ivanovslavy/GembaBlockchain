@@ -13,6 +13,22 @@ founder or a municipality, holds special power.
 The single source of truth for the design is [`CLAUDE.md`](./CLAUDE.md). If a
 design decision changes, update `CLAUDE.md` first, then the docs, then the code.
 
+## Listed in public registries
+
+**GembaBlockchain testnet** (EVM chainId **821207**) is listed in two official,
+community-run open-source chain registries — both pull requests **merged**:
+
+- **[ethereum-lists/chains #8413](https://github.com/ethereum-lists/chains/pull/8413)** —
+  the canonical registry of EVM networks that powers **[chainlist.org](https://chainlist.org)**.
+  Listing means wallets and developer tooling that read this registry recognise the network,
+  and anyone can **add it to MetaMask in one click** from chainlist.org.
+- **[blockscout/chainscout #241](https://github.com/blockscout/chainscout/pull/241)** —
+  Blockscout's public directory of chains, listing the **GembaScan** testnet explorer
+  ([testnet.gembascan.io](https://testnet.gembascan.io)).
+
+> These are **testnet** listings (chainId **821207**). **Mainnet (chainId 821206) is not yet
+> launched** — it gets its own registry entries once the mainnet RPC/explorer are live.
+
 ## Core facts
 
 | Field | Value |

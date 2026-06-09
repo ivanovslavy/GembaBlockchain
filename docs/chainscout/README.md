@@ -1,5 +1,9 @@
 # Chainscout submission (Blockscout explorer directory)
 
+> ✅ **Testnet (821207) MERGED** — [`blockscout/chainscout` #241](https://github.com/blockscout/chainscout/pull/241).
+> GembaScan now appears in Blockscout's chain directory. Mainnet (821206) gets its own entry
+> once the mainnet explorer is live (`isTestnet: false`).
+
 > **Separate** from [`../chain-registry/`](../chain-registry/). That one
 > (`ethereum-lists/chains`) is what gives the network + native-GMB **icon in
 > MetaMask / chainlist.org**. **This** one lists **GembaScan** in

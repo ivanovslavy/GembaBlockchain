@@ -22,6 +22,27 @@
 | EVM JSON-RPC (public) | **https://testnet.gembascan.io/rpc** |
 | Active validators | 4 (3 on public cloud hosts + 1 operator node), each 1,000,000 GMB |
 
+## Listed in public registries
+
+The GembaBlockchain **testnet** (EVM chainId **821207**) is now listed in two official,
+community-run open-source registries — both PRs **merged**:
+
+| Registry | PR | What it is | Why it matters |
+|---|---|---|---|
+| **ethereum-lists/chains** | [#8413](https://github.com/ethereum-lists/chains/pull/8413) | the canonical registry of EVM networks (chainId → metadata + icon) | it powers **[chainlist.org](https://chainlist.org)** and is read by wallets/tooling, so the network is **recognised** and users can **add it to MetaMask in one click** (no manual RPC entry) |
+| **blockscout/chainscout** | [#241](https://github.com/blockscout/chainscout/pull/241) | Blockscout's public directory of chains with an explorer | **GembaScan** ([testnet.gembascan.io](https://testnet.gembascan.io)) appears in Blockscout's chain directory — independent discoverability |
+
+What being in `ethereum-lists/chains` concretely buys us: MetaMask and chainlist.org pull
+network metadata **and the native GMB icon** from that repo (not from our own explorer), so a
+listed chain shows up with its logo and an "Add to MetaMask" / "Connect Wallet" button on
+chainlist.org. The ready-to-submit payloads live in [`chain-registry/`](./chain-registry/)
+(MetaMask/chainlist) and [`chainscout/`](./chainscout/) (Blockscout directory).
+
+> **Accuracy:** these are **testnet** listings (chainId **821207**). **Mainnet (chainId
+> 821206) is not yet launched** and gets its own entries (with `isTestnet: false`) once the
+> mainnet RPC + explorer are live. Do not describe GembaBlockchain as a "recognised network"
+> in a way that implies mainnet — the recognition is of the testnet.
+
 ## What is verified working
 
 The test chain is producing blocks and the full EVM surface is live:
