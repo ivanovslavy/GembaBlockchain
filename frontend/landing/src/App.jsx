@@ -14,6 +14,14 @@ const NET = {
   symbol: "GMB",
 };
 
+const FAUCET = "0x2baE94C0463bcdcCD0120A33D90E7fB5b5449584";
+const TOKENS = [
+  { symbol: "USDT", name: "Tether USD (Test)", address: "0x0821EAAE0328b02d6f85C36925acb92E90ef680C", decimals: 6 },
+  { symbol: "USDC", name: "USD Coin (Test)", address: "0x131f3087ecabA6f7ae91439DDaF70f4269D4b9Ef", decimals: 6 },
+  { symbol: "EURC", name: "Euro Coin (Test)", address: "0x05003C73FfEC1c2f56021549501Dd7AD850e39C3", decimals: 6 },
+];
+const SEL = { claimGMB: "0xc89830b0", claimToken: "0x32f289cf" };
+
 async function addToMetaMask() {
   if (!window.ethereum) {
     window.open("https://metamask.io/download/", "_blank", "noopener");
@@ -31,6 +39,42 @@ async function addToMetaMask() {
           blockExplorerUrls: [NET.explorer],
         },
       ],
+    });
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+async function ensureGembaChain() {
+  try {
+    await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: NET.chainIdHex }] });
+  } catch (e) {
+    if (e.code === 4902) await addToMetaMask();
+    else throw e;
+  }
+}
+
+async function sendFaucetTx(data) {
+  if (!window.ethereum) { window.open("https://metamask.io/download/", "_blank", "noopener"); return; }
+  try {
+    const [from] = await window.ethereum.request({ method: "eth_requestAccounts" });
+    await ensureGembaChain();
+    await window.ethereum.request({ method: "eth_sendTransaction", params: [{ from, to: FAUCET, data }] });
+  } catch (e) {
+    console.error(e);
+    alert(e?.data?.message || e?.shortMessage || e?.message || "Transaction failed");
+  }
+}
+
+const claimGMB = () => sendFaucetTx(SEL.claimGMB);
+const claimToken = (addr) => sendFaucetTx(SEL.claimToken + addr.toLowerCase().replace("0x", "").padStart(64, "0"));
+
+async function addToken(tok) {
+  if (!window.ethereum) { window.open("https://metamask.io/download/", "_blank", "noopener"); return; }
+  try {
+    await window.ethereum.request({
+      method: "wallet_watchAsset",
+      params: { type: "ERC20", options: { address: tok.address, symbol: tok.symbol, decimals: tok.decimals } },
     });
   } catch (e) {
     console.error(e);
@@ -87,6 +131,7 @@ function App() {
           <a className="btn btn-sm" href={NET.swap} target="_blank" rel="noopener">
             Swap
           </a>
+          <a href="#faucet">Faucet</a>
           <a href={NET.explorer} target="_blank" rel="noopener">
             Explorer
           </a>
@@ -219,6 +264,58 @@ function App() {
           </div>
         </section>
 
+        <section className="details" id="faucet">
+          <div className="details-inner">
+            <h2>Testnet faucet &amp; test stablecoins</h2>
+            <p className="muted">
+              Free testnet assets so anyone can try GembaBlockchain and the dApps built on it.
+              Per wallet: <strong>0.1 GMB</strong> and <strong>10,000 of each stablecoin</strong>{" "}
+              every 24 hours. These are valueless test tokens — not real USDT / USDC / EURC.
+            </p>
+            <div className="cta">
+              <button className="btn" onClick={claimGMB}>Claim 0.1 GMB</button>
+              {TOKENS.map((t) => (
+                <button className="btn" key={t.symbol} onClick={() => claimToken(t.address)}>
+                  Claim 10,000 {t.symbol}
+                </button>
+              ))}
+            </div>
+            <table>
+              <tbody>
+                <tr>
+                  <th>Faucet</th>
+                  <td>
+                    <a href={`${NET.explorer}/address/${FAUCET}`} target="_blank" rel="noopener">{FAUCET}</a>
+                  </td>
+                </tr>
+                {TOKENS.map((t) => (
+                  <tr key={t.symbol}>
+                    <th>{t.symbol}</th>
+                    <td>
+                      <a href={`${NET.explorer}/address/${t.address}`} target="_blank" rel="noopener">{t.address}</a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="registry-badges">
+              {TOKENS.map((t) => (
+                <button className="btn btn-sm" key={t.symbol} onClick={() => addToken(t)}>
+                  Add {t.symbol} to MetaMask
+                </button>
+              ))}
+            </div>
+            <p className="muted registries-note">
+              The faucet is also built into the dApps with a full UI and cooldown timers:{" "}
+              <a href="https://win.gembait.com/en/faucet" target="_blank" rel="noopener">GembaWin faucet</a>
+              {" · "}
+              <a href="https://escrow.gembait.com/en/faucet" target="_blank" rel="noopener">GembaEscrow faucet</a>.
+              Stablecoins are minted on demand; the native GMB reserve has a global daily cap, so a
+              sybil swarm can never drain it.
+            </p>
+          </div>
+        </section>
+
         <section className="note">
           <p>
             <strong>Not for speculation — by design.</strong> GembaBlockchain provides
@@ -243,6 +340,7 @@ function App() {
           <a href={NET.swap} target="_blank" rel="noopener">
             Swap
           </a>
+          <a href="#faucet">Faucet</a>
           <a href={NET.explorer} target="_blank" rel="noopener">
             Explorer
           </a>

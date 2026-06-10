@@ -53,3 +53,8 @@
 ## Who
 - Built by GEMBA EOOD (https://gembait.com), a Bulgarian technology company in Varna.
 - Source code: https://github.com/ivanovslavy/GembaBlockchain (Apache-2.0).
+
+## Testnet faucet & test stablecoins
+- Public faucet (chainId 821207): contract 0x2baE94C0463bcdcCD0120A33D90E7fB5b5449584. Free testnet assets per wallet every 24h: 0.1 GMB and 10,000 of each test stablecoin. Claim on the official site (https://gembachain.io/#faucet) or in the dApps (https://win.gembait.com/en/faucet , https://escrow.gembait.com/en/faucet).
+- Test stablecoins (6 decimals, valueless test tokens, NOT real): USDT 0x0821EAAE0328b02d6f85C36925acb92E90ef680C, USDC 0x131f3087ecabA6f7ae91439DDaF70f4269D4b9Ef, EURC 0x05003C73FfEC1c2f56021549501Dd7AD850e39C3.
+- dApps accepting native GMB + these stablecoins: GembaWin (on-chain bounty/reward contests, https://win.gembait.com) and GembaEscrow (smart-contract escrow, https://escrow.gembait.com).
