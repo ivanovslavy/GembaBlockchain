@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback } from "react";
 import "./App.css";
 
 const NET = {
@@ -21,6 +22,8 @@ const TOKENS = [
   { symbol: "EURC", name: "Euro Coin (Test)", address: "0x05003C73FfEC1c2f56021549501Dd7AD850e39C3", decimals: 6 },
 ];
 const SEL = { claimGMB: "0xc89830b0", claimToken: "0x32f289cf" };
+const SELR = { gmbAvailableAt: "0x4a1303cb", tokenAvailableAt: "0x9de4bd3d" };
+const pad32 = (a) => a.toLowerCase().replace("0x", "").padStart(64, "0");
 
 async function addToMetaMask() {
   if (!window.ethereum) {
@@ -81,6 +84,78 @@ async function addToken(tok) {
   }
 }
 
+function ClaimButtons() {
+  const [avail, setAvail] = useState({});
+  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
+  const [busy, setBusy] = useState("");
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Read the per-wallet cooldowns via the wallet's own provider (raw eth_call, no deps).
+  const refresh = useCallback(async () => {
+    if (!window.ethereum) return;
+    try {
+      const accs = await window.ethereum.request({ method: "eth_accounts" });
+      const acct = accs && accs[0];
+      const chain = await window.ethereum.request({ method: "eth_chainId" });
+      if (!acct || chain !== NET.chainIdHex) { setAvail({}); return; }
+      const call = async (data) => {
+        const r = await window.ethereum.request({ method: "eth_call", params: [{ to: FAUCET, data }, "latest"] });
+        return parseInt(r, 16) || 0;
+      };
+      const next = { GMB: await call(SELR.gmbAvailableAt + pad32(acct)) };
+      for (const t of TOKENS) next[t.symbol] = await call(SELR.tokenAvailableAt + pad32(acct) + pad32(t.address));
+      setAvail(next);
+    } catch (e) { /* not connected / wrong chain */ }
+  }, []);
+
+  useEffect(() => {
+    refresh();
+    const id = setInterval(refresh, 15000);
+    const eth = window.ethereum;
+    if (eth && eth.on) { eth.on("accountsChanged", refresh); eth.on("chainChanged", refresh); }
+    return () => {
+      clearInterval(id);
+      if (eth && eth.removeListener) { eth.removeListener("accountsChanged", refresh); eth.removeListener("chainChanged", refresh); }
+    };
+  }, [refresh]);
+
+  const countdown = (ts) => {
+    if (!ts || ts <= now) return null;
+    const s = ts - now;
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    return h > 0 ? `${h}h ${m}m` : m > 0 ? `${m}m ${sec}s` : `${sec}s`;
+  };
+
+  const doClaim = async (key, data) => {
+    setBusy(key);
+    try { await sendFaucetTx(data); } finally { setBusy(""); }
+    setTimeout(refresh, 2000);
+    setTimeout(refresh, 5000);
+  };
+
+  const gmbCd = countdown(avail.GMB);
+  return (
+    <div className="cta">
+      <button className="btn" disabled={busy === "GMB" || !!gmbCd} onClick={() => doClaim("GMB", SEL.claimGMB)}>
+        {busy === "GMB" ? "…" : gmbCd ? `0.1 GMB · ${gmbCd}` : "Claim 0.1 GMB"}
+      </button>
+      {TOKENS.map((t) => {
+        const cd = countdown(avail[t.symbol]);
+        return (
+          <button className="btn" key={t.symbol} disabled={busy === t.symbol || !!cd}
+            onClick={() => doClaim(t.symbol, SEL.claimToken + pad32(t.address))}>
+            {busy === t.symbol ? "…" : cd ? `10,000 ${t.symbol} · ${cd}` : `Claim 10,000 ${t.symbol}`}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 const FEATURES = [
   {
     title: "Permissionless PoS",
@@ -128,9 +203,6 @@ function App() {
           </span>
         </a>
         <nav className="nav-links">
-          <a className="btn btn-sm" href={NET.swap} target="_blank" rel="noopener">
-            Swap
-          </a>
           <a href="#faucet">Faucet</a>
           <a href={NET.explorer} target="_blank" rel="noopener">
             Explorer
@@ -141,9 +213,6 @@ function App() {
           <a href={NET.github} target="_blank" rel="noopener">
             GitHub
           </a>
-          <button className="btn btn-sm" onClick={addToMetaMask}>
-            Add to MetaMask
-          </button>
         </nav>
       </header>
 
@@ -167,7 +236,6 @@ function App() {
             services to their citizens and users.
           </p>
           <div className="cta">
-            <button className="btn" onClick={addToMetaMask}>Add to MetaMask</button>
             <a className="btn" href={NET.explorer} target="_blank" rel="noopener">Open GembaScan</a>
             <a className="btn" href={NET.github} target="_blank" rel="noopener">View on GitHub</a>
           </div>
@@ -195,7 +263,6 @@ function App() {
               <span>Lock / Unlock LP</span>
             </div>
           </div>
-          <a className="btn" href={NET.swap} target="_blank" rel="noopener">Open GembaSwap →</a>
         </section>
 
         <section className="features">
@@ -238,14 +305,14 @@ function App() {
                 </a>{" "}
                 adds it to MetaMask in one click:
               </p>
-              <div className="registry-badges">
+              <div className="registry-badges" style={{ justifyContent: "center" }}>
                 <a
                   className="btn btn-sm"
                   href="https://github.com/ethereum-lists/chains/pull/8413"
                   target="_blank"
                   rel="noopener"
                 >
-                  ethereum-lists/chains ↗
+                  ethereum-lists/chains
                 </a>
                 <a
                   className="btn btn-sm"
@@ -253,7 +320,7 @@ function App() {
                   target="_blank"
                   rel="noopener"
                 >
-                  Blockscout chainscout ↗
+                  Blockscout chainscout
                 </a>
               </div>
               <p className="muted registries-note">
@@ -272,14 +339,7 @@ function App() {
               Per wallet: <strong>0.1 GMB</strong> and <strong>10,000 of each stablecoin</strong>{" "}
               every 24 hours. These are valueless test tokens — not real USDT / USDC / EURC.
             </p>
-            <div className="cta">
-              <button className="btn" onClick={claimGMB}>Claim 0.1 GMB</button>
-              {TOKENS.map((t) => (
-                <button className="btn" key={t.symbol} onClick={() => claimToken(t.address)}>
-                  Claim 10,000 {t.symbol}
-                </button>
-              ))}
-            </div>
+            <ClaimButtons />
             <table>
               <tbody>
                 <tr>
@@ -287,6 +347,7 @@ function App() {
                   <td>
                     <a href={`${NET.explorer}/address/${FAUCET}`} target="_blank" rel="noopener">{FAUCET}</a>
                   </td>
+                  <td></td>
                 </tr>
                 {TOKENS.map((t) => (
                   <tr key={t.symbol}>
@@ -294,17 +355,13 @@ function App() {
                     <td>
                       <a href={`${NET.explorer}/address/${t.address}`} target="_blank" rel="noopener">{t.address}</a>
                     </td>
+                    <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                      <button className="btn btn-sm" onClick={() => addToken(t)}>Add to MetaMask</button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <div className="registry-badges">
-              {TOKENS.map((t) => (
-                <button className="btn btn-sm" key={t.symbol} onClick={() => addToken(t)}>
-                  Add {t.symbol} to MetaMask
-                </button>
-              ))}
-            </div>
             <p className="muted registries-note">
               The faucet is also built into the dApps with a full UI and cooldown timers:{" "}
               <a href="https://win.gembait.com/en/faucet" target="_blank" rel="noopener">GembaWin faucet</a>
