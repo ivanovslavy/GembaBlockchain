@@ -12,6 +12,7 @@ const NET = {
   github: "https://github.com/ivanovslavy/GembaBlockchain",
   swap: "https://swap.gembachain.io",
   addresses: "https://addresses.gembachain.io",
+  docs: "https://github.com/ivanovslavy/GembaBlockchain/tree/main/docs",
   gembait: "https://gembait.com",
   symbol: "GMB",
 };
@@ -83,6 +84,44 @@ async function addToken(tok) {
   } catch (e) {
     console.error(e);
   }
+}
+
+function AssetRow({ label, address, onAdd }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1300);
+    } catch {
+      /* clipboard unavailable */
+    }
+  };
+  const short = `${address.slice(0, 6)}…${address.slice(-4)}`;
+  return (
+    <div className="asset">
+      <span className="asset-label">{label}</span>
+      <a
+        className="asset-addr"
+        href={`${NET.explorer}/address/${address}`}
+        target="_blank"
+        rel="noopener"
+        title={address}
+      >
+        {short}
+      </a>
+      <div className="asset-actions">
+        <button className="btn btn-sm btn-ghost" onClick={copy} aria-label={`Copy ${label} address`}>
+          {copied ? "Copied ✓" : "Copy"}
+        </button>
+        {onAdd && (
+          <button className="btn btn-sm" onClick={onAdd}>
+            + MetaMask
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function ClaimButtons() {
@@ -206,12 +245,18 @@ function App() {
           </span>
         </a>
         <nav className="nav-links">
+          <a href={NET.swap} target="_blank" rel="noopener">
+            Swap
+          </a>
           <a href="#faucet">Faucet</a>
           <a href={NET.explorer} target="_blank" rel="noopener">
             Explorer
           </a>
           <a href={NET.addresses} target="_blank" rel="noopener">
             Addresses
+          </a>
+          <a href={NET.docs} target="_blank" rel="noopener">
+            Docs
           </a>
           <a href={NET.github} target="_blank" rel="noopener">
             GitHub
@@ -343,28 +388,12 @@ function App() {
               every 24 hours. These are valueless test tokens — not real USDT / USDC / EURC.
             </p>
             <ClaimButtons />
-            <table>
-              <tbody>
-                <tr>
-                  <th>Faucet</th>
-                  <td>
-                    <a href={`${NET.explorer}/address/${FAUCET}`} target="_blank" rel="noopener">{FAUCET}</a>
-                  </td>
-                  <td></td>
-                </tr>
-                {TOKENS.map((t) => (
-                  <tr key={t.symbol}>
-                    <th>{t.symbol}</th>
-                    <td>
-                      <a href={`${NET.explorer}/address/${t.address}`} target="_blank" rel="noopener">{t.address}</a>
-                    </td>
-                    <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                      <button className="btn btn-sm" onClick={() => addToken(t)}>Add to MetaMask</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="assets">
+              <AssetRow label="Faucet" address={FAUCET} />
+              {TOKENS.map((t) => (
+                <AssetRow key={t.symbol} label={t.symbol} address={t.address} onAdd={() => addToken(t)} />
+              ))}
+            </div>
             <p className="muted registries-note">
               The faucet is also built into the dApps with a full UI and cooldown timers:{" "}
               <a href="https://win.gembait.com/en/faucet" target="_blank" rel="noopener">GembaWin faucet</a>
@@ -409,6 +438,9 @@ function App() {
           </a>
           <a href={NET.addresses} target="_blank" rel="noopener">
             Addresses
+          </a>
+          <a href={NET.docs} target="_blank" rel="noopener">
+            Docs
           </a>
           <a href={NET.github} target="_blank" rel="noopener">
             GitHub
