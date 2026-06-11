@@ -65,3 +65,6 @@ coverage/
 .idea/
 .vscode/
 *.swp
+
+# --- Claude Code local data (settings, transcripts) — never commit ---
+.claude/
