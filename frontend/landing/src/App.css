@@ -2,6 +2,8 @@
   max-width: 1040px;
   margin: 0 auto;
   padding: 0 22px;
+  position: relative;
+  z-index: 1;
 }
 
 /* ---------- nav ---------- */
@@ -44,28 +46,31 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 12px 20px;
-  border-radius: 11px;
-  border: 1px solid var(--line-hi);
+  gap: 0.5rem;
+  padding: 12px 22px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
   background: var(--card-2);
   color: var(--heading);
   font-size: 14.5px;
   font-weight: 600;
   cursor: pointer;
-  transition: border-color 0.14s, background 0.14s;
+  box-shadow: 0 6px 22px -8px var(--btn-glow);
+  transition: transform 0.2s, box-shadow 0.3s, border-color 0.3s;
   font-family: inherit;
 }
 .btn:hover {
-  border-color: var(--indigo);
-  background: #1b1f3d;
+  transform: translateY(-3px);
+  border-color: var(--line-hi);
+  box-shadow: 0 16px 36px -10px var(--btn-glow);
 }
 .btn-sm {
-  padding: 8px 13px;
-  border-radius: 9px;
+  padding: 8px 15px;
   font-size: 13.5px;
 }
 .btn-primary { background: var(--card-2); }
-.btn-ghost { background: transparent; }
+.btn-ghost { background: transparent; box-shadow: none; }
+.btn-ghost:hover { box-shadow: 0 12px 28px -12px var(--btn-glow); }
 
 /* ---------- registry listings (Connect to the testnet) ---------- */
 .registries { margin-top: 22px; }
@@ -173,11 +178,12 @@
 .card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 18px;
   padding: 22px;
-  transition: border-color 0.15s;
+  backdrop-filter: blur(12px);
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.3s, box-shadow 0.4s;
 }
-.card:hover { border-color: var(--line-hi); }
+.card:hover { border-color: var(--line-hi); box-shadow: var(--shadow); transform: translateY(-3px); }
 .card h3 { font-size: 16.5px; margin-bottom: 10px; color: var(--heading); }
 .card h3::before {
   content: "";
@@ -251,3 +257,8 @@ code {
   .details-inner { padding: 24px 16px; }
   .appblock { flex-direction: column; align-items: stretch; text-align: center; }
 }
+
+/* glass surfaces + display font — slavy.gembait.com design language */
+.appblock, .details-inner, .credit, .badge, .note p { backdrop-filter: blur(12px); }
+.appblock, .details-inner, .credit { border-radius: 18px; }
+.brand, .footer-brand { font-family: var(--font-display); letter-spacing: -0.02em; }

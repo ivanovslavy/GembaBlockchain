@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import "./App.css";
+import NodeField from "./NodeField.jsx";
 
 const NET = {
   name: "GembaBlockchain Testnet",
@@ -194,7 +195,9 @@ const DETAILS = [
 
 function App() {
   return (
-    <div className="page">
+    <>
+      <div className="nodefield-bg"><NodeField /></div>
+      <div className="page">
       <header className="nav">
         <a className="brand" href="/">
           <img src="/gemba-animated.svg" alt="" width="34" height="34" />
@@ -417,6 +420,7 @@ function App() {
         </p>
       </footer>
     </div>
+    </>
   );
 }
 

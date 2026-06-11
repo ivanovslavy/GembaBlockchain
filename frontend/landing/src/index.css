@@ -1,42 +1,46 @@
 :root {
-  --bg: #0a0b16;
-  --card: #13152a;
-  --card-2: #171a33;
-  --border: #262a4d;
-  --text: #b7bad2;
-  --text-dim: #7a7e9e;
-  --heading: #f4f5fb;
-  --indigo: #6366f1;
-  --cyan: #22d3ee;
-  --line-hi: #3a3f6e;
+  /* design tokens — same system as slavy.gembait.com (refined dark, indigo accent) */
+  --bg: #07090f;
+  --card: rgba(18, 22, 39, 0.6);
+  --card-2: #121627;
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #9ba1b4;
+  --text-dim: #5e6472;
+  --heading: #e8e9ed;
+  --indigo: #6366F1;
+  --cyan: #06B6D4;
+  --line-hi: rgba(99, 102, 241, 0.5);
   --ok: #34d399;
+  --glass-bg: rgba(11, 14, 24, 0.55);
+  --btn-glow: rgba(99, 102, 241, 0.4);
+  --shadow: 0 10px 50px -12px rgba(0, 0, 0, 0.6);
+  --font-display: 'Outfit', sans-serif;
 
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
-    sans-serif;
+  font-family: 'DM Sans', system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.6;
   color: var(--text);
   background-color: var(--bg);
   -webkit-font-smoothing: antialiased;
 }
 
-* {
-  box-sizing: border-box;
-}
-body {
-  margin: 0;
-  overflow-x: hidden;
-}
-a {
+* { box-sizing: border-box; }
+body { margin: 0; overflow-x: hidden; }
+a { color: var(--heading); text-decoration: none; }
+h1, h2, h3 {
   color: var(--heading);
-  text-decoration: none;
-}
-h1,
-h2,
-h3 {
-  color: var(--heading);
-  line-height: 1.2;
+  line-height: 1.12;
   margin: 0;
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  font-weight: 700;
 }
-::selection {
-  background: rgba(99, 102, 241, 0.35);
+::selection { background: rgba(99, 102, 241, 0.3); }
+
+/* full-site animated node-field background (ported from slavy.gembait.com) */
+.nodefield-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.5;
+  pointer-events: none;
 }
