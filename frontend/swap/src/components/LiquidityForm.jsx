@@ -3,7 +3,7 @@ import {
   useAccount, useChainId, useBalance, useReadContract, useReadContracts,
   useWriteContract, useWaitForTransactionReceipt,
 } from "wagmi";
-import { parseUnits, formatUnits, isAddress, getAddress, maxUint256, zeroAddress } from "viem";
+import { parseUnits, formatUnits, isAddress, getAddress, zeroAddress } from "viem";
 import { DEX, ROUTER_ABI, FACTORY_ABI, PAIR_ABI, ERC20_ABI, DEFAULT_CHAIN_ID } from "../config/chains.js";
 import ConnectButton from "./ConnectButton.jsx";
 
@@ -92,8 +92,10 @@ export default function LiquidityForm() {
 
   async function approve(tokenAddrToApprove) {
     setErr("");
-    try { const h = await writeContractAsync({ address: tokenAddrToApprove, abi: ERC20_ABI, functionName: "approve", args: [dex.router, maxUint256] }); setTxHash(h); }
-    catch (e) { setErr(e.shortMessage || e.message); }
+    // T-1: approve exactly what this action needs (the token amount being added, or the LP being removed) — not maxUint256.
+    const amt = tokenAddrToApprove === pair ? lpWei : amtTokenWei;
+    try { const h = await writeContractAsync({ address: tokenAddrToApprove, abi: ERC20_ABI, functionName: "approve", args: [dex.router, amt] }); setTxHash(h); }
+    catch (e) { console.error(e); setErr("Approval failed — please try again or check your wallet."); }
   }
   async function doAdd() {
     setErr(""); setTxHash(null);
@@ -106,7 +108,7 @@ export default function LiquidityForm() {
         args: [token, amtTokenWei, minTok, minGmb, address, dl], value: amtGmbWei,
       });
       setTxHash(h); setAmtToken(""); setAmtGmbManual("");
-    } catch (e) { setErr(e.shortMessage || e.message); }
+    } catch (e) { console.error(e); setErr("Add-liquidity failed — please try again or check your wallet."); }
   }
   async function doRemove() {
     setErr(""); setTxHash(null);
@@ -117,7 +119,7 @@ export default function LiquidityForm() {
       const fn = fot ? "removeLiquidityETHSupportingFeeOnTransferTokens" : "removeLiquidityETH";
       const h = await writeContractAsync({ address: dex.router, abi: ROUTER_ABI, functionName: fn, args: [token, lpWei, minTok, minGmb, address, dl] });
       setTxHash(h); setLpAmt("");
-    } catch (e) { setErr(e.shortMessage || e.message); }
+    } catch (e) { console.error(e); setErr("Remove-liquidity failed — please try again or check your wallet."); }
   }
 
   return (
@@ -168,6 +170,8 @@ export default function LiquidityForm() {
       {!fot && (
         <div className="meta"><div className="r"><span>Slippage</span><span className="slip"><input value={slip} onChange={(e) => setSlip(e.target.value.replace(/[^0-9.]/g, ""))} />%</span></div></div>
       )}
+
+      {valid && <div className="warn">⚠ Unverified token — you entered this address yourself. GembaSwap does not vouch for it; add liquidity at your own risk.</div>}
 
       {!isConnected || wrongChain ? <div style={{ marginTop: 14 }}><ConnectButton /></div>
         : !valid ? <button className="btn" disabled>Enter a token address</button>

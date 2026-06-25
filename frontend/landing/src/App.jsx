@@ -66,8 +66,10 @@ async function sendFaucetTx(data) {
     await ensureGembaChain();
     await window.ethereum.request({ method: "eth_sendTransaction", params: [{ from, to: FAUCET, data }] });
   } catch (e) {
+    // T-2: never surface raw provider/RPC error text to the user (it can leak RPC URLs / internal strings).
+    // Log the detail to the console for debugging and show a friendly, generic message.
     console.error(e);
-    alert(e?.data?.message || e?.shortMessage || e?.message || "Transaction failed");
+    alert("Transaction failed — please try again or check your wallet.");
   }
 }
 

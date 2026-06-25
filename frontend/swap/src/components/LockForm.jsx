@@ -3,7 +3,7 @@ import {
   useAccount, useChainId, useReadContract, useReadContracts,
   useWriteContract, useWaitForTransactionReceipt,
 } from "wagmi";
-import { parseUnits, formatUnits, isAddress, getAddress, maxUint256 } from "viem";
+import { parseUnits, formatUnits, isAddress, getAddress } from "viem";
 import { DEX, LOCKER_ABI, ERC20_ABI, DEFAULT_CHAIN_ID } from "../config/chains.js";
 import ConnectButton from "./ConnectButton.jsx";
 
@@ -56,8 +56,9 @@ export default function LockForm() {
 
   async function doApprove() {
     setErr("");
-    try { const h = await writeContractAsync({ address: token, abi: ERC20_ABI, functionName: "approve", args: [locker, maxUint256] }); setTxHash(h); }
-    catch (e) { setErr(e.shortMessage || e.message); }
+    // T-1: approve exactly the amount being locked (not maxUint256) — limits blast radius if the token/locker misbehaves.
+    try { const h = await writeContractAsync({ address: token, abi: ERC20_ABI, functionName: "approve", args: [locker, amtWei] }); setTxHash(h); }
+    catch (e) { console.error(e); setErr("Approval failed — please try again or check your wallet."); }
   }
   async function doLock() {
     setErr(""); setTxHash(null);
@@ -65,16 +66,26 @@ export default function LockForm() {
       const h = await writeContractAsync({ address: locker, abi: LOCKER_ABI, functionName: "lock", args: [token, amtWei, BigInt(unlockUnix)] });
       setTxHash(h); setAmount("");
       setTimeout(() => { refetchIds(); refetchLocks(); }, 4000);
-    } catch (e) { setErr(e.shortMessage || e.message); }
+    } catch (e) { console.error(e); setErr("Lock failed — please try again or check your wallet."); }
   }
   async function doWithdraw(id) {
     setErr(""); setTxHash(null);
     try { const h = await writeContractAsync({ address: locker, abi: LOCKER_ABI, functionName: "withdraw", args: [id] }); setTxHash(h); setTimeout(() => refetchLocks(), 4000); }
-    catch (e) { setErr(e.shortMessage || e.message); }
+    catch (e) { console.error(e); setErr("Withdraw failed — please try again or check your wallet."); }
   }
 
   const now = Math.floor(Date.now() / 1000);
   const myLocks = (locks || []).map((l, i) => ({ id: (ids || [])[i], ...(l.result || {}) })).filter((l) => l.owner && l.owner.toLowerCase() === address?.toLowerCase());
+
+  // F-3: getLock() does not return token decimals, so read them on-chain (same pattern as the token meta above)
+  // and format each locked amount with its token's real decimals instead of a hardcoded 18.
+  const lockTokens = [...new Set(myLocks.map((l) => l.token).filter(Boolean))];
+  const { data: lockDecData } = useReadContracts({
+    contracts: lockTokens.map((t) => ({ address: getAddress(t), abi: ERC20_ABI, functionName: "decimals" })),
+    query: { enabled: lockTokens.length > 0 },
+  });
+  const lockDecimals = {};
+  lockTokens.forEach((t, i) => { lockDecimals[t.toLowerCase()] = Number(lockDecData?.[i]?.result ?? 18); });
 
   return (
     <>
@@ -90,6 +101,8 @@ export default function LockForm() {
         <label>Unlock date &amp; time</label>
         <input className="input" type="datetime-local" value={unlockAt} onChange={(e) => setUnlockAt(e.target.value)} />
       </div>
+
+      {valid && <div className="warn">⚠ Unverified token — you entered this address yourself. GembaSwap does not vouch for it; lock at your own risk.</div>}
 
       {!isConnected || wrongChain ? <div style={{ marginTop: 14 }}><ConnectButton /></div>
         : !valid ? <button className="btn" disabled>Enter a token address</button>
@@ -108,7 +121,7 @@ export default function LockForm() {
             const matured = Number(l.unlockTime) <= now;
             return (
               <div className="lock" key={String(l.id)}>
-                <div className="top"><span className="mono">{short(l.token)}</span><span>{fmt(l.amount, 18)}</span></div>
+                <div className="top"><span className="mono">{short(l.token)}</span><span>{fmt(l.amount, lockDecimals[l.token?.toLowerCase()] ?? 18)}</span></div>
                 <div className="meta2">
                   {l.withdrawn ? "Withdrawn" : `Unlocks ${new Date(Number(l.unlockTime) * 1000).toLocaleString()}`}
                   {!l.withdrawn && (matured ? " · ready" : " · locked")}

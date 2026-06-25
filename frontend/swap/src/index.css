@@ -2,7 +2,7 @@
   --bg: #0a0b16; --card: #13152a; --card-2: #171a33; --border: #262a4d;
   --text: #b7bad2; --text-dim: #7a7e9e; --heading: #f4f5fb;
   --indigo: #6366f1; --line-hi: #3a3f6e;
-  --ok: #34d399; --bad: #f87171;
+  --ok: #34d399; --bad: #f87171; --warn: #fbbf24;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 * { box-sizing: border-box; }
@@ -60,6 +60,8 @@ h1 { color: var(--heading); font-size: 20px; margin: 0 0 4px; font-weight: 650; 
 .meta .r span:last-child { color: var(--text); }
 .err { color: var(--bad); font-size: 13px; margin-top: 10px; }
 .ok { color: var(--ok); font-size: 13px; margin-top: 10px; }
+/* Unverified-token warning: shown when the active token was imported by address (not in the built-in list). */
+.warn { color: var(--warn); font-size: 12.5px; line-height: 1.45; margin-top: 12px; padding: 10px 12px; border: 1px solid var(--warn); border-radius: 10px; background: rgba(251, 191, 36, .07); }
 .mono { font-family: ui-monospace, "SF Mono", Consolas, monospace; }
 
 /* lock list */

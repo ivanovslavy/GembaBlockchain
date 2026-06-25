@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useAccount, useChainId, useBalance, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { readContracts } from "wagmi/actions";
-import { parseUnits, formatUnits, isAddress, getAddress, maxUint256 } from "viem";
+import { parseUnits, formatUnits, isAddress, getAddress } from "viem";
 import { DEX, NATIVE, ROUTER_ABI, ERC20_ABI, WGMB_ABI, wagmiConfig, DEFAULT_CHAIN_ID } from "../config/chains.js";
 import ConnectButton from "./ConnectButton.jsx";
 
@@ -77,8 +77,9 @@ export default function SwapForm() {
 
   async function doApprove() {
     setErr("");
-    try { const h = await writeContractAsync({ address: tIn.address, abi: ERC20_ABI, functionName: "approve", args: [dex.router, maxUint256] }); setTxHash(h); await refetchAllow(); }
-    catch (e) { setErr(e.shortMessage || e.message); }
+    // T-1: approve exactly the amount being swapped (not maxUint256) — limits blast radius if the token/router misbehaves.
+    try { const h = await writeContractAsync({ address: tIn.address, abi: ERC20_ABI, functionName: "approve", args: [dex.router, amountIn] }); setTxHash(h); await refetchAllow(); }
+    catch (e) { console.error(e); setErr("Approval failed — please try again or check your wallet."); }
   }
   async function doSwap() {
     setErr(""); setTxHash(null);
@@ -91,12 +92,17 @@ export default function SwapForm() {
       else if (tOut.isNative) h = await writeContractAsync({ address: dex.router, abi: ROUTER_ABI, functionName: "swapExactTokensForETH", args: [amountIn, minOut, path, address, deadline] });
       else h = await writeContractAsync({ address: dex.router, abi: ROUTER_ABI, functionName: "swapExactTokensForTokens", args: [amountIn, minOut, path, address, deadline] });
       setTxHash(h); setAmount("");
-    } catch (e) { setErr(e.shortMessage || e.message); }
+    } catch (e) { console.error(e); setErr("Swap failed — please try again or check your wallet."); }
   }
 
   const rate = out > 0n && amountIn > 0n ? (Number(formatUnits(out, tOut.decimals)) / Number(formatUnits(amountIn, tIn.decimals))) : 0;
   const insufficient = amountIn > balIn;
   const wrongChain = isConnected && chainId !== DEFAULT_CHAIN_ID;
+
+  // T-1: flag tokens the user imported themselves. Built-in = native GMB or the canonical WGMB; anything else
+  // was pasted in by address with no allowlist behind it, so warn before the user trades/approves it.
+  const isUnverified = (t) => !t.isNative && t.address?.toLowerCase() !== wgmbLower;
+  const showUnverified = isUnverified(tIn) || isUnverified(tOut);
 
   return (
     <>
@@ -126,6 +132,8 @@ export default function SwapForm() {
           {isWrapUnwrap && <div className="r"><span>{isWrap ? "Wrap" : "Unwrap"}</span><span>1:1 · no fee</span></div>}
         </div>
       )}
+
+      {showUnverified && <div className="warn">⚠ Unverified token — you imported this address yourself. GembaSwap does not vouch for it; trade at your own risk.</div>}
 
       {!isConnected ? <div style={{ marginTop: 14 }}><ConnectButton /></div>
         : wrongChain ? <div style={{ marginTop: 14 }}><ConnectButton /></div>

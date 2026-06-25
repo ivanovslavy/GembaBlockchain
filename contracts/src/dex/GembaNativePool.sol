@@ -121,6 +121,15 @@ contract GembaNativePool is ERC20, ReentrancyGuard {
             liquidity = Math.sqrt(amountToken * amountNative) - MINIMUM_LIQUIDITY;
             _mint(address(0xdead), MINIMUM_LIQUIDITY);
         } else {
+            // Re-quote the native side against the token amount ACTUALLY received: a
+            // fee-on-transfer token shrinks `amountToken` on intake (above), so the
+            // pre-pull `amountNative` would over-commit native relative to the LP minted
+            // (audit finding F-2). Re-derive native at the true ratio and re-check the
+            // slippage floor; `nativeNeeded <= nativeIn` always, so the excess is refunded
+            // below. Standard ERC-20s are unaffected (amountToken unchanged => same native).
+            uint256 nativeNeeded = quote(amountToken, reserveToken, reserveNative);
+            if (nativeNeeded < amountNativeMin) revert InsufficientNativeAmount();
+            amountNative = nativeNeeded;
             liquidity = Math.min((amountToken * supply) / reserveToken, (amountNative * supply) / reserveNative);
         }
         if (liquidity == 0) revert InsufficientLiquidityMinted();
