@@ -10,9 +10,12 @@ useDefault = true   # keep gitleaks' built-in rules (private keys, API tokens, e
 
 [[rules]]
 id = "bip39-mnemonic"
-description = "Hardcoded BIP-39 mnemonic (12/15/18/21/24 lowercase words)"
-# 11+ space-separated lowercase words followed by one more = 12+ word phrase
-regex = '''\b([a-z]{3,8}\s+){11,23}[a-z]{3,8}\b'''
+description = "Hardcoded BIP-39 mnemonic (12/15/18/21/24 lowercase words) in a QUOTED string"
+# Require the word-run to be QUOTED — real leaks are assignments/array literals like
+# DEV0_MNEMONIC="word word ..." or "word word ...". This avoids flagging ordinary English
+# prose (12+ short words), which an unquoted regex matches (pentest: 2 such false positives
+# in docs/*.md and llms-full.txt). A genuine mnemonic in code/config is always quoted.
+regex = '''["'`]([a-z]{3,8} ){11,23}[a-z]{3,8}["'`]'''
 tags = ["mnemonic", "key"]
 
 [[rules]]
