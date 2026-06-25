@@ -6,7 +6,7 @@
 #
 # Usage:  ./script/verify-all.sh
 #   VERIFIER_URL  (default https://testnet.gembascan.io/api/)
-#   RPC_URL       (default https://testnet.gembascan.io/rpc)
+#   RPC_URL       (default https://rpc1.gembascan.io)
 #   CHAIN_ID      (default 821207)
 # Run AFTER the re-genesis deploys (#5 + DeployDex). The deploy scripts can also
 # pass `--verify --verifier blockscout --verifier-url $VERIFIER_URL` to verify inline.
@@ -14,7 +14,7 @@
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"; cd "$HERE"
 VERIFIER_URL="${VERIFIER_URL:-https://testnet.gembascan.io/api/}"
-RPC_URL="${RPC_URL:-https://testnet.gembascan.io/rpc}"
+RPC_URL="${RPC_URL:-https://rpc1.gembascan.io}"
 CHAIN_ID="${CHAIN_ID:-821207}"
 
 # contractName -> fully-qualified source path (for the verifier)

@@ -84,7 +84,7 @@ port-forward required; A1-style CGNAT often blocks inbound anyway).
 
 ## 5. MetaMask + chain registry
 
-- MetaMask: RPC `https://testnet.gembascan.io/rpc`, explorer
+- MetaMask: RPC `https://rpc1.gembascan.io`, explorer
   `https://testnet.gembascan.io`, chainId **821207**, symbol **GMB**.
 - Network + native-coin **icon in MetaMask/chainlist** comes from
   `ethereum-lists/chains` (not our explorer). Submission payloads are in

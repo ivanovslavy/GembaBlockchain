@@ -35,7 +35,7 @@ This folder holds the ready-to-submit payloads:
    gh pr create --repo ethereum-lists/chains --fill   # or open the PR in the GitHub UI
    ```
 4. Their CI validates that the **RPC responds with the matching chainId** (ours does:
-   `https://testnet.gembascan.io/rpc` → `eth_chainId` = `0xc87d7` = 821207). Once merged,
+   `https://rpc1.gembascan.io` → `eth_chainId` = `0xc87d7` = 821207). Once merged,
    chainlist.org shows the network with the icon, and MetaMask picks it up — the icon
    then also represents the **native GMB coin** (MetaMask uses the network icon for the
    native currency).

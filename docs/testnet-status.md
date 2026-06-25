@@ -19,7 +19,7 @@
 | Native coin | Gemba (GMB) — **test GMB, no value** |
 | Consensus | CometBFT BFT PoS, ~5 s blocks, instant finality |
 | Explorer (public) | **https://testnet.gembascan.io** (GembaScan / Blockscout) |
-| EVM JSON-RPC (public) | **https://testnet.gembascan.io/rpc** |
+| EVM JSON-RPC (public) | **https://rpc1.gembascan.io** |
 | Active validators | 4 (3 on public cloud hosts + 1 operator node), each 1,000,000 GMB |
 
 ## Listed in public registries
@@ -103,7 +103,7 @@ After the migration, add/point MetaMask at:
 | Field | Value |
 |---|---|
 | Network name | GembaBlockchain testnet |
-| New RPC URL | **https://testnet.gembascan.io/rpc** |
+| New RPC URL | **https://rpc1.gembascan.io** |
 | Chain ID | **821207** |
 | Currency symbol | **GMB** |
 | Block explorer URL | **https://testnet.gembascan.io** |

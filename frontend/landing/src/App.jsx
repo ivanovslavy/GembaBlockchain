@@ -7,7 +7,7 @@ const NET = {
   cosmosId: "gemba-testnet-1",
   chainIdHex: "0xc87d7", // 821207
   chainId: 821207,
-  rpc: "https://testnet.gembascan.io/rpc",
+  rpc: "https://rpc1.gembascan.io",
   explorer: "https://testnet.gembascan.io",
   github: "https://github.com/ivanovslavy/GembaBlockchain",
   swap: "https://swap.gembachain.io",
@@ -39,7 +39,7 @@ async function addToMetaMask() {
         {
           chainId: NET.chainIdHex,
           chainName: NET.name,
-          rpcUrls: [NET.rpc],
+          rpcUrls: [NET.rpc, "https://rpc2.gembascan.io", "https://rpc3.gembascan.io"],
           nativeCurrency: { name: "Gemba", symbol: NET.symbol, decimals: 18 },
           blockExplorerUrls: [NET.explorer],
         },
