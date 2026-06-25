@@ -34,6 +34,17 @@ go mod edit -replace=github.com/ivanovslavy/GembaBlockchain/chain="$CHAIN_DIR"
 go mod tidy >/dev/null 2>&1
 
 echo ">> building gembad -> $OUT"
-go build -o "$OUT" ./cmd/evmd
-echo "OK: $OUT"
+# Stamp a real version (pentest P-3): an unstamped build reports web3_clientVersion
+# "Version dev ()", which fingerprints the node. Set a concrete version/commit and
+# strip debug info (-s -w) so the binary advertises a controlled string.
+GEMBAD_VERSION="${GEMBAD_VERSION:-$(git -C "$CHAIN_DIR" describe --tags --always --dirty 2>/dev/null || echo "v0.1.0")}"
+GEMBAD_COMMIT="${GEMBAD_COMMIT:-$(git -C "$CHAIN_DIR" rev-parse --short HEAD 2>/dev/null || echo none)}"
+SDK_VER="github.com/cosmos/cosmos-sdk/version"
+LDFLAGS="-s -w \
+  -X ${SDK_VER}.Name=gemba \
+  -X ${SDK_VER}.AppName=gembad \
+  -X ${SDK_VER}.Version=${GEMBAD_VERSION} \
+  -X ${SDK_VER}.Commit=${GEMBAD_COMMIT}"
+go build -ldflags "$LDFLAGS" -o "$OUT" ./cmd/evmd
+echo "OK: $OUT (version ${GEMBAD_VERSION}, commit ${GEMBAD_COMMIT})"
 "$OUT" version 2>/dev/null || true

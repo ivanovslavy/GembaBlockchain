@@ -18,11 +18,13 @@ N=4
 RS_RESERVE_ADDR="cosmos1s32mhm7c0eest48njscsr5fnn2c42mr9w8cnqe"
 FAUCET_ADDR="cosmos17s95c5jpc6x2l3edwh4dm8yhac68yru7cre47d"
 
+# ALL env-sourced, NEVER hardcoded (repo is public; a hardcoded mnemonic here was
+# reused for the live testnet faucet and had to be rotated — docs/security-pentest-2026-06-24.md P-1).
 VAL_MNEMONICS=(
   "${DEV0_MNEMONIC:?set DEV0_MNEMONIC — see chain/.env.example}"
-  "***REMOVED-DEVNET-MNEMONIC***"
-  "***REMOVED-ROTATED-FAUCET-MNEMONIC***"
-  "***REMOVED-DEVNET-MNEMONIC***"
+  "${DEV1_MNEMONIC:?set DEV1_MNEMONIC — see chain/.env.example}"
+  "${DEV2_MNEMONIC:?set DEV2_MNEMONIC — see chain/.env.example}"
+  "${DEV3_MNEMONIC:?set DEV3_MNEMONIC — see chain/.env.example}"
 )
 
 echo ">> wiping $BASE"; rm -rf "$BASE"; N0="$BASE/node0"

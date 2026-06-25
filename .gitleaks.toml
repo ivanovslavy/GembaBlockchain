@@ -1,0 +1,39 @@
+# gitleaks config for GembaBlockchain (public repo). Blocks committed secrets.
+# Run locally:  gitleaks detect --no-banner --config .gitleaks.toml
+# Enforced in CI: .github/workflows/secret-scan.yml
+# Added after pentest P-1 (docs/security-pentest-2026-06-24.md): a hardcoded BIP-39
+# mnemonic in an init script was reused for the live testnet faucet account.
+title = "GembaBlockchain secret scan"
+
+[extend]
+useDefault = true   # keep gitleaks' built-in rules (private keys, API tokens, etc.)
+
+[[rules]]
+id = "bip39-mnemonic"
+description = "Hardcoded BIP-39 mnemonic (12/15/18/21/24 lowercase words)"
+# 11+ space-separated lowercase words followed by one more = 12+ word phrase
+regex = '''\b([a-z]{3,8}\s+){11,23}[a-z]{3,8}\b'''
+tags = ["mnemonic", "key"]
+
+[[rules]]
+id = "evm-private-key-hex"
+description = "Raw 32-byte hex private key (0x + 64 hex)"
+regex = '''\b0x[a-fA-F0-9]{64}\b'''
+tags = ["privatekey"]
+
+[allowlist]
+description = "Known-safe matches: placeholders, public constants, test fixtures, gitignored secret store"
+paths = [
+  '''(^|/)\.env\.example$''',
+  '''(^|/)\.gitleaks\.toml$''',
+  '''wallet-backup/''',              # gitignored secret store (never committed anyway)
+  '''.*\.t\.sol$''',                 # Foundry tests use throwaway/anvil keys
+  '''(^|/)test/''',
+  '''security/track4-services-dapp/faucet-attack\.test\.mjs$''',
+]
+regexes = [
+  '''0x0{64}''',                                                  # zero hash
+  '''0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9''', # public Uniswap PERMIT_TYPEHASH
+  '''<.*mnemonic.*>''',                                           # angle-bracket placeholders
+  '''anvil|hardhat|0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80''', # well-known anvil key
+]

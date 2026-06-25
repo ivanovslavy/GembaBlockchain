@@ -16,12 +16,15 @@ require_tools
 BASE="${BASE:-$HOME/.gemba-multinode}"
 N=4
 
-# 4 distinct, well-known devnet validator mnemonics (cosmos/evm dev0..dev3).
+# 4 distinct devnet validator mnemonics — ALL env-sourced, NEVER hardcoded.
+# (Security: this repo is public. A mnemonic hardcoded here previously was reused for
+# the live testnet faucet account and had to be rotated — see
+# docs/security-pentest-2026-06-24.md P-1. No secret material in the source, ever.)
 VAL_MNEMONICS=(
   "${DEV0_MNEMONIC:?set DEV0_MNEMONIC — see chain/.env.example}"
-  "***REMOVED-DEVNET-MNEMONIC***"
-  "***REMOVED-ROTATED-FAUCET-MNEMONIC***"
-  "***REMOVED-DEVNET-MNEMONIC***"
+  "${DEV1_MNEMONIC:?set DEV1_MNEMONIC — see chain/.env.example}"
+  "${DEV2_MNEMONIC:?set DEV2_MNEMONIC — see chain/.env.example}"
+  "${DEV3_MNEMONIC:?set DEV3_MNEMONIC — see chain/.env.example}"
 )
 
 echo ">> wiping $BASE"

@@ -54,6 +54,13 @@ up `/monitoring` (Prometheus + Grafana + the bonded-ratio metric) on day 0.
 - [ ] CPU/mem/IO headroom under load; no OOM/restarts.
 - [ ] Backups tested (restore a node from snapshot/state-sync) — `backups.md`.
 - [ ] Validator keys on tmkms; failover drill done without a double-sign — `validator-keys.md`.
+- [ ] **Every Docker container survives a daemon restart / reboot.** The GembaScan
+      (Blockscout) stack — `db`, `redis`, `backend`, `frontend`, `sc-verifier` — must
+      ALL carry `restart: unless-stopped` **both in `docker-compose.yml` and live**
+      (`docker inspect -f '{{.HostConfig.RestartPolicy.Name}}' <name>`). The stateful
+      containers (`db`/`redis`) are the easy miss. A dockerd restart (e.g. an `apt`
+      docker upgrade) or host reboot must bring the **whole** explorer back
+      unattended — never relying on a manual `docker compose up`.
 
 ## Drills (do them on testnet, not first on mainnet)
 
@@ -63,6 +70,15 @@ up `/monitoring` (Prometheus + Grafana + the bonded-ratio metric) on day 0.
       `halt-recovery.md`; time it.
 - [ ] **Governance**: pass a parameter-change proposal end-to-end (propose → vote →
       execute) so the on-chain governance path is exercised before mainnet.
+- [ ] **Host-update / dockerd-restart resilience** (explorer + archive host): run
+      `systemctl restart docker`, then a full host reboot, and confirm **every**
+      container + the archive node auto-recovers and `gembascan.io` serves data with
+      **zero** manual intervention. *Incident 2026-06-23 (testnet): an `apt` upgrade
+      restarted dockerd; the Blockscout `db` + `redis` had **no** `restart:` policy in
+      `docker-compose.yml`, so they stayed down and the explorer went "no data" while
+      the chain was fine. Fixed by adding `restart: unless-stopped` to all services.
+      This MUST be verified green before mainnet — a silent explorer is a public-trust
+      hit even when the chain is healthy.*
 
 ## Exit criteria (ready to plan mainnet)
 
