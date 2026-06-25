@@ -68,6 +68,20 @@ The 4-box setup (Node 20, harness, 75-wallet slice each, public-RPC `.env`, foun
 wallets) **persists on the boxes** — you don't rebuild it. Full procedure + 2026-06-26 results
 (protection rejects ~85% with `503` at ~2900 req/s; chain untouched): **`docs/runbooks/distributed-load-test.md`**.
 
+### Raw-ceiling result (localhost, .100, 2026-06-26)
+
+To measure the chain's *true* throughput (no front door), point one box at its own node and
+add wallets: on `.100` set `RPC_URLS=http://127.0.0.1:8545` + drop in all 300 wallets, then
+`node scripts/run.js --profile=A`. Result: profile A's knee fired at **target 150 tps, sustained
+~88 / peak ~102 tps mined** — but `reason=errors`, **not** consensus. Throughout, the **chain was
+never the bottleneck**: `num_unconfirmed_txs` ~0, base fee pinned at the ~1-gwei floor (1.1–1.3),
+p95 ~10 s (≈2 blocks). The cap was the **generator + single-node submission**: errors were
+dominated by `fee_too_low` (2116) — the harness doesn't bump `maxFeePerGas` to track the rising
+base fee — plus nonce gaps and timeouts. **Improvement for a truer ceiling:** make the harness
+track base fee (dynamic `maxFeePerGas`), spread submission across multiple nodes, and use more
+wallets. Bottom line: at ~100 tps the chain loafs (base fee at floor); real consensus capacity is
+well above what one node's RPC + this generator could push.
+
 ## Logs (`logs/<runId>/`)
 - `tx.jsonl` — one line per mined/timed-out tx (from, nonce, type, hash, block, latency, status, gasUsed)
 - `blocks.jsonl` — per block (txCount, gasUsed/limit, baseFee)
