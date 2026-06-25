@@ -21,12 +21,18 @@ const (
 
 func coins(n int64) sdk.Coins { return sdk.NewCoins(sdk.NewCoin(denom, math.NewInt(n))) }
 
+// sdkCtx returns a minimal sdk.Context carrying an event manager, so the redirect
+// path (which emits slash_redirected) can be exercised without a full app.
+func sdkCtx() sdk.Context {
+	return sdk.Context{}.WithContext(context.Background()).WithEventManager(sdk.NewEventManager())
+}
+
 // The core invariant (§3.1, §5.6): a slash burns from the bonded pool, but the
 // decorator must keep total supply UNCHANGED and deposit the slashed stake into
 // the faucet reserve — punishing the validator by stake loss, not by destroying
 // supply.
 func TestSlashFromBondedPool_PreservesSupply_CreditsFaucet(t *testing.T) {
-	ctx := context.Background()
+	ctx := sdkCtx()
 	bank := gtu.NewBankFake()
 	bank.FundModule(stakingtypes.BondedPoolName, coins(1000)) // a validator's bonded stake
 	k := slashfunds.NewBankKeeper(bank, faucet)
@@ -37,11 +43,16 @@ func TestSlashFromBondedPool_PreservesSupply_CreditsFaucet(t *testing.T) {
 	require.Equal(t, before, bank.GetSupply(ctx, denom).Amount, "supply must be unchanged by slashing")
 	require.Equal(t, int64(100), bank.BalanceOf(faucet, denom).Int64(), "slashed stake must land in the faucet")
 	require.Equal(t, int64(900), bank.BalanceOf(stakingtypes.BondedPoolName, denom).Int64())
+
+	// A redirect must emit the observable, on-chain marker (the P-4 verifiability fix).
+	evs := ctx.EventManager().Events()
+	require.Len(t, evs, 1, "exactly one slash_redirected event expected")
+	require.Equal(t, slashfunds.EventTypeSlashRedirected, evs[0].Type)
 }
 
 // Tombstone / double-sign slashes burn from the not-bonded pool too; same rule.
 func TestSlashFromNotBondedPool_PreservesSupply_CreditsFaucet(t *testing.T) {
-	ctx := context.Background()
+	ctx := sdkCtx()
 	bank := gtu.NewBankFake()
 	bank.FundModule(stakingtypes.NotBondedPoolName, coins(500))
 	k := slashfunds.NewBankKeeper(bank, faucet)
@@ -51,6 +62,10 @@ func TestSlashFromNotBondedPool_PreservesSupply_CreditsFaucet(t *testing.T) {
 
 	require.Equal(t, before, bank.GetSupply(ctx, denom).Amount)
 	require.Equal(t, int64(50), bank.BalanceOf(faucet, denom).Int64())
+
+	evs := ctx.EventManager().Events()
+	require.Len(t, evs, 1, "exactly one slash_redirected event expected")
+	require.Equal(t, slashfunds.EventTypeSlashRedirected, evs[0].Type)
 }
 
 // A burn from a non-staking module is NOT redirected — it still burns and reduces

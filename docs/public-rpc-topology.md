@@ -22,12 +22,12 @@ so already-configured clients keep working.
 | `https://rpc1.gembascan.io` (**primary**) | .83 (gemba-tn-contabo-2) | pruned validator | nginx TLS + **single CORS** + rate-limit, Cloudflare-only |
 | `https://rpc2.gembascan.io` | .84 (gemba-tn-contabo-3) | pruned validator | same |
 | `https://rpc3.gembascan.io` (**added 2026-06-25**) | .82 (gemba-tn-contabo-1) | pruned validator | same — added to move wallet/dapp RPC off the archive |
-| ~~`testnet.gembascan.io/rpc`~~ | .137 archive | archive | **de-advertised; explorer-only**; `/rpc` repointed → rpc1 for legacy clients |
+| ~~`testnet.gembascan.io/rpc`~~ | .137 archive | archive | **REMOVED 2026-06-26** — public `/rpc` returns **`410 Gone`** (pentest P-2); the archive serves the explorer only and reads the node internally on `127.0.0.1:8545` |
 
 Web / explorer hosts:
 | Host | Box | Serves |
 |---|---|---|
-| `testnet.gembascan.io`, `gembascan.io`, `www` | **13.140.148.137** | GembaScan (Blockscout) + `/rpc` (archive) |
+| `testnet.gembascan.io`, `gembascan.io`, `www` | **13.140.148.137** | GembaScan (Blockscout) only — public `/rpc` removed (`410`, P-2); reads the node internally on `127.0.0.1:8545` |
 | `gembachain.io`, `www` | **46.225.1.162** | landing site (Apache static, `/gembachain.io/dist`) |
 | `swap.gembachain.io` | **46.225.1.162** | GembaSwap DEX UI (`/swap.gembachain.io/dist`) — our own swap app, **no platform fees**; GMB↔WGMB wrap/unwrap is free (1:1); ERC-20 swaps via GembaSwap V2. Linked prominently from gembachain.io (nav + hero + footer). |
 | `addresses.gembachain.io` | **46.225.1.162** | official address directory (`/addresses.gembachain.io`, static) — testnet/mainnet tabs; genesis reserves, governance, DEX (Router V2/WGMB/Factory), validators; copy + GembaScan links. Linked from gembachain.io (nav + footer). |
