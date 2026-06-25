@@ -41,7 +41,7 @@ case "$cmd" in
   status)
     for ip in "${BOXES[@]}"; do
       printf "  %-16s " "$ip"
-      timeout 12 $SSH slavy@$ip 'echo "run.js=$(pgrep -fc "^node .*scripts/run.js" 2>/dev/null||echo 0) flood=$(pgrep -fc "^node .*flood.mjs" 2>/dev/null||echo 0) node=$(node -v)"' 2>/dev/null
+      timeout 12 $SSH slavy@$ip 'echo "run.js=$(pgrep -fc "^node .*scripts/run.js" 2>/dev/null) flood=$(pgrep -fc "^node .*flood.mjs" 2>/dev/null) node=$(node -v)"' 2>/dev/null
     done
     echo "  chain: $(chain_health)" ;;
 
