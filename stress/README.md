@@ -47,6 +47,27 @@ node scripts/analyze.js --run=<runId>   # → logs/<runId>/report.md
 npm run verify                     # optional: explorer verify check
 ```
 
+## Distributed mode (4 IPs, public RPC — the realistic test)
+
+The run above hits a node's **localhost** to measure the raw consensus ceiling. To test the
+network **the way real traffic arrives** — from multiple IPs over the internet through
+Cloudflare + the public RPC rate-limit — use the **distributed** harness:
+
+- `flood.mjs` — lightweight per-box request flooder (proves the rate-limit protection).
+- `dist-run.sh` — orchestrates load from **4 distinct source IPs** (.82/.83/.84 + home .100)
+  against `rpc1/2/3.gembascan.io`, with chain monitoring + a kill-switch.
+
+```bash
+./dist-run.sh status              # what's running + chain health
+./dist-run.sh flood 60 150        # 4 IPs × conc 150 × 60s → ~3000 req/s; per-IP 200/503 counts
+./dist-run.sh harness A           # full tx workload from all 4 IPs
+./dist-run.sh stop
+```
+
+The 4-box setup (Node 20, harness, 75-wallet slice each, public-RPC `.env`, founder-funded
+wallets) **persists on the boxes** — you don't rebuild it. Full procedure + 2026-06-26 results
+(protection rejects ~85% with `503` at ~2900 req/s; chain untouched): **`docs/runbooks/distributed-load-test.md`**.
+
 ## Logs (`logs/<runId>/`)
 - `tx.jsonl` — one line per mined/timed-out tx (from, nonce, type, hash, block, latency, status, gasUsed)
 - `blocks.jsonl` — per block (txCount, gasUsed/limit, baseFee)
