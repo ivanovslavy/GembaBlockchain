@@ -41,7 +41,7 @@ case "$cmd" in
   status)
     for ip in "${BOXES[@]}"; do
       printf "  %-16s " "$ip"
-      timeout 12 $SSH slavy@$ip 'echo "run.js=$(pgrep -fc "node scripts/run.js" 2>/dev/null||echo 0) flood=$(pgrep -fc "flood.mjs" 2>/dev/null||echo 0) node=$(node -v)"' 2>/dev/null
+      timeout 12 $SSH slavy@$ip 'echo "run.js=$(pgrep -fc "^node .*scripts/run.js" 2>/dev/null||echo 0) flood=$(pgrep -fc "^node .*flood.mjs" 2>/dev/null||echo 0) node=$(node -v)"' 2>/dev/null
     done
     echo "  chain: $(chain_health)" ;;
 
@@ -71,7 +71,7 @@ case "$cmd" in
     while [ $SECONDS -lt $end ]; do echo "  $(date -u +%H:%M:%S) $(chain_health)"; sleep 10; done ;;
 
   stop)
-    for ip in "${BOXES[@]}"; do $SSH slavy@$ip 'pkill -9 -f "node scripts/run.js" 2>/dev/null; pkill -9 -f "flood.mjs" 2>/dev/null; echo "  '"$ip"' stopped"' 2>/dev/null; done ;;
+    for ip in "${BOXES[@]}"; do $SSH slavy@$ip 'pkill -9 -f "^node .*scripts/run.js" 2>/dev/null; pkill -9 -f "^node .*flood.mjs" 2>/dev/null; echo "  '"$ip"' stopped"' 2>/dev/null; done ;;
 
   *) echo "usage: $0 {status|fund|flood [DUR CONC]|harness [A|B|C]|monitor [SECS]|stop}"; exit 1 ;;
 esac
