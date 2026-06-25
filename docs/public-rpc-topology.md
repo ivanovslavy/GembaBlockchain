@@ -12,11 +12,17 @@ to `46.225.1.162` (gembait box). Explorer reads **locally** from its co-located 
 (`host.docker.internal:8545`), no external API calls.
 
 ## Public endpoints (EVM JSON-RPC, chainId **821207**)
+**Primary = `rpc1`; fallbacks `rpc2`, `rpc3`.** As of **2026-06-25** the archive node is **no longer
+a public wallet RPC** — it serves the explorer only. The old `testnet.gembascan.io/rpc` was overloaded
+(it shares the box with Blockscout indexing) and hung on batched JSON-RPC, which broke MetaMask balance
+reads + tx building (pentest P-2/P-5). It was de-advertised everywhere and its `/rpc` repointed to `rpc1`
+so already-configured clients keep working.
 | URL | Origin | Node type | Notes |
 |---|---|---|---|
-| `https://rpc1.gembascan.io` | .83 (gemba-tn-contabo-2) | **pruned** | nginx TLS + rate-limit, Cloudflare-only |
-| `https://rpc2.gembascan.io` | .84 (gemba-tn-contabo-3) | **pruned** | same |
-| `https://testnet.gembascan.io/rpc` | **13.140.148.137** `gembad-archive` | **archive** | dedicated box; Apache; also the explorer's source |
+| `https://rpc1.gembascan.io` (**primary**) | .83 (gemba-tn-contabo-2) | pruned validator | nginx TLS + **single CORS** + rate-limit, Cloudflare-only |
+| `https://rpc2.gembascan.io` | .84 (gemba-tn-contabo-3) | pruned validator | same |
+| `https://rpc3.gembascan.io` (**added 2026-06-25**) | .82 (gemba-tn-contabo-1) | pruned validator | same — added to move wallet/dapp RPC off the archive |
+| ~~`testnet.gembascan.io/rpc`~~ | .137 archive | archive | **de-advertised; explorer-only**; `/rpc` repointed → rpc1 for legacy clients |
 
 Web / explorer hosts:
 | Host | Box | Serves |
@@ -76,12 +82,24 @@ heavy indexer over residential bandwidth, and piles load on a box that also runs
 the public archive in a datacenter. `jellyfin` is fine for a *personal pruned* node, not the public
 archive.
 
-## Mainnet
-Mainnet (`gemba-1`, EVM chainId **821206**) is a **separate chain** → needs its **own** archive +
-explorer + public RPC set (can't share testnet's). Notes:
-- Validators distribute across independent operators (not all founder-run).
+## Mainnet — RPC policy (DECIDED 2026-06-25)
+Mainnet (`gemba-1`, EVM chainId **821206**) is a **separate chain** → its own archive + explorer +
+public RPC set (can't share testnet's).
+
+**Operator decision:** mainnet uses the **same model as testnet — the validators serve the public RPC**,
+just on **more powerful servers**. We will **NOT** stand up separate dedicated RPC-only servers (cost;
+and the network is not under real load). The residual "RPC-on-a-validator" risk is **accepted**, mitigated
+by beefier hardware + Cloudflare rate-limiting + ufw (CF-only) + single-CORS nginx.
+
+**HARD RULE — RPC must NEVER live on the archive node or the explorer host.** That was the exact root of
+the testnet incident (pentest P-2/P-5): the archive box also runs Blockscout indexing → it overloads and
+**hangs on batched JSON-RPC**, so wallets read **0 balance / "Fund your wallet"** and can't build txs.
+Keep them strictly separated:
+- **Public RPC** → validator nodes only (beefier boxes), behind single-CORS nginx + rate-limit + CF-only ufw.
+- **Archive node** → explorer/indexing ONLY; never advertised or used as a wallet RPC.
+
+Other notes:
+- Validators distribute across independent operators over time (not all founder-run).
 - The mainnet archive will be **heavier** (real traffic) → size disk/RAM bigger.
-- Put explorer + archive on a **dedicated box, never on a validator** (the .82 lesson).
-- One well-resourced box can co-host both mainnet and testnet explorer+archive (separate
-  processes/ports/data-dirs); testnet can be downsized after mainnet launch. So it's a second
-  *supporting* set, not a blind 2× of everything.
+- One well-resourced box can co-host mainnet + testnet explorer+archive (separate processes/ports/
+  data-dirs); testnet can be downsized after mainnet launch.

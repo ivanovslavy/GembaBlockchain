@@ -54,7 +54,12 @@ export const wagmiConfig = createConfig({
   chains: SUPPORTED_CHAINS,
   connectors,
   transports: {
-    [gembaTestnet.id]: fallback(TESTNET_RPCS.map((u) => http(u))),
+    // T-3 — RPC trust assumption (testnet read path): viem `fallback` tries the RPCs in order and the UI
+    // trusts whatever the first healthy endpoint returns. There is NO cross-checking of replies between RPCs —
+    // a single malicious/compromised RPC could feed the UI a wrong balance/quote/reserve. Accepted for a
+    // valueless testnet read path; do not rely on it for value-critical reads without multi-RPC agreement.
+    // `rank: true` makes viem actively measure latency/health and prefer the best-performing RPC.
+    [gembaTestnet.id]: fallback(TESTNET_RPCS.map((u) => http(u)), { rank: true }),
   },
 });
 

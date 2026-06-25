@@ -12,7 +12,7 @@
 
 ## Live (testnet)
 - Explorer (GembaScan): https://testnet.gembascan.io
-- Public RPC: https://testnet.gembascan.io/rpc, https://rpc1.gembascan.io, https://rpc2.gembascan.io (chainId 821207, symbol GMB)
+- Public RPC: https://rpc1.gembascan.io, https://rpc1.gembascan.io, https://rpc2.gembascan.io (chainId 821207, symbol GMB)
 - DEX (GembaSwap): https://swap.gembachain.io
 - Public registry listings (testnet, chainId 821207): listed in ethereum-lists/chains (the registry that powers chainlist.org, enabling one-click "Add to MetaMask") and in Blockscout's chainscout directory. Merged PRs: https://github.com/ethereum-lists/chains/pull/8413 and https://github.com/blockscout/chainscout/pull/241. These are testnet listings; mainnet (chainId 821206) is not yet launched.
 

@@ -7,7 +7,7 @@ const NET = {
   cosmosId: "gemba-testnet-1",
   chainIdHex: "0xc87d7", // 821207
   chainId: 821207,
-  rpc: "https://testnet.gembascan.io/rpc",
+  rpc: "https://rpc1.gembascan.io",
   explorer: "https://testnet.gembascan.io",
   github: "https://github.com/ivanovslavy/GembaBlockchain",
   swap: "https://swap.gembachain.io",
@@ -39,7 +39,7 @@ async function addToMetaMask() {
         {
           chainId: NET.chainIdHex,
           chainName: NET.name,
-          rpcUrls: [NET.rpc],
+          rpcUrls: [NET.rpc, "https://rpc2.gembascan.io", "https://rpc3.gembascan.io"],
           nativeCurrency: { name: "Gemba", symbol: NET.symbol, decimals: 18 },
           blockExplorerUrls: [NET.explorer],
         },
@@ -66,8 +66,10 @@ async function sendFaucetTx(data) {
     await ensureGembaChain();
     await window.ethereum.request({ method: "eth_sendTransaction", params: [{ from, to: FAUCET, data }] });
   } catch (e) {
+    // T-2: never surface raw provider/RPC error text to the user (it can leak RPC URLs / internal strings).
+    // Log the detail to the console for debugging and show a friendly, generic message.
     console.error(e);
-    alert(e?.data?.message || e?.shortMessage || e?.message || "Transaction failed");
+    alert("Transaction failed — please try again or check your wallet.");
   }
 }
 
