@@ -109,6 +109,33 @@ and, at scale, a liveness risk. Size each validator box for `gembad` **alone**, 
 headroom; put Qortal / other nodes / load generators on **separate** machines. (See
 `docs/runbooks/distributed-load-test.md` for the soak data.)
 
+## Mainnet hardware plan (DECIDED 2026-06-26)
+Concrete box sizing, derived from the testnet load + soak tests:
+
+- **Validators — 4× small boxes (≈ Contabo VPS 10: 4 vCPU / 8 GB / NVMe), one `gembad` each.**
+  A *pure* validator on 4c/8GB handled the load tests without trouble (the testnet validators
+  that struggled only did so when a co-tenant — Qortal — shared the box, per the "one validator =
+  one box" rule above). So each mainnet validator gets its own clean 4c/8GB box; the public wallet
+  RPC front-desk (nginx + rate-limit + CF-only) rides on these, nothing else.
+- **Archive + explorer — split across 2× mid boxes (≈ Contabo VPS 30: 8 vCPU / 24 GB / 200 GB
+  NVMe each).** One box runs the **archive node** only, the other runs **Blockscout** (indexer +
+  Postgres + frontend) only. Splitting removes the CPU contention seen on testnet (where `gembad`
+  tracing + the Elixir indexer fought for 6 shared cores → load 10 → the explorer lagged ~7 h under
+  a 1 M-tx soak). Each role now has its own cores + its own growing disk. **Use NVMe, not SSD**
+  (archive state + Postgres are I/O-heavy); **disk is the long-term limit — expand each box's volume
+  as the archive / DB grow.**
+
+**Explorer → node RPC link (changed by the split).** Because the archive node and Blockscout are now
+on **separate boxes**, Blockscout no longer reads a *local* RPC (`host.docker.internal:8545`). It
+reaches the node **over the network via a DNS name** (e.g. `archive-rpc.<...>`). Two hard constraints:
+- It **must point at the debug/trace-enabled archive node** (Blockscout's `ETHEREUM_JSONRPC_TRACE_URL`
+  needs `debug_trace*` to index **internal transactions** — required to show what factory-created
+  contracts like Escrow clones / DEX pairs actually did). The **public wallet RPC (validators) has
+  `debug` disabled**, so it **cannot** serve as the explorer's trace source — only the archive can.
+- That archive RPC stays **firewalled to the explorer box's IP only** (ufw / private network), **never
+  open to the public internet** — it is an internal indexer feed, not a public wallet RPC, so the
+  "no public RPC on the archive" hard rule still holds. The DNS name is just how the explorer finds it.
+
 Other notes:
 - Validators distribute across independent operators over time (not all founder-run).
 - The mainnet archive will be **heavier** (real traffic) → size disk/RAM bigger.
