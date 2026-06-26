@@ -96,7 +96,11 @@ remediation**. AU-2 also overlaps the faucet (its npm deps were fixed here).
 - [ ] Update CLAUDE.md / `tokenomics-pending.md` (reserves ARE funded). — R-1 (done)
 - [x] One validator = one box; RPC never on archive/explorer (`public-rpc-topology.md`).
 - [ ] Validator key mgmt (tmkms/Vault); bonded-ratio monitoring live.
-- [ ] **Upstream Cosmos EVM audit (ADR-006)** — hard launch blocker. Timeline: cosmos/evm v1 (post-audit) targeted **~end of Q2 2026**; track the cosmos/evm releases + the Sherlock report.
+- [x] **Mainnet faucet on-chain cooldown** (`GembaDripFaucet`) + per-IP service guard + e2e tests. — AU-2
+- [x] **Fail-soft module alerts + email** (`/monitoring`, alertmanager via gembascan.io SMTP). — AU-1
+- [x] **Validator auto-unjail + auto-compound** daemons (defend ~66% bonded ratio). — §16.8/§16.9
+- [ ] **Activate validator auto-ops on the testnet boxes** — runbook ready (`runbooks/validator-auto-ops-deploy.md`); needs the operator-key import per box.
+- [ ] **Upstream Cosmos EVM audit (ADR-006)** — hard launch blocker (cosmos/evm v1 ~end Q2 2026). Timeline: cosmos/evm v1 (post-audit) targeted **~end of Q2 2026**; track the cosmos/evm releases + the Sherlock report.
 
 ## 6b. Follow-up hardening (2026-06-26) — faucet + validator resilience
 
@@ -114,7 +118,11 @@ Built after the audit, on top of the items above:
   into self-delegation) so the founder validators continuously grow and anchor the **~66% bonded
   ratio** (ADR-008) on a free, no-price chain where casual validators could otherwise let it
   collapse. Consensus power only — **no** governance/treasury weight (§5.7). systemd timers +
-  installer; active on the testnet validators, part of the mainnet validator setup from genesis.
+  installer; part of the mainnet validator setup from genesis. **Testnet activation runbook**
+  (verified box→validator→operator-key mapping + import/gas/install steps):
+  [`docs/runbooks/validator-auto-ops-deploy.md`](runbooks/validator-auto-ops-deploy.md). The
+  operator keys live off the public boxes (in `wallet-backup/`), so on-box activation is a
+  deliberate, documented step (Option A — each validator self-manages, the mainnet model).
 
 ## 6. App / reference contracts — deployed on testnet 2026-06-26 (what they are, what you need)
 
