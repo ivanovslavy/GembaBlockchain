@@ -75,9 +75,11 @@ async function fireOne(sig) {
   if (!req) return;
   const submitMs = Date.now();
   try {
-    const { hash, nonce } = await sendRaw(sig, sig.provider(), nonceMgr, req, fee, chainId);
+    const res = await sendRaw(sig, sig.provider(), nonceMgr, req, fee, chainId);
+    if (res.status === "dropped") { metrics.onSoft(res.msg); nonceMgr.settle(sig.address); return; } // our nonce already used → won't mine; resynced
     metrics.onSubmit(it.type);
-    collector.track(hash, { submitMs, row: { ts: submitMs, profile: profileName, walletIdx: sig.index, from: sig.address, nonce, type: it.type, to: req.to ?? null, gas: req.gas.toString() } });
+    if (res.status === "soft") metrics.onSoft(res.msg); // benign dup — still tracked (it's in the pool)
+    collector.track(res.hash, { submitMs, row: { ts: submitMs, profile: profileName, walletIdx: sig.index, from: sig.address, nonce: res.nonce, type: it.type, to: req.to ?? null, gas: req.gas.toString() } });
   } catch (e) {
     nonceMgr.settle(sig.address);
     metrics.onSubmitFail(String(e.message || e));
@@ -94,6 +96,24 @@ async function pump() {
 }
 
 collector.start();
+
+// Dynamic fee: every 3s set the bid to 2x the live base fee (+ tip), so under real load
+// the tx fee tracks the rising base fee instead of being rejected. Never below the floor;
+// capped so a runaway base fee can't drain a wallet on one tx.
+const FEE_CAP = fee.floorWei * 200n; // sane ceiling
+const feePoll = setInterval(async () => {
+  try {
+    const blk = await providers.primary.getBlock("latest");
+    const base = blk?.baseFeePerGas;
+    if (base) {
+      let bid = base * 2n + fee.priorityWei;
+      if (bid < fee.floorWei) bid = fee.floorWei;
+      if (bid > FEE_CAP) bid = FEE_CAP;
+      fee.maxFeePerGas = bid;
+    }
+  } catch {}
+}, 3000);
+
 let prev = { submitted: 0, failedSubmit: 0 };
 const mon = setInterval(async () => {
   const s = metrics.snapshot(collector.size);
@@ -102,7 +122,7 @@ const mon = setInterval(async () => {
   const dSub = s.submitted - prev.submitted, dErr = s.failedSubmit - prev.failedSubmit; prev = s;
   const errRate = dSub > 0 ? dErr / dSub : 0;
   s._errRate = errRate;
-  process.stdout.write(`\r  tps s/m ${s.submitTps}/${s.minedTps} | inflight ${s.inflight} | p95 ${s.p95}ms | err ${(errRate * 100).toFixed(1)}% | blk ${collector.lastBlock} | mem ${np.mempool ?? "-"} | disk ${np.diskFreeGb ?? "-"}GB    `);
+  process.stdout.write(`\r  tps s/m ${s.submitTps}/${s.minedTps} | inflight ${s.inflight} | p95 ${s.p95}ms | err ${(errRate * 100).toFixed(1)}% soft ${s.softSubmit} | fee ${(Number(fee.maxFeePerGas) / 1e9).toFixed(2)}gw | blk ${collector.lastBlock} | mem ${np.mempool ?? "-"} | disk ${np.diskFreeGb ?? "-"}GB    `);
   if (probe.aborted) { console.log(`\n⚠ ABORT: ${probe.abortReason}`); running = false; }
   global._last = s;
 }, 2000);
@@ -158,6 +178,7 @@ pump();
 if (profile.mode === "ramp") await runRamp(); else await runPhases();
 running = false;
 clearInterval(mon);
+clearInterval(feePoll);
 console.log("\n  draining in-flight…");
 await collector.drain(90000);
 collector.stop();

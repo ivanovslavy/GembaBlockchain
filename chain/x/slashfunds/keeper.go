@@ -43,6 +43,21 @@ type BankKeeper struct {
 // compile-time guarantee that the decorator is still a valid staking bank keeper.
 var _ stakingtypes.BankKeeper = BankKeeper{}
 
+// Event emitted every time a slash burn is redirected to the faucet instead of
+// destroying supply. It exists for two reasons:
+//   - Observability: a slash→faucet redirect now shows up in the block results, so
+//     the zero-burn behaviour (§3.1, §5.6) is verifiable on-chain without guessing.
+//   - Binary verifiability: this event-type string sits on the LIVE redirect path
+//     (unlike the startup panic guard, which the compiler dead-code-eliminates
+//     because faucetModule is a non-empty constant). So `grep slash_redirected` on
+//     the binary actually proves slashfunds is wired in — see the pentest P-4 note.
+const (
+	EventTypeSlashRedirected = "slash_redirected"
+	AttributeKeySourcePool   = "source_pool"   // bonded / not-bonded pool the burn came from
+	AttributeKeyFaucet       = "faucet_module" // reserve the slashed stake was moved to
+	AttributeKeyAmount       = "amount"
+)
+
 // NewBankKeeper wraps inner so that a slash (BurnCoins from the staking pools) is
 // redirected to faucetModule instead of destroying supply. faucetModule must be a
 // registered module account — the same "faucet" reserve x/feesplit feeds
@@ -62,7 +77,21 @@ func NewBankKeeper(inner stakingtypes.BankKeeper, faucetModule string) BankKeepe
 // exist on this chain today) is forwarded to the real bank keeper unchanged.
 func (k BankKeeper) BurnCoins(ctx context.Context, moduleName string, amt sdk.Coins) error {
 	if moduleName == stakingtypes.BondedPoolName || moduleName == stakingtypes.NotBondedPoolName {
-		return k.BankKeeper.SendCoinsFromModuleToModule(ctx, moduleName, k.faucetModule, amt)
+		if err := k.BankKeeper.SendCoinsFromModuleToModule(ctx, moduleName, k.faucetModule, amt); err != nil {
+			return err
+		}
+		// Emit an observable, non-elidable marker on the redirect path: this is what
+		// proves — both on-chain and in the shipped binary — that the slash landed in
+		// the faucet instead of being burned (the startup panic guard is compiled out).
+		sdk.UnwrapSDKContext(ctx).EventManager().EmitEvent(
+			sdk.NewEvent(
+				EventTypeSlashRedirected,
+				sdk.NewAttribute(AttributeKeySourcePool, moduleName),
+				sdk.NewAttribute(AttributeKeyFaucet, k.faucetModule),
+				sdk.NewAttribute(AttributeKeyAmount, amt.String()),
+			),
+		)
+		return nil
 	}
 	return k.BankKeeper.BurnCoins(ctx, moduleName, amt)
 }
