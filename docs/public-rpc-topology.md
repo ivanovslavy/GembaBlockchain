@@ -98,6 +98,17 @@ Keep them strictly separated:
 - **Public RPC** → validator nodes only (beefier boxes), behind single-CORS nginx + rate-limit + CF-only ufw.
 - **Archive node** → explorer/indexing ONLY; never advertised or used as a wallet RPC.
 
+**HARD RULE — one validator = one box. No co-located blockchain nodes.** A validator box runs
+**only** its `gembad` validator (plus the lightweight RPC front-desk, per the rule above) — never a
+second chain node or other heavy daemon. Proven on testnet by the 2026-06-26 overnight soak: `.82`
+(4-core / 8 GB) also ran a **Qortal** node, leaving only ~1.8 GB RAM free at idle; under a *moderate*
+~24 tps/box load it ran out of headroom, **missed its signing window, and was downtime-jailed ~22 min
+into the run** — while the other validators (no co-tenant; the 8-core `.100` especially) sailed through.
+The chain stayed live on 3/4 and `slashfunds` preserved supply, but a jailed validator is lost capacity
+and, at scale, a liveness risk. Size each validator box for `gembad` **alone**, with real CPU/RAM
+headroom; put Qortal / other nodes / load generators on **separate** machines. (See
+`docs/runbooks/distributed-load-test.md` for the soak data.)
+
 Other notes:
 - Validators distribute across independent operators over time (not all founder-run).
 - The mainnet archive will be **heavier** (real traffic) → size disk/RAM bigger.
