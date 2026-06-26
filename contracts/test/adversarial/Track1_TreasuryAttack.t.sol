@@ -61,7 +61,7 @@ contract Track1TreasuryAttackTest is Test {
         address[] memory excluded = new address[](1);
         excluded[0] = address(reserve);
         votes = new GembaVotes(address(timelock), excluded);
-        gov = new GembaGovernor(votes, timelock, VOTING_DELAY, VOTING_PERIOD, 0, QUORUM, SUPERMAJORITY);
+        gov = new GembaGovernor(votes, timelock, VOTING_DELAY, VOTING_PERIOD, 0, QUORUM, SUPERMAJORITY, QUORUM, SUPERMAJORITY);
 
         timelock.grantRole(timelock.PROPOSER_ROLE(), address(gov));
         timelock.grantRole(timelock.CANCELLER_ROLE(), address(gov));

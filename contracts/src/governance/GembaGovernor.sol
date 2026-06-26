@@ -25,8 +25,24 @@ contract GembaGovernor is
     GovernorVotesQuorumFraction,
     GovernorTimelockControl
 {
-    /// @notice Supermajority numerator out of 100 (e.g. 66 = 66% of For+Against).
+    // --- two governance tiers (regenesis spec §9). A proposal is auto-classified at propose time
+    // (the CODE decides, not a human): CRITICAL if it touches the Governor itself, the Timelock, or
+    // a target governance flagged critical (staking/economic params, big treasury moves). Iron rule:
+    // changing governance config targets the Governor/Timelock => always Critical, so nobody can lower
+    // the bar via a "minor" proposal. Standard = 40% quorum / 51%; Critical = 51% quorum / 66%.
+    /// @notice Standard-tier supermajority numerator out of 100 (For/(For+Against)).
     uint256 public immutable supermajorityNumerator;
+    /// @notice Critical-tier quorum numerator out of quorumDenominator (For+Abstain / pastSupply).
+    uint256 public immutable criticalQuorumNumerator;
+    /// @notice Critical-tier supermajority numerator out of 100.
+    uint256 public immutable criticalSupermajorityNumerator;
+    /// @notice governance-flagged critical targets (staking/economic/treasury contracts). gov-tunable.
+    mapping(address => bool) public criticalTarget;
+    /// @notice tier captured at propose time: true = Critical.
+    mapping(uint256 => bool) public isCritical;
+
+    event CriticalTargetSet(address indexed target, bool critical);
+    event ProposalTier(uint256 indexed proposalId, bool critical);
 
     error InvalidSupermajority();
 
@@ -37,7 +53,9 @@ contract GembaGovernor is
         uint32 votingPeriod_,
         uint256 proposalThreshold_,
         uint256 quorumNumerator_,
-        uint256 supermajorityNumerator_
+        uint256 supermajorityNumerator_,
+        uint256 criticalQuorumNumerator_,
+        uint256 criticalSupermajorityNumerator_
     )
         Governor("GembaGovernor")
         GovernorSettings(votingDelay_, votingPeriod_, proposalThreshold_)
@@ -45,18 +63,62 @@ contract GembaGovernor is
         GovernorVotesQuorumFraction(quorumNumerator_)
         GovernorTimelockControl(timelock_)
     {
-        // supermajority must be a real majority and at most unanimous
+        // both supermajorities must be a real majority and at most unanimous; critical >= standard.
         if (supermajorityNumerator_ < 51 || supermajorityNumerator_ > 100) revert InvalidSupermajority();
+        if (criticalSupermajorityNumerator_ < supermajorityNumerator_ || criticalSupermajorityNumerator_ > 100) {
+            revert InvalidSupermajority();
+        }
+        if (criticalQuorumNumerator_ < quorumNumerator_ || criticalQuorumNumerator_ > quorumDenominator()) {
+            revert InvalidSupermajority();
+        }
         supermajorityNumerator = supermajorityNumerator_;
+        criticalQuorumNumerator = criticalQuorumNumerator_;
+        criticalSupermajorityNumerator = criticalSupermajorityNumerator_;
     }
 
-    /// @dev A proposal succeeds only if For reaches the supermajority share of the
-    /// decisive (For + Against) votes — stricter than the default simple majority.
+    /// @notice Governance flags/unflags a target as critical. The Governor + Timelock are ALWAYS
+    /// critical (the iron rule), regardless of this map.
+    function setCriticalTarget(address target, bool critical) external onlyGovernance {
+        criticalTarget[target] = critical;
+        emit CriticalTargetSet(target, critical);
+    }
+
+    /// @dev Capture the tier at propose time from the proposal's targets (the code decides).
+    function propose(
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas,
+        string memory description
+    ) public override(Governor) returns (uint256) {
+        uint256 proposalId = super.propose(targets, values, calldatas, description);
+        bool critical = false;
+        for (uint256 i = 0; i < targets.length; i++) {
+            if (targets[i] == address(this) || targets[i] == _executor() || criticalTarget[targets[i]]) {
+                critical = true;
+                break;
+            }
+        }
+        isCritical[proposalId] = critical;
+        emit ProposalTier(proposalId, critical);
+        return proposalId;
+    }
+
+    /// @dev Tiered quorum: For+Abstain must reach the proposal's tier fraction of past total supply.
+    function _quorumReached(uint256 proposalId) internal view override(Governor, GovernorCountingSimple) returns (bool) {
+        uint256 num = isCritical[proposalId] ? criticalQuorumNumerator : quorumNumerator();
+        uint256 supply = token().getPastTotalSupply(proposalSnapshot(proposalId));
+        uint256 threshold = (supply * num) / quorumDenominator();
+        (, uint256 forVotes, uint256 abstainVotes) = proposalVotes(proposalId);
+        return forVotes + abstainVotes >= threshold;
+    }
+
+    /// @dev Tiered supermajority: For must reach the tier's share of the decisive (For+Against) votes.
     function _voteSucceeded(uint256 proposalId) internal view override(Governor, GovernorCountingSimple) returns (bool) {
         (uint256 againstVotes, uint256 forVotes, ) = proposalVotes(proposalId);
         uint256 decisive = forVotes + againstVotes;
         if (decisive == 0) return false;
-        return forVotes * 100 >= decisive * supermajorityNumerator;
+        uint256 sm = isCritical[proposalId] ? criticalSupermajorityNumerator : supermajorityNumerator;
+        return forVotes * 100 >= decisive * sm;
     }
 
     // --- required multiple-inheritance overrides ---

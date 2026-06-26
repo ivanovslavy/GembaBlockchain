@@ -17,7 +17,9 @@ contract DeployDripFaucet is Script {
         uint256 pk = vm.envUint("FOUNDER_PK");
         address timelock = vm.envAddress("TIMELOCK");
         address pause = vm.envAddress("EMERGENCY_PAUSE");
-        uint256 drip = vm.envOr("DRIP_GMB", uint256(10)) * 1 ether;
+        // regenesis §8: 0.1 GMB per drip, once per day per address (the service adds the per-IP
+        // limit). DRIP_WEI overrides for other amounts.
+        uint256 drip = vm.envOr("DRIP_WEI", uint256(0.1 ether));
         uint256 cooldown = vm.envOr("COOLDOWN_SECS", uint256(1 days));
         uint256 minBal = vm.envOr("MIN_BALANCE_GMB", uint256(1000)) * 1 ether;
 
