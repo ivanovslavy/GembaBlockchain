@@ -13,7 +13,9 @@ const DRIP_GMB = process.env.DRIP_AMOUNT_GMB || '100';
 const COOLDOWN_MS = Number(process.env.DRIP_COOLDOWN_MS || 24 * 60 * 60 * 1000); // 24h
 const PORT = process.env.FAUCET_PORT || 3002;
 
-const faucet = createFaucet({ rpcUrl: RPC_URL, faucetKey: FAUCET_KEY, dripAmountGmb: DRIP_GMB });
+// FAUCET_CONTRACT set => MAINNET mode: drip via the on-chain GembaDripFaucet (on-chain
+// per-address cooldown, restart-proof). Unset => testnet raw-send (off-chain limiter only).
+const faucet = createFaucet({ rpcUrl: RPC_URL, faucetKey: FAUCET_KEY, dripAmountGmb: DRIP_GMB, faucetContract: process.env.FAUCET_CONTRACT });
 const byAddress = new CooldownLimiter(COOLDOWN_MS);
 const byIp = new CooldownLimiter(COOLDOWN_MS);
 
@@ -38,7 +40,9 @@ function globalBudgetRelease() {
   if (dripCountToday > 0) dripCountToday--;
 }
 
-export function createApp() {
+// Dependencies are injectable so the off-chain guard flow can be tested end-to-end with a
+// mock faucet + fresh limiters (no real RPC). Production calls createApp() with no args.
+export function createApp({ faucet: _faucet = faucet, byAddress: _byAddress = byAddress, byIp: _byIp = byIp } = {}) {
   const app = express();
   app.use(express.json());
   // Trust EXACTLY the number of reverse-proxy hops in front (default 1 = the documented
@@ -49,7 +53,7 @@ export function createApp() {
 
   app.get('/health', async (_req, res, next) => {
     try {
-      res.json({ faucet: faucet.address, balance: (await faucet.balance()).toString(), dripGmb: DRIP_GMB });
+      res.json({ faucet: _faucet.address, balance: (await _faucet.balance()).toString(), dripGmb: DRIP_GMB });
     } catch (e) {
       next(e);
     }
@@ -66,32 +70,32 @@ export function createApp() {
       // Acquire the cooldowns ATOMICALLY (honoring tryAcquire's return) BEFORE any await, so
       // concurrent same-address requests can't all pass a separate remaining() gate and then
       // drip — closing the TOCTOU race (audit L-3).
-      if (!byAddress.tryAcquire(to, now))
-        return res.status(429).json({ error: 'address on cooldown', retryAfterMs: byAddress.remaining(to, now) });
-      if (!byIp.tryAcquire(ip, now)) {
-        byAddress.release(to);
-        return res.status(429).json({ error: 'ip on cooldown', retryAfterMs: byIp.remaining(ip, now) });
+      if (!_byAddress.tryAcquire(to, now))
+        return res.status(429).json({ error: 'address on cooldown', retryAfterMs: _byAddress.remaining(to, now) });
+      if (!_byIp.tryAcquire(ip, now)) {
+        _byAddress.release(to);
+        return res.status(429).json({ error: 'ip on cooldown', retryAfterMs: _byIp.remaining(ip, now) });
       }
       // global daily budget (defends against the fresh-address bypass) + balance circuit breaker
       if (!globalBudgetAllow(now)) {
-        byAddress.release(to);
-        byIp.release(ip);
+        _byAddress.release(to);
+        _byIp.release(ip);
         return res.status(429).json({ error: 'global daily drip budget reached, try tomorrow' });
       }
-      if ((await faucet.balance()) < MIN_BALANCE_WEI) {
-        byAddress.release(to);
-        byIp.release(ip);
+      if ((await _faucet.balance()) < MIN_BALANCE_WEI) {
+        _byAddress.release(to);
+        _byIp.release(ip);
         globalBudgetRelease();
         return res.status(503).json({ error: 'faucet balance below floor; refill required' });
       }
 
       try {
-        const hash = await faucet.drip(to);
+        const hash = await _faucet.drip(to);
         res.json({ ok: true, to, amountGmb: DRIP_GMB, txHash: hash });
       } catch (sendErr) {
         // roll back the cooldown + global budget so a failed send doesn't burn the window/budget
-        byAddress.release(to);
-        byIp.release(ip);
+        _byAddress.release(to);
+        _byIp.release(ip);
         globalBudgetRelease();
         throw sendErr;
       }
