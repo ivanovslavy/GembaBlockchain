@@ -30,20 +30,21 @@ contract DeployApps is Script {
         address deployer = vm.addr(pk);
         vm.startBroadcast(pk);
 
-        // OnRamp — owner = Timelock (governance-controlled; AU-4). publicSaleEnabled is false
-        // by default (no public sale by design, §2/Phase 6).
-        GembaOnRamp onramp = new GembaOnRamp(TIMELOCK, IERC20(USDC));
+        // CREATE2 + fixed salts (§41): every address = f(deployer, salt, init-code) — nonce-free,
+        // so a regenesis redeploy with the same salts + bytecode yields the SAME addresses → dApp
+        // configs stay untouched. (Init args must stay identical too — same TIMELOCK/USDC/deployer.)
+        GembaOnRamp onramp = new GembaOnRamp{salt: keccak256(bytes("gemba.onramp.v1"))}(TIMELOCK, IERC20(USDC));
 
         // Tickets + Perks (events / employee bonuses) — issuer-operated reference.
-        GembaTicketing ticketing = new GembaTicketing(deployer);
-        GembaPerks perks = new GembaPerks(deployer, IGembaTicketing(address(ticketing)), MAX_BONUS);
+        GembaTicketing ticketing = new GembaTicketing{salt: keccak256(bytes("gemba.ticketing.v1"))}(deployer);
+        GembaPerks perks = new GembaPerks{salt: keccak256(bytes("gemba.perks.v1"))}(deployer, IGembaTicketing(address(ticketing)), MAX_BONUS);
 
         // Paymaster (sponsored gas, EIP-2771): forwarder + an example sponsored target.
-        GembaForwarder forwarder = new GembaForwarder();
-        WorkplaceCheckIn checkin = new WorkplaceCheckIn(address(forwarder));
+        GembaForwarder forwarder = new GembaForwarder{salt: keccak256(bytes("gemba.forwarder.v1"))}();
+        WorkplaceCheckIn checkin = new WorkplaceCheckIn{salt: keccak256(bytes("gemba.checkin.v1"))}(address(forwarder));
 
         // Access-control capability NFT (soulbound, no PII) — issuer-operated reference.
-        AccessControlNFT access = new AccessControlNFT(deployer);
+        AccessControlNFT access = new AccessControlNFT{salt: keccak256(bytes("gemba.accessnft.v1"))}(deployer);
 
         vm.stopBroadcast();
 

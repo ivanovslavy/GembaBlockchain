@@ -24,9 +24,10 @@ contract DeployDripFaucet is Script {
         uint256 minBal = vm.envOr("MIN_BALANCE_GMB", uint256(1000)) * 1 ether;
 
         vm.startBroadcast(pk);
-        GembaDripFaucet impl = new GembaDripFaucet();
+        // CREATE2 (§41): salt the impl AND the proxy so both addresses survive a regenesis.
+        GembaDripFaucet impl = new GembaDripFaucet{salt: keccak256(bytes("gemba.dripfaucet.impl.v1"))}();
         bytes memory data = abi.encodeCall(GembaDripFaucet.initialize, (timelock, pause, drip, cooldown, minBal));
-        address faucet = address(new ERC1967Proxy(address(impl), data));
+        address faucet = address(new ERC1967Proxy{salt: keccak256(bytes("gemba.dripfaucet.v1"))}(address(impl), data));
         vm.stopBroadcast();
 
         console.log("GembaDripFaucet (proxy)", faucet, "owner=Timelock");
