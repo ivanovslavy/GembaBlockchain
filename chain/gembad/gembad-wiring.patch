@@ -87,6 +87,11 @@ index 204345c..c081d7f 100644
 +	// enforcing the §5.2 min-self-bond on BOTH the Cosmos and EVM-precompile paths (audit #1).
 +	app.ValgateKeeper = app.ValgateKeeper.WithStakingKeeper(app.StakingKeeper)
 +
++	// rewardstreamer: inject the staking + distribution keepers for the §4 reward FORMULA
++	// (per-validator capped payout). Both exist by here; reassigned before the module manager so
++	// the BeginBlocker uses the formula-enabled keeper. Inert until FormulaParams.Enabled.
++	app.RewardStreamerKeeper = app.RewardStreamerKeeper.WithFormulaKeepers(app.StakingKeeper, app.DistrKeeper)
++
  	// register the staking hooks
  	// NOTE: stakingKeeper above is passed by reference, so that it will contain these hooks
  	app.StakingKeeper.SetHooks(
