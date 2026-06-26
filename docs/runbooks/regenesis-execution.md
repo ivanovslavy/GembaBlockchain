@@ -8,6 +8,16 @@ server until the local staging dry-run is green + a full backup exists.** No PK 
 
 > **Status legend:** ✅ done · 🔨 code-ready, needs wiring/test · ⏳ pending
 
+> **✅ PREP COMPLETE — READY FOR THE OFFICIAL GENESIS (2026-06-26).** Everything before the live
+> cutover is built, tested and dry-run-validated locally: reward formula (capped, recirculated,
+> supply-invariant — proven on a live local chain), min/max self-bond + 50/day cap, ~3s blocks,
+> 5 gwei fee, faucet 0.1/day, 2-tier governance (40/51 vs 51/66, auto-classified), genesis allocation
+> (10K validators, reward reserve 29.96M, 100M total — validated), CREATE2 on every deploy script
+> (CA preserved). Full suites green: chain Go + **122 Foundry tests**. Remaining = **Stage E only**:
+> the deliberate, destructive LIVE cutover (backups → coordinated reset of the 4 validators with the
+> regenesis binary + real-WA genesis → CREATE2 redeploy → re-verify the 5 dApps). That step is the
+> founder's go/no-go.
+
 ## Stage A — economic-engine code
 
 ### A1 — anti-domination (✅ done, on main)
@@ -40,14 +50,22 @@ implemented once, correctly):
 drip=0.1, cooldown=1day; service keeps the per-IP limit. governance 2-tier (40/51 std, 51/66 crit,
 3-day period) — set Governor quorum/threshold/voting-period + the category map (⏳).
 
-## Stage B — genesis allocation (⏳)
-New `genesis.json` from `chain/testnet` generator with §0 numbers:
-- **WA preserved** (same addresses; balances reset to the genesis allocation).
-- The reserve/founder/circulation splits **as already in the current config** (§11 — don't redefine).
-- **+8M** (the ~2M idle on each of the 4 validator operator accounts) folded into the **validator
-  reward reserve** module account.
-- 4 genesis validators funded **exactly 10,000 GMB each from the founder** (gentx / pre-fund).
-- mint inflation 0; the A2 formula/faucet/governance params baked in.
+## Stage B — genesis allocation (✅ dry-run validated; ⏳ swap in real WA for live)
+The allocation logic is in `init-gembad-multinode.sh` and **dry-run validated** (4-validator genesis:
+validators 10K each, reward reserve 29,960,000 = 20M + 9.96M reclaimed circulation, supply 100M,
+gentx valgate-valid, genesis VALID). For the LIVE regenesis the ONLY change is using the **real
+testnet wallets (WA)** instead of fresh devnet keys — balances reset, addresses preserved:
+
+- **Validators (preserve valoper):** import the real `val0..val3` operator keys from
+  `wallet-backup/PRIVATE-KEYS.md` into the genesis-builder keyring and gentx from THEM (10K each).
+  Real operators: `val0 cosmos1u6zhxs… val1 cosmos19527lf… val2 cosmos1vayp2t… val3 cosmos10d6u5g…`.
+- **Reserve buckets (preserve addresses):** the rewardstreamer + faucet **module** accounts are
+  deterministic (unchanged). The EOA buckets use the real addresses: `founder cosmos124uvwh…`,
+  `foundation cosmos1kghqe0…`, `dao cosmos1s3fuvg…`, `contingency cosmos1muvra3…` (all in wallet-backup).
+- mint inflation 0; the formula/faucet/governance params baked in; total stays 100,000,000 GMB.
+
+> PK safety: the real operator keys come from `wallet-backup/` (gitignored) only on the genesis box;
+> never printed/committed. The genesis file holds only ADDRESSES (public) + balances.
 
 ## Stage C — contracts via CREATE2 (🔨 mechanism proven; per-script conversion is the rollout)
 CREATE2 address = f(deployer, salt, init-code) — **no nonce term** → same deployer + salt + bytecode
