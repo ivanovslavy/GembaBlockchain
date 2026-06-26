@@ -19,12 +19,13 @@ import {ContingencyReserve} from "../src/reserves/ContingencyReserve.sol";
 /// Timelock; then funds each reserve to its EXACT §4.1 amount by broadcasting from the
 /// matching genesis EOA. Deployer = founder. Run against the new chain after re-genesis.
 contract DeployGovernance is Script {
-    // governance settings (testnet — short delays; §7 high quorum + supermajority)
-    uint256 constant MIN_DELAY = 300;        // 5-min timelock (raise via governance on mainnet)
+    // governance settings. Testnet uses short delays + a 50% quorum; MAINNET hardens to a
+    // 24h timelock + 66% quorum (CLAUDE.md §7, R-5). Both are env-overridable at deploy:
+    //   MAINNET: MIN_DELAY=86400  QUORUM_PCT=66   (24h timelock, 66% quorum)
+    //   testnet: leave unset → the defaults below (5-min timelock, 50% quorum)
     uint48 constant VOTING_DELAY = 1;        // blocks
     uint32 constant VOTING_PERIOD = 600;     // blocks (~20 min @ 2s)
     uint256 constant PROPOSAL_THRESHOLD = 0; // any vGMB holder may propose
-    uint256 constant QUORUM = 50;            // 50% of vGMB (treasury bar)
     uint256 constant SUPERMAJORITY = 66;     // 66% to pass (§7)
     uint256 constant PER_GRANT_CAP = 1000 ether;          // faucet per-grant cap
     uint256 constant FAUCET_EPOCH_CAP = 100_000 ether;    // faucet aggregate cap per window (drain bound)
@@ -33,6 +34,9 @@ contract DeployGovernance is Script {
     function run() external {
         uint256 founderPk = vm.envUint("FOUNDER_PK");
         address deployer = vm.addr(founderPk);
+        // mainnet hardening (R-5): set MIN_DELAY=86400 (24h) + QUORUM_PCT=66 in the env for
+        // mainnet; testnet leaves them unset → the 300s / 50% defaults below (read inline to
+        // keep run()'s stack shallow).
 
         // --- deploy governance + reserves (founder) ---
         vm.startBroadcast(founderPk);
@@ -40,7 +44,7 @@ contract DeployGovernance is Script {
         address[] memory proposers = new address[](0);
         address[] memory executors = new address[](1);
         executors[0] = address(0); // open execution: anyone executes after the delay
-        GembaTimelock timelock = new GembaTimelock(MIN_DELAY, proposers, executors, deployer);
+        GembaTimelock timelock = new GembaTimelock(vm.envOr("MIN_DELAY", uint256(300)), proposers, executors, deployer);
 
         // EmergencyPause: 3 governance-elected guardians, 2-of-3 to pause (pause-only).
         address[] memory guardians = new address[](3);
@@ -88,7 +92,7 @@ contract DeployGovernance is Script {
         GembaVotes votes = new GembaVotes(address(timelock), excludedReserves);
 
         GembaGovernor governor = new GembaGovernor(
-            IVotes(address(votes)), timelock, VOTING_DELAY, VOTING_PERIOD, PROPOSAL_THRESHOLD, QUORUM, SUPERMAJORITY
+            IVotes(address(votes)), timelock, VOTING_DELAY, VOTING_PERIOD, PROPOSAL_THRESHOLD, vm.envOr("QUORUM_PCT", uint256(50)), SUPERMAJORITY
         );
 
         // wire: Governor proposes/cancels; the deployer renounces the timelock admin so

@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -19,11 +20,16 @@ func (k Keeper) BeginBlock(ctx sdk.Context) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			ctx.Logger().Error("rewardstreamer: StreamRewards panicked; skipping this block", "panic", r)
+			// Observability (audit AU-1): a recurring skip silently halts the validator-reward
+			// stream while blocks keep producing. Surface it (gemba_rewardstreamer_skipped_blocks)
+			// so /monitoring can alert. Fail-soft is unchanged.
+			telemetry.IncrCounter(1, "gemba", "rewardstreamer", "skipped_blocks")
 			err = nil
 		}
 	}()
 	if _, e := k.StreamRewards(ctx); e != nil {
 		ctx.Logger().Error("rewardstreamer: StreamRewards failed; skipping this block", "err", e)
+		telemetry.IncrCounter(1, "gemba", "rewardstreamer", "skipped_blocks")
 	}
 	return nil
 }

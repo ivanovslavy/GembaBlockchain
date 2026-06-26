@@ -68,3 +68,7 @@ coverage/
 
 # --- Claude Code local data (settings, transcripts) — never commit ---
 .claude/
+
+# alertmanager SMTP secret (never commit — repo is public)
+smtp_password
+monitoring/*.secret
