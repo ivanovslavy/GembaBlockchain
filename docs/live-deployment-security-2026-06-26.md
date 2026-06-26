@@ -71,7 +71,20 @@ circulation (10M) + founder (5M).
 - **multi-agent `gemba-security-audit`** (auditor-per-component → adversarial verify → synthesis):
   _results appended below when the run completes._
 
-<!-- AUDIT-RESULTS -->
+**Multi-agent `gemba-security-audit` result (38 agents, adversarial verification):**
+**No Critical / High / Medium findings.** 29 raw candidates → **4 confirmed** after adversarial
+verification: **1 info + 3 low**, all observability/operational hardening, none exploitable.
+Verdict: *"no buyer/user funds at risk anywhere; no supply or consensus risk; no repo secret leak."*
+
+| # | Sev | Component | Finding | Action |
+|---|---|---|---|---|
+| AU-1 | Low | chain Go modules | fail-soft `recover()` in the BeginBlockers (feesplit/rewardstreamer/tailreward) has **no metric/alert** → a recurring panic would silently stall the economic logic while the node looks healthy | add per-module skip counters + a `/monitoring` alert (pre-mainnet) |
+| AU-2 | Low | testnet-faucet | rate-limit + daily budget are **in-process only** (reset on restart, not shared across instances); min-balance floor is the durable hard stop | back with Redis or document single-instance |
+| AU-3 | Low (op) | secret hygiene | local `.env`/the known GitHub PAT flagged for rotation (NOT committed) | rotate (operator note; PAT kept by decision until 2026-12-31) |
+| AU-4 | Info | GembaOnRamp | on-ramp owner can drain its **own pre-funded sale stock** (operator-trust, by design, documented §16) | transfer ownership to Governor+Timelock for any public deploy |
+
+This corroborates the live testing: the security work is **hardening backlog, not vulnerability
+remediation**. AU-2 also overlaps the faucet (its npm deps were fixed here).
 
 ## 5. Mainnet hardening checklist (carry-over)
 
