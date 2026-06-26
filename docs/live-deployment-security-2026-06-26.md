@@ -98,6 +98,24 @@ remediation**. AU-2 also overlaps the faucet (its npm deps were fixed here).
 - [ ] Validator key mgmt (tmkms/Vault); bonded-ratio monitoring live.
 - [ ] **Upstream Cosmos EVM audit (ADR-006)** — hard launch blocker. Timeline: cosmos/evm v1 (post-audit) targeted **~end of Q2 2026**; track the cosmos/evm releases + the Sherlock report.
 
+## 6b. Follow-up hardening (2026-06-26) — faucet + validator resilience
+
+Built after the audit, on top of the items above:
+
+- **Mainnet faucet now has an on-chain cooldown.** `GembaDripFaucet` (`contracts/src/reserves/`,
+  UUPS, owner=Timelock) enforces the per-address cooldown + a min-balance floor **on-chain**, so
+  a restart/redeploy/second-instance of the front-end can't bypass it (closes AU-2 for mainnet).
+  The faucet service gained a **mainnet mode** (`FAUCET_CONTRACT` env → drips via `dripTo`) while
+  the **testnet stays off-chain-only** (valueless tokens). The off-chain guards (per-address +
+  **per-IP** cooldown, daily budget, balance circuit-breaker) are now covered by **end-to-end
+  tests** (`services/testnet-faucet/test/drip.e2e.test.js`, 7) and the contract by 9 Foundry tests.
+- **Validator auto-ops** (`gemba-validator/auto/`): `auto-unjail` (rejoin after a downtime blip
+  once caught up; never touches a tombstone) + `auto-compound` (daily re-stake of 50% of rewards
+  into self-delegation) so the founder validators continuously grow and anchor the **~66% bonded
+  ratio** (ADR-008) on a free, no-price chain where casual validators could otherwise let it
+  collapse. Consensus power only — **no** governance/treasury weight (§5.7). systemd timers +
+  installer; active on the testnet validators, part of the mainnet validator setup from genesis.
+
 ## 6. App / reference contracts — deployed on testnet 2026-06-26 (what they are, what you need)
 
 All five were deployed to `gemba-testnet-1` and **Blockscout-verified** (gembascan.io). They are

@@ -1,0 +1,9 @@
+[Unit]
+Description=GembaBlockchain validator auto-compound (one-shot, driven by the timer)
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/gemba/validator-auto.env
+ExecStart=/usr/local/bin/gemba-auto-compound.sh
+Nice=10
