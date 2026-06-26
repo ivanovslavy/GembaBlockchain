@@ -113,3 +113,34 @@ reaches the node. That is the intended behaviour, demonstrated end-to-end from 4
 - Slashing from missed blocks under load now redirects to the faucet (zero-burn, `x/slashfunds`,
   proven 2026-06-26) — a self-inflicted downtime slash does not reduce supply.
 - Keep load on the **public RPCs only**. Do not aim it at `.162`/`.137` (production).
+
+## Overnight B+C soak — 2026-06-26 results
+
+Ran B then C sequentially on all 4 boxes (localhost, `TARGET_TPS=30`, `CONCURRENCY=100`,
+wallets topped to ~17 GMB), ~6 h unattended with the node guards as the safety net.
+
+| | Profile B (~2 h) | Profile C (~4 h soak) | total |
+|---|---|---|---|
+| submitted | 485,934 | 514,735 | **1,000,669** |
+| mined | 481,065 (99 %) | 513,809 (99.8 %) | **994,874** |
+| **hard failures** | **0** | **0** | **0** |
+| reverts (workload) | 16,685 | 155,097 | 171,782 |
+| timeouts | 4,869 | 926 | 5,795 |
+| soft (benign) | 141 | 0 | 141 |
+
+- **~1 million transactions, ZERO hard fee/nonce failures** — the tuned harness (dynamic
+  fee + benign-error tolerance) held over the full soak. Reverts are workload-intrinsic
+  (intentional `revertOp`, bootstrap, NFT/DEX cap-hits in the soak mix), not failures —
+  they mine with status 0.
+- **GMB:** founder funded ~5,100 GMB to the 300 wallets (recoverable via sweep); the
+  wallets consumed ~315 GMB over the run (gas fees, which **recirculate** 60 % validators /
+  40 % faucet, + GMB locked in WGMB/DEX). **Zero GMB burned — total supply stayed exactly
+  99,999,980.1 GMB** through 1 M txs (fixed-supply invariant held).
+- **Key soak finding:** the weakest box (`.82` = val-0, 4-core, double-duty) got
+  CPU-starved ~30 min into B → **downtime-jailed** (its own load-gen also choked: 11 k txs
+  vs ~156 k on the others). **The chain ran on 3/4 validators all night with no halt**
+  (liveness needs >2/3; 3/4 held), and **`slashfunds` redirected the 1 % slash (10 GMB) to
+  the faucet → supply unchanged.** val-0 was unjailed in the morning → 4/4 restored. This
+  re-confirms: do **not** run heavy load generation on the validators themselves; use
+  dedicated generator boxes (the 8-core .100 stayed at load <1 and never jailed).
+- Network healthy after the soak: 4/4 bonded, base fee at the 1-gwei floor, mempool ~0.
