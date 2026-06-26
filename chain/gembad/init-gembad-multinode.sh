@@ -38,10 +38,17 @@ for i in $(seq 0 $((N-1))); do
 done
 for b in foundation dao liquidity founder; do "$EVMD" keys add "$b" --keyring-backend "$KEYRING" --algo "$KEYALGO" --home "$N0" >/dev/null 2>&1; done
 
-# allocation (fixed 100M GMB). circulation 10M = 4 x 2.5M; reserve+faucet to module accts.
-for i in $(seq 0 $((N-1))); do gacct "val$i" "2500000"; done
-gacct "$RS_RESERVE_ADDR" "$ALLOC_VAL_RESERVE"; gacct "$FAUCET_ADDR" "$ALLOC_FAUCET"
+# allocation (fixed 100M GMB) — REGENESIS (§0/§40): validators no longer get the 2.5M circulation
+# slice; they enter with exactly SELF_BOND_GMB (10K) each, and the freed circulation pool
+# (old 4x2.5M = 10M, minus the 4x10K self-bond) is FOLDED INTO the validator-reward reserve
+# (the user's "~8M idle on validators -> reward reserve"). Total stays 100M.
+VAL_ENTRY_TOTAL=$((N * SELF_BOND_GMB))                       # 4 x 10K = 40K to validators
+RECLAIMED=$((10000000 - VAL_ENTRY_TOTAL))                    # old 10M circulation - 40K = 9,960,000
+REGEN_VAL_RESERVE=$((ALLOC_VAL_RESERVE + RECLAIMED))         # 20M + 9.96M = 29,960,000
+for i in $(seq 0 $((N-1))); do gacct "val$i" "$SELF_BOND_GMB"; done
+gacct "$RS_RESERVE_ADDR" "$REGEN_VAL_RESERVE"; gacct "$FAUCET_ADDR" "$ALLOC_FAUCET"
 gacct foundation "$ALLOC_FOUNDATION"; gacct dao "$ALLOC_DAO"; gacct liquidity "$ALLOC_LIQUIDITY"; gacct founder "$ALLOC_FOUNDER"
+echo ">> regenesis allocation: validators ${SELF_BOND_GMB} GMB each; reward reserve ${REGEN_VAL_RESERVE} GMB (20M + ${RECLAIMED} reclaimed circulation)"
 
 GEN="$N0/config/genesis.json"; patch_economics "$GEN"
 TMP="$(mktemp)"
