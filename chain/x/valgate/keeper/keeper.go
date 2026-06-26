@@ -56,6 +56,12 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	}
 	var p types.Params
 	k.cdc.MustUnmarshal(bz, &p)
+	// Migration safety: params stored before max_self_bond existed unmarshal with a nil
+	// MaxSelfBond. Default it (also keeps the math.Int non-nil so marshaling can't panic).
+	// A live chain can then set the real cap via a governance MsgUpdateParams.
+	if p.MaxSelfBond.IsNil() {
+		p.MaxSelfBond = types.DefaultParams().MaxSelfBond
+	}
 	return p
 }
 

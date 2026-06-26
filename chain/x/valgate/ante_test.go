@@ -63,10 +63,13 @@ func TestMinSelfBondEnforced(t *testing.T) {
 	require.NoError(t, err, "a tx without MsgCreateValidator must pass")
 }
 
-type mockStaking struct{ msd math.Int }
+type mockStaking struct {
+	msd    math.Int
+	tokens math.Int // initial self-bond seen by AfterValidatorCreated (0/nil = unset)
+}
 
 func (m mockStaking) GetValidator(_ context.Context, _ sdk.ValAddress) (stakingtypes.Validator, error) {
-	return stakingtypes.Validator{MinSelfDelegation: m.msd}, nil
+	return stakingtypes.Validator{MinSelfDelegation: m.msd, Tokens: m.tokens}, nil
 }
 
 // TestHookEnforcesMinSelfDelegation: the staking hook rejects a below-floor MinSelfDelegation
@@ -112,6 +115,65 @@ func TestGovernanceTunable(t *testing.T) {
 
 	_, err = d.AnteHandle(ctx, mockTx{[]sdk.Msg{cv(5000)}}, false, next)
 	require.NoError(t, err, "5000 accepted at the new floor")
+}
+
+// TestMaxSelfBondEnforced: at the 10,000 GMB cap is accepted; above it is rejected — the
+// §5.2 anti-domination cap (a new validator can't enter with a huge self-stake).
+func TestMaxSelfBondEnforced(t *testing.T) {
+	ctx, k := setupKeeper(t) // default params: min 1000, max 10000
+	d := valgate.NewMinSelfBondDecorator(k)
+
+	_, err := d.AnteHandle(ctx, mockTx{[]sdk.Msg{cv(10000)}}, false, next)
+	require.NoError(t, err, "exactly 10000 GMB (the cap) must be accepted")
+
+	_, err = d.AnteHandle(ctx, mockTx{[]sdk.Msg{cv(10001)}}, false, next)
+	require.Error(t, err, "10001 GMB self-bond must be rejected (above the max)")
+
+	_, err = d.AnteHandle(ctx, mockTx{[]sdk.Msg{cv(1_000_000)}}, false, next)
+	require.Error(t, err, "a whale entering with 1M GMB must be rejected (anti-domination)")
+}
+
+// TestMaxSelfBondZeroMeansNoCap: max_self_bond = 0 disables the cap.
+func TestMaxSelfBondZeroMeansNoCap(t *testing.T) {
+	ctx, k := setupKeeper(t)
+	require.NoError(t, k.SetParams(ctx, types.Params{
+		MinSelfBond: math.NewInt(1000).Mul(oneGmb),
+		MaxSelfBond: math.ZeroInt(), // no cap
+	}))
+	d := valgate.NewMinSelfBondDecorator(k)
+	_, err := d.AnteHandle(ctx, mockTx{[]sdk.Msg{cv(1_000_000)}}, false, next)
+	require.NoError(t, err, "with max=0 (no cap) a large self-bond must be accepted")
+}
+
+// TestHookEnforcesMaxSelfBond: the staking hook also caps the initial self-bond — covers the
+// EVM staking precompile path (val.Tokens at creation == the self-bond).
+func TestHookEnforcesMaxSelfBond(t *testing.T) {
+	key := storetypes.NewKVStoreKey(types.StoreKey)
+	tkey := storetypes.NewTransientStoreKey("transient_valgate")
+	ctx := sdktestutil.DefaultContext(key, tkey)
+	cdc := codec.NewProtoCodec(codectypes.NewInterfaceRegistry())
+	msd := math.NewInt(1000).Mul(oneGmb)
+
+	over := keeper.NewKeeper(cdc, key, "gov").WithStakingKeeper(mockStaking{msd: msd, tokens: math.NewInt(10001).Mul(oneGmb)})
+	require.NoError(t, over.SetParams(ctx, types.DefaultParams()))
+	require.Error(t, over.Hooks().AfterValidatorCreated(ctx, sdk.ValAddress("validator-address-x")),
+		"a 10001 GMB initial self-bond must be rejected at the hook (precompile path)")
+
+	atCap := keeper.NewKeeper(cdc, key, "gov").WithStakingKeeper(mockStaking{msd: msd, tokens: math.NewInt(10000).Mul(oneGmb)})
+	require.NoError(t, atCap.SetParams(ctx, types.DefaultParams()))
+	require.NoError(t, atCap.Hooks().AfterValidatorCreated(ctx, sdk.ValAddress("validator-address-x")),
+		"exactly at the cap must be accepted")
+}
+
+// TestMaxSelfBondThroughAuthzMsgExec: the cap also applies to a MsgCreateValidator nested in
+// an authz MsgExec.
+func TestMaxSelfBondThroughAuthzMsgExec(t *testing.T) {
+	ctx, k := setupKeeper(t)
+	d := valgate.NewMinSelfBondDecorator(k)
+	grantee := sdk.AccAddress([]byte("grantee-------------"))
+	exec := authz.NewMsgExec(grantee, []sdk.Msg{cv(10001)})
+	_, err := d.AnteHandle(ctx, mockTx{[]sdk.Msg{&exec}}, false, next)
+	require.Error(t, err, "above-cap CreateValidator nested in MsgExec must be rejected")
 }
 
 // TestMinSelfBondThroughAuthzMsgExec: a MsgCreateValidator nested in an authz MsgExec must

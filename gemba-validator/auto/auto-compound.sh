@@ -15,21 +15,24 @@
 set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-[ -f "$DIR/validator-auto.env" ] && . "$DIR/validator-auto.env"
+# Load config: the installed location (systemd EnvironmentFile) first, then a repo-local copy.
+for _f in /etc/gemba/validator-auto.env "$DIR/validator-auto.env"; do [ -f "$_f" ] && . "$_f" && break; done
 GEMBAD=${GEMBAD:-gembad}; HOME_DIR=${GEMBAD_HOME:-/root/.gembad}; KEY=${VAL_KEY:-valop}
 KB=${KEYRING_BACKEND:-test}; CHAIN_ID=${CHAIN_ID:-gemba-testnet-1}; NODE=${NODE:-tcp://localhost:26657}
 DENOM=${DENOM:-agmb}; PCT=${REINVEST_PCT:-50}; MIN_REINVEST=${MIN_REINVEST_AGMB:-1000000000000000000}
 GAS_PRICES=${GAS_PRICES:-1000000000agmb}; LOG=${LOG_FILE:-/var/log/gemba-validator-auto.log}
 
 COMMON="--home $HOME_DIR --keyring-backend $KB --chain-id $CHAIN_ID --node $NODE"
+KR="--home $HOME_DIR --keyring-backend $KB"   # `keys show` rejects --chain-id/--node
 TX="--gas auto --gas-adjustment 1.5 --gas-prices $GAS_PRICES -y -o json"
 log(){ echo "[$(date -Is)] compound: $*" >>"$LOG"; }
 
 command -v jq >/dev/null || { log "jq missing"; exit 1; }
 command -v bc >/dev/null || { log "bc missing"; exit 1; }
 
-valoper=$($GEMBAD keys show "$KEY" --bech val -a $COMMON 2>/dev/null) || { log "cannot read valoper"; exit 1; }
-deladdr=$($GEMBAD keys show "$KEY" -a $COMMON 2>/dev/null)
+valoper=$($GEMBAD keys show "$KEY" --bech val -a $KR 2>/dev/null) || { log "cannot read valoper"; exit 1; }
+[ -z "$valoper" ] && { log "cannot read valoper (empty) — key $KEY missing?"; exit 1; }
+deladdr=$($GEMBAD keys show "$KEY" -a $KR 2>/dev/null)
 bal(){ $GEMBAD query bank balances "$deladdr" --node "$NODE" -o json 2>/dev/null \
        | jq -r --arg d "$DENOM" '(.balances[]|select(.denom==$d)|.amount) // "0"'; }
 

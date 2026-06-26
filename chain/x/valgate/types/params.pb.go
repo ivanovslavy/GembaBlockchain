@@ -31,6 +31,12 @@ type Params struct {
 	// min_self_bond is the minimum self-delegation (in agmb base units) required to
 	// create a validator. Anti-spam floor; raise/lower it by governance. §5.2.
 	MinSelfBond cosmossdk_io_math.Int `protobuf:"bytes,1,opt,name=min_self_bond,json=minSelfBond,proto3,customtype=cosmossdk.io/math.Int" json:"min_self_bond"`
+	// max_self_bond is the MAXIMUM self-delegation (in agmb base units) allowed when
+	// CREATING a validator. Anti-domination cap: stops a single party from entering with a
+	// huge stake and grabbing an outsized share of consensus power. Governance-tunable;
+	// 0/nil means "no cap". Applies only at creation — an existing validator may grow past
+	// it via ordinary delegation (e.g. auto-compounding). §5.2.
+	MaxSelfBond cosmossdk_io_math.Int `protobuf:"bytes,2,opt,name=max_self_bond,json=maxSelfBond,proto3,customtype=cosmossdk.io/math.Int" json:"max_self_bond"`
 }
 
 func (m *Params) Reset()         { *m = Params{} }
@@ -114,6 +120,16 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	{
+		size := m.MaxSelfBond.Size()
+		i -= size
+		if _, err := m.MaxSelfBond.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		i = encodeVarintParams(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x12
+	{
 		size := m.MinSelfBond.Size()
 		i -= size
 		if _, err := m.MinSelfBond.MarshalTo(dAtA[i:]); err != nil {
@@ -144,6 +160,8 @@ func (m *Params) Size() (n int) {
 	var l int
 	_ = l
 	l = m.MinSelfBond.Size()
+	n += 1 + l + sovParams(uint64(l))
+	l = m.MaxSelfBond.Size()
 	n += 1 + l + sovParams(uint64(l))
 	return n
 }
@@ -214,6 +232,40 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if err := m.MinSelfBond.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MaxSelfBond", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowParams
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthParams
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthParams
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.MaxSelfBond.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
