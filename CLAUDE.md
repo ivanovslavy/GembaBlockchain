@@ -10,6 +10,17 @@
 > public institutions but they follow the same rules as everyone else — they get
 > no special power.
 
+> **⏭ REGENESIS PLANNED (locked 2026-06-26).** A full testnet regenesis (then mainnet) moves the
+> economics to: capped validator reward `max(10, min(100, stake×1%))` GMB/day; min/max self-bond
+> 1,000/10,000 at entry + **50 GMB/day** bond-increase cap; **~3s blocks** (timeout_commit 1s);
+> **5 gwei** fee floor; faucet 0.1 GMB/day per-acct+per-IP; 2-tier governance (40/51 std, 51/66
+> crit, 3-day period); the ~8M idle on validator accounts folded into the reward reserve; 4 genesis
+> validators funded 10K each from the founder; **wallets (WA) preserved, contracts (CA) preserved
+> via CREATE2**; auto-compound/auto-unjail are **off-chain scripts, not a protocol whitelist**. GMB
+> stays no-inflation / no-liquidity, serving the Gemba ecosystem + any project that wants it. Authoritative
+> spec: **[`docs/GembaBlockchain_Нова_Логика_Регенезис.md`](docs/GembaBlockchain_Нова_Логика_Регенезис.md)**
+> (§0 locked decisions) — on conflict that doc wins for post-regenesis logic.
+
 ---
 
 ## 0. Working rules for Claude Code (read first, every session)

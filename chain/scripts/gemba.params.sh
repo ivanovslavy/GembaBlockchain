@@ -20,8 +20,11 @@ BASE_DENOM="agmb"                # smallest unit, what the EVM/bank use internal
 DISPLAY_DENOM="GMB"              # human display, exponent 18
 DECIMALS="18"
 
-# --- Block time ~2s (CLAUDE.md §1, §11; CometBFT timeout_commit) ---
-TIMEOUT_COMMIT="2s"
+# --- Block time: target ~3s (regenesis decision 2026-06-26; ~2x faster than the old ~5.5s) ---
+# CometBFT block time = timeout_commit + the real consensus round-trip between validators. With
+# the prior 2s commit blocks landed ~5.5s (geo + the NAT'd node's latency dominate). Dropping the
+# commit to 1s targets ~3s blocks; the floor below that is the inter-validator RTT, not config.
+TIMEOUT_COMMIT="1s"
 
 # --- Active validator set cap (CLAUDE.md §5.2: permissionless + ranked, O(n^2)) ---
 MAX_VALIDATORS="150"
@@ -44,9 +47,12 @@ MINT_INFLATION_RATE_CHANGE="0.000000000000000000"
 #   - EIP-1559 base fee rises with block fullness => security budget scales with
 #     usage (mechanism (a) of ADR-008).
 # Units are agmb-per-gas (like wei-per-gas). 1 gwei-equivalent = 1e9 agmb.
-BASE_FEE="1000000000.000000000000000000"        # 1 gwei starting base fee
-MIN_GAS_PRICE="1000000000.000000000000000000"    # 1 gwei FLOOR (ADR-008a, non-zero)
-MIN_GAS_PRICES_NODE="1000000000agmb"             # validator mempool floor (app.toml / --minimum-gas-prices)
+# Regenesis decision 2026-06-26: fee floor raised 1 -> 5 gwei (more recirculation 60/40 to
+# validators/faucet + larger security budget; still negligible per tx — a 21k-gas transfer ~=
+# 0.0001 GMB ~= 0.01 cent at 1 GMB = 1 EUR).
+BASE_FEE="5000000000.000000000000000000"        # 5 gwei starting base fee
+MIN_GAS_PRICE="5000000000.000000000000000000"    # 5 gwei FLOOR (ADR-008a, non-zero)
+MIN_GAS_PRICES_NODE="5000000000agmb"             # validator mempool floor (app.toml / --minimum-gas-prices)
 # EIP-1559 dynamics (defaults): base fee moves +-1/8 (12.5%) per block toward a
 # 1/elasticity full target => "scaling with usage".
 ELASTICITY_MULTIPLIER="2"
