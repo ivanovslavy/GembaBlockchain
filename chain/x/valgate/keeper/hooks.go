@@ -27,7 +27,8 @@ func (k Keeper) Hooks() Hooks { return Hooks{k: k} }
 // (MsgCreateValidator), so MinSelfDelegation >= floor implies the self-bond >= floor, and the
 // floor is permanently enforced by staking on later self-undelegation (closes finding #4 too).
 func (h Hooks) AfterValidatorCreated(ctx context.Context, valAddr sdk.ValAddress) error {
-	min := h.k.GetParams(sdk.UnwrapSDKContext(ctx)).MinSelfBond
+	p := h.k.GetParams(sdk.UnwrapSDKContext(ctx))
+	min := p.MinSelfBond
 	val, err := h.k.stakingKeeper.GetValidator(ctx, valAddr)
 	if err != nil {
 		return err
@@ -36,6 +37,14 @@ func (h Hooks) AfterValidatorCreated(ctx context.Context, valAddr sdk.ValAddress
 		return fmt.Errorf(
 			"validator min_self_delegation %s is below the minimum %s (governance-set, x/valgate; enforced on Cosmos and EVM-precompile paths)",
 			val.MinSelfDelegation, min,
+		)
+	}
+	// Anti-domination cap (§5.2): at creation val.Tokens is the initial self-bond (no other
+	// delegators yet). Reject if it exceeds the max. 0/nil = no cap. Covers the precompile path.
+	if max := p.MaxSelfBond; !max.IsNil() && max.IsPositive() && !val.Tokens.IsNil() && val.Tokens.GT(max) {
+		return fmt.Errorf(
+			"validator self-bond %s exceeds the maximum %s allowed at creation (governance-set anti-domination cap, x/valgate; Cosmos + EVM-precompile paths)",
+			val.Tokens, max,
 		)
 	}
 	return nil
