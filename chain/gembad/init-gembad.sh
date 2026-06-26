@@ -87,7 +87,11 @@ sed -i.bak '/^\[json-rpc\]/,/^\[/ s/^enable = false/enable = true/' "$APP"
 rm -f "${APP}.bak"
 
 echo ">> gentx: validator self-bonds $SELF_BOND_GMB GMB"
+# --min-self-delegation MUST be >= the x/valgate floor (MIN_SELF_BOND_GMB), else valgate's
+# AfterValidatorCreated hook rejects the gentx at InitChain (gentx defaults it to 1). And the
+# self-bond must be <= the valgate max (regenesis cap); SELF_BOND_GMB is set within [min,max].
 "$EVMD" genesis gentx validator "$(gmb "$SELF_BOND_GMB")$BASE_DENOM" \
+  --min-self-delegation "$(gmb "$MIN_SELF_BOND_GMB")" \
   --gas-prices "$MIN_GAS_PRICES_NODE" --keyring-backend "$KEYRING" \
   --chain-id "$COSMOS_CHAIN_ID" --home "$HOME_DIR" >/dev/null 2>&1
 "$EVMD" genesis collect-gentxs --home "$HOME_DIR" >/dev/null 2>&1

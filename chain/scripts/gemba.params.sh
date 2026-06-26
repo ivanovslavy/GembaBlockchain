@@ -82,5 +82,7 @@ ALLOC_CIRCULATION="10000000"     # 10% client/circulation pool — the VOTING ba
 #  - each genesis validator self-bonds SELF_BOND_GMB out of circulation (so
 #    consensus power comes from circulation, never from a reserve), and
 #  - the remainder stays liquid in validator + client accounts.
-SELF_BOND_GMB="1000000"          # 1,000,000 GMB self-bonded per genesis validator
+SELF_BOND_GMB="10000"            # 10,000 GMB self-bonded per genesis validator (regenesis §11:
+                                 # the max entry self-bond; was 1,000,000 pre-regenesis but the
+                                 # valgate max-self-bond cap now rejects anything above 10,000)
 MIN_SELF_BOND_GMB="1000"   # x/valgate floor (gentx --min-self-delegation must be >= this)
