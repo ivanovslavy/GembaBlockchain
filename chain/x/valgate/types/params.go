@@ -18,11 +18,18 @@ const DefaultMinSelfBondGmb = 1000
 // via ordinary delegation (e.g. auto-compounding). Governance-tunable; 0 = no cap.
 const DefaultMaxSelfBondGmb = 10000
 
-// DefaultParams returns the launch params: 1,000 GMB min, 10,000 GMB max self-bond at creation.
+// DefaultMaxDailyBondIncreaseGmb is the launch per-day cap on how much an ALREADY-created
+// validator's bonded stake may grow (all sources: self-bond, delegations, founder auto-compound).
+// Anti-domination: stake (and thus voting power) accrues slowly + predictably. §6 regenesis spec.
+const DefaultMaxDailyBondIncreaseGmb = 50
+
+// DefaultParams returns the launch params: 1,000 GMB min, 10,000 GMB max self-bond at creation,
+// 50 GMB/day max bond increase for an existing validator.
 func DefaultParams() Params {
 	return Params{
-		MinSelfBond: math.NewInt(DefaultMinSelfBondGmb).Mul(oneGmb),
-		MaxSelfBond: math.NewInt(DefaultMaxSelfBondGmb).Mul(oneGmb),
+		MinSelfBond:          math.NewInt(DefaultMinSelfBondGmb).Mul(oneGmb),
+		MaxSelfBond:          math.NewInt(DefaultMaxSelfBondGmb).Mul(oneGmb),
+		MaxDailyBondIncrease: math.NewInt(DefaultMaxDailyBondIncreaseGmb).Mul(oneGmb),
 	}
 }
 
@@ -39,6 +46,10 @@ func (p Params) Validate() error {
 		if p.MaxSelfBond.IsPositive() && p.MaxSelfBond.LT(p.MinSelfBond) {
 			return fmt.Errorf("max_self_bond %s must be >= min_self_bond %s", p.MaxSelfBond, p.MinSelfBond)
 		}
+	}
+	// max_daily_bond_increase: nil/0 = no cap; if set, must be non-negative.
+	if !p.MaxDailyBondIncrease.IsNil() && p.MaxDailyBondIncrease.IsNegative() {
+		return fmt.Errorf("max_daily_bond_increase must be non-negative, got %s", p.MaxDailyBondIncrease)
 	}
 	return nil
 }
