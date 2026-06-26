@@ -71,6 +71,33 @@ node2 runs gembad **in a Docker container** (glibc). Run the daemons inside the 
 exec `gembad` via `docker exec`), pointing `GEMBAD_HOME` at the container's home, and import
 val-3's operator key into the container keyring. Otherwise identical.
 
+## Status (2026-06-26) — what is LIVE vs pending
+
+**LIVE on the 3 Contabo validators (val-0/1/2):** operator keys imported, gas bootstrapped,
+daemons installed, both systemd timers active (auto-unjail /5min, auto-compound daily). First
+auto-compound proven: each grew its self-stake **1000 → ~6,774 / 6,902 / 6,888 GMB** (claimed the
+~11.8k GMB reward backlog, re-staked 50%).
+
+**Per-validator compound numbers (today):** ~11.8k GMB rewards accrued over ~20 days since
+re-genesis ≈ **~590 GMB/day rewards → ~295 GMB/day re-staked (50%)** per validator at current
+load; the one-time backlog re-stake was ~5.9k GMB each. (Use these to size the per-day add cap —
+the planned next task.)
+
+**Pending:**
+- **node2 / val-3 (Docker, LAN):** not yet activated — needs the key imported into the container
+  keyring + the daemon run in/around the container (see the node2 note above). Still 980 GMB.
+- **valgate max-self-bond cap (10000) live on testnet:** the cap is coded, unit-tested (9 tests)
+  and **active on mainnet from genesis** (DefaultParams). Enforcing it on the *running* testnet
+  needs a binary upgrade, but the validators run `b7f96c2-dirty` (an unreproducible build) and
+  `main` has since diverged — a blind swap risks an AppHash fork unrelated to the cap. So testnet
+  activation is deferred to a **planned coordinated upgrade** (reconcile the running version, build
+  a matching binary, canary one validator while the other 3 keep the chain live, then roll). Low
+  urgency: the cap only affects creating a >10k-GMB validator, which is not happening on the testnet.
+
+> **Observation to review:** the val-0/1/2 operator accounts each hold **~2,000,000 GMB liquid**
+> (~6M total) — separate from their self-bond. Not touched by auto-compound (it re-stakes only the
+> *delta* of withdrawn rewards). Worth confirming this liquid allocation is intended.
+
 ## Mainnet (from genesis)
 
 On mainnet each operator runs `install-validator-auto.sh` on their own box with their own
