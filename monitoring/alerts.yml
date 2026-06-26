@@ -54,3 +54,34 @@ groups:
         labels: { severity: warning }
         annotations:
           summary: "Node disk < 15% free — review pruning (validators) or capacity (archive)"
+
+  # Economic modules (feesplit / rewardstreamer / tailreward) are fail-soft by design:
+  # a panic/error skips that block instead of halting the chain (AU-1). The danger is
+  # that this is SILENT — blocks keep producing and dashboards look healthy while the
+  # 40%-fee->faucet split or the validator-reward stream is quietly disabled every block.
+  # These alerts make that loud. The counters come from telemetry.IncrCounter in each
+  # module's BeginBlocker (needs [telemetry] enabled + prometheus-retention-time > 0 in
+  # app.toml; confirm the exact metric names at the node's /metrics).
+  - name: gemba-economic-modules
+    rules:
+      - alert: FeeSplitStalled
+        expr: increase(gemba_feesplit_skipped_blocks[10m]) > 0
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "feesplit skipped {{ $value }} blocks in 10m — 40% fee->faucet split is silently disabled"
+          description: "x/feesplit BeginBlocker is failing repeatedly (panic/error). The chain is producing but the faucet is not being refilled. Check node logs for 'feesplit: SplitFees'. Supply is safe (skipping mints/loses nothing)."
+      - alert: RewardStreamerStalled
+        expr: increase(gemba_rewardstreamer_skipped_blocks[10m]) > 0
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "rewardstreamer skipped {{ $value }} blocks in 10m — validator reward stream silently halted"
+          description: "x/rewardstreamer BeginBlocker is failing repeatedly. Validators stop receiving the reserve-funded stream. Check logs for 'rewardstreamer: StreamRewards'. Supply is safe."
+      - alert: TailRewardStalled
+        expr: increase(gemba_tailreward_skipped_blocks[10m]) > 0
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "tailreward skipped {{ $value }} blocks in 10m — post-reserve tail reward silently halted"
+          description: "x/tailreward BeginBlocker is failing repeatedly. Check logs for 'tailreward: StreamTailReward'. Supply is safe."

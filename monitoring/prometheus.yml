@@ -8,6 +8,12 @@ global:
 rule_files:
   - alerts.yml
 
+# Send firing alerts to Alertmanager (see alertmanager.yml), which emails the operator.
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["localhost:9093"]
+
 scrape_configs:
   # CometBFT metrics — enable in config.toml: [instrumentation] prometheus = true
   # (listens on :26660). Block height, peers, consensus rounds, missing validators.

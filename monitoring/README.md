@@ -7,9 +7,38 @@ security metric** (ADR-008).
 
 | File | Purpose |
 |---|---|
-| `prometheus.yml` | scrape config: CometBFT (`:26660`), app telemetry, node_exporter |
-| `alerts.yml` | alert rules: bonded-ratio thresholds (66/50/33, ADR-008), chain halt, low peers, disk |
+| `prometheus.yml` | scrape config: CometBFT (`:26660`), app telemetry, node_exporter; forwards alerts to Alertmanager |
+| `alerts.yml` | alert rules: bonded-ratio (66/50/33, ADR-008), chain halt, low peers, disk, **economic-module-stalled** |
+| `alertmanager.yml` | routes firing alerts to the operator **by email** (gembascan.io SMTP) |
 | `bonded-ratio-exporter.sh` | computes `gemba_bonded_ratio` (bonded / circulating) and writes a node_exporter textfile metric |
+
+## How you (the operator) receive alerts — EMAIL
+
+The chain is **fail-soft**: it keeps producing blocks even if the fee-split or reward
+stream silently breaks (AU-1), and a halt/low-peers/disk problem won't email anyone by
+itself. Alertmanager closes that gap — **every firing alert is emailed to you**.
+
+**Delivery path:** node metrics → Prometheus (`alerts.yml` evaluates them) →
+**Alertmanager** (`alertmanager.yml`) → **email to `ivanovslavy@gmail.com`**.
+
+**Setup (once, on the monitoring box):**
+1. Run Alertmanager next to Prometheus (`:9093`), pointed at `alertmanager.yml`.
+2. Fill the 3 SMTP fields in `alertmanager.yml` with the **gembascan.io contact-form
+   mailbox** (`smtp_smarthost`, `smtp_from`, `smtp_auth_username`).
+3. Put that mailbox's **password** in `/etc/alertmanager/smtp_password` (root-owned,
+   `chmod 600`). It is read at runtime via `smtp_auth_password_file` and is **never**
+   committed — this repo is public, so no secret goes in git.
+
+**What gets emailed:** chain halt + bonded-ratio red line (critical, re-notified every
+30 min); fee-split / reward-streamer / tail-reward stalls, low peers, disk pressure,
+bonded-ratio below target/floor (warning, re-notified every 3 h). Subject line:
+`[GembaChain <severity>] <AlertName>`. You also get a "resolved" email when it clears.
+
+> The three economic-module alerts (`FeeSplitStalled`, `RewardStreamerStalled`,
+> `TailRewardStalled`) need the counters from the modules' BeginBlockers — enable
+> `[telemetry] enabled = true` + `prometheus-retention-time > 0` in `app.toml`, and roll
+> out the binary that has the `telemetry.IncrCounter` calls. Confirm the exact metric
+> names at the node's `/metrics` (`gemba_feesplit_skipped_blocks`, etc.).
 
 ## Enable the metric sources on the node
 
