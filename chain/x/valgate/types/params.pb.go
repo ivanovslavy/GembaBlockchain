@@ -37,6 +37,12 @@ type Params struct {
 	// 0/nil means "no cap". Applies only at creation — an existing validator may grow past
 	// it via ordinary delegation (e.g. auto-compounding). §5.2.
 	MaxSelfBond cosmossdk_io_math.Int `protobuf:"bytes,2,opt,name=max_self_bond,json=maxSelfBond,proto3,customtype=cosmossdk.io/math.Int" json:"max_self_bond"`
+	// max_daily_bond_increase is the MAXIMUM GMB (agmb) that may be added to ANY already-created
+	// validator's bonded stake within one (deterministic, block-time) day — from all sources
+	// combined (self-bond, delegations, the founder auto-compound). Anti-domination: a validator
+	// can't suddenly jump by a huge amount. Governance-tunable; 0/nil means "no cap". §6 of the
+	// regenesis spec.
+	MaxDailyBondIncrease cosmossdk_io_math.Int `protobuf:"bytes,3,opt,name=max_daily_bond_increase,json=maxDailyBondIncrease,proto3,customtype=cosmossdk.io/math.Int" json:"max_daily_bond_increase"`
 }
 
 func (m *Params) Reset()         { *m = Params{} }
@@ -120,6 +126,16 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	{
+		size := m.MaxDailyBondIncrease.Size()
+		i -= size
+		if _, err := m.MaxDailyBondIncrease.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		i = encodeVarintParams(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x1a
+	{
 		size := m.MaxSelfBond.Size()
 		i -= size
 		if _, err := m.MaxSelfBond.MarshalTo(dAtA[i:]); err != nil {
@@ -162,6 +178,8 @@ func (m *Params) Size() (n int) {
 	l = m.MinSelfBond.Size()
 	n += 1 + l + sovParams(uint64(l))
 	l = m.MaxSelfBond.Size()
+	n += 1 + l + sovParams(uint64(l))
+	l = m.MaxDailyBondIncrease.Size()
 	n += 1 + l + sovParams(uint64(l))
 	return n
 }
@@ -266,6 +284,40 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if err := m.MaxSelfBond.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MaxDailyBondIncrease", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowParams
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthParams
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthParams
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.MaxDailyBondIncrease.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

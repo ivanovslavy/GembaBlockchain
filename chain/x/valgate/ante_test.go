@@ -3,6 +3,7 @@ package valgate_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"cosmossdk.io/math"
 	protov2 "google.golang.org/protobuf/proto"
@@ -115,6 +116,52 @@ func TestGovernanceTunable(t *testing.T) {
 
 	_, err = d.AnteHandle(ctx, mockTx{[]sdk.Msg{cv(5000)}}, false, next)
 	require.NoError(t, err, "5000 accepted at the new floor")
+}
+
+func del(valoper string, gmb int64) sdk.Msg {
+	return &stakingtypes.MsgDelegate{
+		DelegatorAddress: sdk.AccAddress([]byte("delegator-----------")).String(),
+		ValidatorAddress: valoper,
+		Amount:           sdk.NewCoin("agmb", math.NewInt(gmb).Mul(oneGmb)),
+	}
+}
+
+// TestDailyBondCap: an existing validator may grow at most 50 GMB/day (default), summed across
+// delegations; over-cap delegations are REJECTED (a normal tx failure, not a panic); the window
+// resets on the next (block-time) day. §6 of the regenesis spec.
+func TestDailyBondCap(t *testing.T) {
+	ctx, k := setupKeeper(t) // default cap 50 GMB/day
+	ctx = ctx.WithBlockTime(time.Unix(1_700_000_000, 0))
+	d := valgate.NewMinSelfBondDecorator(k)
+	vo := sdk.ValAddress([]byte("daily-cap-validator!")).String()
+
+	_, err := d.AnteHandle(ctx, mockTx{[]sdk.Msg{del(vo, 40)}}, false, next)
+	require.NoError(t, err, "40 GMB (under the 50/day cap) accepted")
+
+	_, err = d.AnteHandle(ctx, mockTx{[]sdk.Msg{del(vo, 20)}}, false, next)
+	require.Error(t, err, "another 20 (total 60 > 50) must be rejected")
+
+	_, err = d.AnteHandle(ctx, mockTx{[]sdk.Msg{del(vo, 10)}}, false, next)
+	require.NoError(t, err, "10 more (total exactly 50) accepted")
+
+	next2 := ctx.WithBlockTime(ctx.BlockTime().Add(24 * time.Hour))
+	_, err = d.AnteHandle(next2, mockTx{[]sdk.Msg{del(vo, 50)}}, false, next)
+	require.NoError(t, err, "new day → full 50 available again")
+}
+
+// TestDailyBondCapZeroMeansNoCap: cap = 0 disables the daily limit.
+func TestDailyBondCapZeroMeansNoCap(t *testing.T) {
+	ctx, k := setupKeeper(t)
+	ctx = ctx.WithBlockTime(time.Unix(1_700_000_000, 0))
+	require.NoError(t, k.SetParams(ctx, types.Params{
+		MinSelfBond:          math.NewInt(1000).Mul(oneGmb),
+		MaxSelfBond:          math.NewInt(10000).Mul(oneGmb),
+		MaxDailyBondIncrease: math.ZeroInt(),
+	}))
+	d := valgate.NewMinSelfBondDecorator(k)
+	vo := sdk.ValAddress([]byte("daily-cap-validator!")).String()
+	_, err := d.AnteHandle(ctx, mockTx{[]sdk.Msg{del(vo, 1_000_000)}}, false, next)
+	require.NoError(t, err, "with cap=0 a large delegation is allowed")
 }
 
 // TestMaxSelfBondEnforced: at the 10,000 GMB cap is accepted; above it is rejected — the

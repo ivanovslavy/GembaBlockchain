@@ -22,13 +22,56 @@ func NewMinSelfBondDecorator(k keeper.Keeper) MinSelfBondDecorator {
 	return MinSelfBondDecorator{keeper: k}
 }
 
-// AnteHandle enforces the min AND max self-bond at validator creation.
+// AnteHandle enforces (1) the min/max self-bond at validator creation and (2) the per-validator
+// daily bond-increase cap (§6) for delegations to an existing validator.
 func (d MinSelfBondDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
 	p := d.keeper.GetParams(ctx)
 	if err := checkMsgs(tx.GetMsgs(), p.MinSelfBond, p.MaxSelfBond, 0); err != nil {
 		return ctx, err
 	}
+	// Daily cap: skip in simulate; enforce on real Check/Deliver. Rejecting an over-cap delegation
+	// is a normal tx failure (the chain keeps running) — never a panic.
+	if !simulate {
+		if err := d.enforceDailyBond(ctx, tx.GetMsgs(), 0); err != nil {
+			return ctx, err
+		}
+	}
 	return next(ctx, tx, simulate)
+}
+
+// enforceDailyBond walks the message tree (unwrapping authz MsgExec) and records/enforces the §6
+// per-validator daily bond-increase cap for each delegation to an EXISTING validator (MsgDelegate,
+// and the destination of MsgBeginRedelegate). MsgCreateValidator's initial stake is the ENTRY
+// (1k–10k, handled above), not a daily add.
+func (d MinSelfBondDecorator) enforceDailyBond(ctx sdk.Context, msgs []sdk.Msg, depth int) error {
+	if depth > maxAuthzDepth {
+		return fmt.Errorf("authz MsgExec nesting too deep (max %d) — rejected by x/valgate", maxAuthzDepth)
+	}
+	for _, msg := range msgs {
+		switch m := msg.(type) {
+		case *stakingtypes.MsgDelegate:
+			if va, err := sdk.ValAddressFromBech32(m.ValidatorAddress); err == nil {
+				if err := d.keeper.CheckAndRecordDailyBond(ctx, va, m.Amount.Amount); err != nil {
+					return err
+				}
+			}
+		case *stakingtypes.MsgBeginRedelegate:
+			if va, err := sdk.ValAddressFromBech32(m.ValidatorDstAddress); err == nil {
+				if err := d.keeper.CheckAndRecordDailyBond(ctx, va, m.Amount.Amount); err != nil {
+					return err
+				}
+			}
+		case *authz.MsgExec:
+			inner, err := m.GetMessages()
+			if err != nil {
+				return fmt.Errorf("x/valgate: cannot decode authz MsgExec inner messages: %w", err)
+			}
+			if err := d.enforceDailyBond(ctx, inner, depth+1); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // maxAuthzDepth bounds recursion so a deeply nested MsgExec cannot grief the ante handler.

@@ -47,6 +47,12 @@ after=$(bal); after=${after:-0}
 received=$(echo "$after - $before" | bc)
 if [ "$(echo "$received <= 0" | bc)" = "1" ]; then log "no net rewards (before=$before after=$after) — skip"; exit 0; fi
 reinvest=$(echo "$received * $PCT / 100" | bc)
+# Clamp to the §6 daily bond-increase cap so the on-chain ante NEVER rejects us — if we'd exceed
+# the cap, delegate the MAX allowed and leave the rest liquid (no error, no panic).
+MAX_DAILY_ADD=${MAX_DAILY_ADD_AGMB:-50000000000000000000}  # 50 GMB default (= valgate cap)
+if [ "$(echo "$reinvest > $MAX_DAILY_ADD" | bc)" = "1" ]; then
+  log "reinvest $reinvest capped to daily max $MAX_DAILY_ADD (§6)"; reinvest=$MAX_DAILY_ADD
+fi
 if [ "$(echo "$reinvest < $MIN_REINVEST" | bc)" = "1" ]; then log "reinvest $reinvest < min $MIN_REINVEST — skip"; exit 0; fi
 
 if $GEMBAD tx staking delegate "$valoper" "${reinvest}${DENOM}" --from "$KEY" $COMMON $TX >/dev/null 2>&1; then
