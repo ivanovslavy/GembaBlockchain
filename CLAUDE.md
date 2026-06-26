@@ -139,12 +139,16 @@ below are authoritative.) Bucket #1 ("faucet") = the **Public/Municipal Reserve*
 from the testnet *drip* faucet; the former liquidity reserve is the **Contingency Reserve**
 (no liquidity by design, §8).
 
-> **Reserve-contract funding status:** the reserves are still held by genesis EOAs + Cosmos
-> module accounts, **not yet by the Solidity reserve contracts** (Governor/Timelock custody).
-> The *testnet* genesis is deliberately testing-shaped (bigger faucet, etc.) and **does not
-> match these mainnet %s**, and ~47% of supply sits in keyless module accounts — so the live
-> testnet contracts cannot be funded to the exact %s below without a corrected re-genesis.
-> Plan + the genesis-vs-spec reconciliation: **[`docs/tokenomics-pending.md`](docs/tokenomics-pending.md)**.
+> **Reserve-contract funding status (UPDATED 2026-06-26 — verified on-chain):** the Solidity
+> reserve contracts **ARE funded on the live testnet** (Governor/Timelock custody): Faucet **30M**,
+> Foundation **15M**, DAO **10M**, Contingency **10M** = **65M**, all owned by the Timelock; the
+> 20M validator reward reserve sits in the `x/rewardstreamer` module account (by design). So the
+> earlier "reserves not yet in the Solidity contracts" note is **superseded** — they are funded.
+> Two carry-over items for mainnet: (1) the reserve contracts are **not yet excluded from
+> `GembaVotes`** (defense-in-depth gap — fix via governance `setExclusion` / a correct genesis),
+> and (2) governance params are still testnet-loose (tighten for mainnet). Full verification +
+> reconciliation: **[`docs/live-deployment-security-2026-06-26.md`](docs/live-deployment-security-2026-06-26.md)**;
+> plan: **[`docs/tokenomics-pending.md`](docs/tokenomics-pending.md)**.
 
 | Bucket | Share | GMB (N=100M) | Votes? | Purpose |
 |---|---|---|---|---|

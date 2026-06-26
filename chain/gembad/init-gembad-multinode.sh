@@ -55,7 +55,9 @@ mkdir -p "$N0/config/gentx"
 for i in $(seq 0 $((N-1))); do
   H="$BASE/node$i"
   [ "$i" -ne 0 ] && cp "$GEN" "$H/config/genesis.json"
-  "$EVMD" genesis gentx "val$i" "$(gmb "$SELF_BOND_GMB")$BASE_DENOM" --gas-prices "$MIN_GAS_PRICES_NODE" --keyring-backend "$KEYRING" --chain-id "$COSMOS_CHAIN_ID" --home "$H" >/dev/null 2>&1
+  # --min-self-delegation MUST be >= the x/valgate floor (default gentx sets it to 1 wei,
+  # which valgate rejects at InitChain → "min_self_delegation 1 is below the minimum").
+  "$EVMD" genesis gentx "val$i" "$(gmb "$SELF_BOND_GMB")$BASE_DENOM" --min-self-delegation "$(gmb "$MIN_SELF_BOND_GMB")" --gas-prices "$MIN_GAS_PRICES_NODE" --keyring-backend "$KEYRING" --chain-id "$COSMOS_CHAIN_ID" --home "$H" >/dev/null 2>&1
   cp "$H"/config/gentx/*.json "$N0/config/gentx/" 2>/dev/null || true
 done
 "$EVMD" genesis collect-gentxs --home "$N0" >/dev/null 2>&1
