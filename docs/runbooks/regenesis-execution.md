@@ -49,10 +49,23 @@ New `genesis.json` from `chain/testnet` generator with §0 numbers:
 - 4 genesis validators funded **exactly 10,000 GMB each from the founder** (gentx / pre-fund).
 - mint inflation 0; the A2 formula/faucet/governance params baked in.
 
-## Stage C — contracts via CREATE2 (⏳, preserves CA)
-Rework deploy scripts to a CREATE2 factory + **fixed salts** so every contract redeploys to the
-**same address** after regenesis → dApp configs untouched. Redeploy governance/treasury/DEX/onramp/
-tickets/perks/access + drip-faucet; **verify each on Blockscout**.
+## Stage C — contracts via CREATE2 (🔨 mechanism proven; per-script conversion is the rollout)
+CREATE2 address = f(deployer, salt, init-code) — **no nonce term** → same deployer + salt + bytecode
+gives the **same address** on a fresh chain. Proven: `contracts/test/Create2Determinism.t.sol` (2 tests:
+address is nonce-independent + matches the prediction). So CA survive the regenesis → dApp configs stay
+untouched. (Plain `new C()` = CREATE = nonce-dependent → addresses would shift.)
+
+**Salt scheme** (fixed, versioned): `keccak256("gemba.<contract>.v1")` — e.g. `gemba.governor.v1`,
+`gemba.timelock.v1`, `gemba.votes.v1`, `gemba.faucet.v1`, `gemba.foundation.v1`, `gemba.dao.v1`,
+`gemba.contingency.v1`, `gemba.emergencypause.v1`, `gemba.dripfaucet.v1`, `gemba.onramp.v1`,
+`gemba.ticketing.v1`, `gemba.perks.v1`, `gemba.forwarder.v1`, `gemba.checkin.v1`, `gemba.accessnft.v1`,
+plus the DEX (factory/router/WGMB/pairs).
+
+**Conversion (mechanical, follow the pattern):** in each deploy script change `new C(args)` →
+`new C{salt: keccak256("gemba.<c>.v1")}(args)` (Foundry routes it through the canonical CREATE2 factory
+0x4e59…, present on the chain). Same founder + salt + bytecode ⇒ identical address every regenesis.
+Verify each on Blockscout. **dApp contracts (GembaTicket/GembaPass/Escrow/GembaWin/EduChain) live in
+their own repos — their deploy scripts must adopt the same CREATE2+salt scheme to keep THEIR CA.**
 
 ## Stage D — local STAGING dry-run (⏳, MANDATORY before live)
 Run the WHOLE thing on a throwaway local 4-node chain first: regenesis → contracts (CREATE2, confirm
