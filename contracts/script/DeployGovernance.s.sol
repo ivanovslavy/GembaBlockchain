@@ -49,20 +49,23 @@ contract DeployGovernance is Script {
         address[] memory proposers = new address[](0);
         address[] memory executors = new address[](1);
         executors[0] = address(0); // open execution: anyone executes after the delay
-        GembaTimelock timelock = new GembaTimelock(vm.envOr("MIN_DELAY", uint256(300)), proposers, executors, deployer);
+        // CREATE2 + fixed salts (§41): all protocol addresses survive a regenesis (same salt +
+        // bytecode + init args => same address). The deployer (founder) + the canonical CREATE2
+        // factory are constant, so re-running this script on the fresh chain reproduces every CA.
+        GembaTimelock timelock = new GembaTimelock{salt: keccak256(bytes("gemba.timelock.v1"))}(vm.envOr("MIN_DELAY", uint256(300)), proposers, executors, deployer);
 
         // EmergencyPause: 3 governance-elected guardians, 2-of-3 to pause (pause-only).
         address[] memory guardians = new address[](3);
         guardians[0] = vm.envAddress("GUARDIAN1");
         guardians[1] = vm.envAddress("GUARDIAN2");
         guardians[2] = vm.envAddress("GUARDIAN3");
-        EmergencyPause pause = new EmergencyPause(address(timelock), guardians, 2);
+        EmergencyPause pause = new EmergencyPause{salt: keccak256(bytes("gemba.emergencypause.v1"))}(address(timelock), guardians, 2);
 
         // reserves: UUPS proxies, owner = Timelock, pauser = EmergencyPause.
         // Deployed BEFORE GembaVotes so their addresses can be excluded at genesis (finding #10).
         address faucet = address(
-            new ERC1967Proxy(
-                address(new Faucet()),
+            new ERC1967Proxy{salt: keccak256(bytes("gemba.faucet.v1"))}(
+                address(new Faucet{salt: keccak256(bytes("gemba.faucet.impl.v1"))}()),
                 abi.encodeCall(
                     Faucet.initialize,
                     (address(timelock), address(pause), deployer, PER_GRANT_CAP, FAUCET_EPOCH_CAP, FAUCET_EPOCH_LENGTH)
@@ -70,20 +73,20 @@ contract DeployGovernance is Script {
             )
         );
         address foundation = address(
-            new ERC1967Proxy(
-                address(new FoundationTreasury()),
+            new ERC1967Proxy{salt: keccak256(bytes("gemba.foundation.v1"))}(
+                address(new FoundationTreasury{salt: keccak256(bytes("gemba.foundation.impl.v1"))}()),
                 abi.encodeCall(FoundationTreasury.initialize, (address(timelock), address(pause)))
             )
         );
         address dao = address(
-            new ERC1967Proxy(
-                address(new DAOReserve()),
+            new ERC1967Proxy{salt: keccak256(bytes("gemba.dao.v1"))}(
+                address(new DAOReserve{salt: keccak256(bytes("gemba.dao.impl.v1"))}()),
                 abi.encodeCall(DAOReserve.initialize, (address(timelock), address(pause)))
             )
         );
         address contingency = address(
-            new ERC1967Proxy(
-                address(new ContingencyReserve()),
+            new ERC1967Proxy{salt: keccak256(bytes("gemba.contingency.v1"))}(
+                address(new ContingencyReserve{salt: keccak256(bytes("gemba.contingency.impl.v1"))}()),
                 abi.encodeCall(ContingencyReserve.initialize, (address(timelock), address(pause)))
             )
         );
@@ -94,9 +97,9 @@ contract DeployGovernance is Script {
         excludedReserves[1] = foundation;
         excludedReserves[2] = dao;
         excludedReserves[3] = contingency;
-        GembaVotes votes = new GembaVotes(address(timelock), excludedReserves);
+        GembaVotes votes = new GembaVotes{salt: keccak256(bytes("gemba.votes.v1"))}(address(timelock), excludedReserves);
 
-        GembaGovernor governor = new GembaGovernor(
+        GembaGovernor governor = new GembaGovernor{salt: keccak256(bytes("gemba.governor.v1"))}(
             IVotes(address(votes)), timelock, VOTING_DELAY, uint32(vm.envOr("VOTING_PERIOD", uint256(86400))),
             PROPOSAL_THRESHOLD, vm.envOr("QUORUM_PCT", uint256(40)), SUPERMAJORITY, CRITICAL_QUORUM, CRITICAL_SUPERMAJORITY
         );
