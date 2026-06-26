@@ -83,9 +83,18 @@ re-genesis ≈ **~590 GMB/day rewards → ~295 GMB/day re-staked (50%)** per val
 load; the one-time backlog re-stake was ~5.9k GMB each. (Use these to size the per-day add cap —
 the planned next task.)
 
+**ALL 4 now balanced to ~25% each** (so losing any one leaves ~75% online, above the 2/3 BFT
+threshold → the chain survives a single-validator outage):
+`val-0 6,774 · val-1 6,902 · val-2 6,888 · val-3 6,851 GMB`.
+
+- **node2 / val-3 (jellyfin, Docker): ACTIVATED.** The host `gembad` can't run (no glibc 2.38), so
+  the node runs in the `gembad-node2` container and the daemons call gembad via `docker exec`
+  (`GEMBAD="docker exec gembad-node2 gembad"`, home `/home/slavy/.gembad-testnet-node2` mounted in).
+  val-3's operator key (`val3op`) imported into the container keyring; compounded 980 → 3,702 (its
+  reward backlog was smaller, ~5.4k), then topped up +3,150 from its operator liquid to ~6,851 to
+  match the others (25% balance). Timers active.
+
 **Pending:**
-- **node2 / val-3 (Docker, LAN):** not yet activated — needs the key imported into the container
-  keyring + the daemon run in/around the container (see the node2 note above). Still 980 GMB.
 - **valgate max-self-bond cap (10000) live on testnet:** the cap is coded, unit-tested (9 tests)
   and **active on mainnet from genesis** (DefaultParams). Enforcing it on the *running* testnet
   needs a binary upgrade, but the validators run `b7f96c2-dirty` (an unreproducible build) and
