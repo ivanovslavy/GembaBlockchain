@@ -24,9 +24,14 @@ contract DeployGovernance is Script {
     //   MAINNET: MIN_DELAY=86400  QUORUM_PCT=66   (24h timelock, 66% quorum)
     //   testnet: leave unset → the defaults below (5-min timelock, 50% quorum)
     uint48 constant VOTING_DELAY = 1;        // blocks
-    uint32 constant VOTING_PERIOD = 600;     // blocks (~20 min @ 2s)
     uint256 constant PROPOSAL_THRESHOLD = 0; // any vGMB holder may propose
-    uint256 constant SUPERMAJORITY = 66;     // 66% to pass (§7)
+    // Regenesis 2-tier governance (§9): Standard (quorum 40% / supermajority 51%) for routine
+    // proposals; Critical (51% / 66%) for anything touching the Governor/Timelock/staking/treasury
+    // (auto-classified on-chain). Voting period defaults to ~3 days at ~3s blocks (env-overridable
+    // for staging). Standard quorum is QUORUM_PCT (default 40); critical is CRITICAL_QUORUM (51).
+    uint256 constant SUPERMAJORITY = 51;          // standard-tier "For" threshold
+    uint256 constant CRITICAL_QUORUM = 51;        // critical-tier quorum
+    uint256 constant CRITICAL_SUPERMAJORITY = 66; // critical-tier "For" threshold
     uint256 constant PER_GRANT_CAP = 1000 ether;          // faucet per-grant cap
     uint256 constant FAUCET_EPOCH_CAP = 100_000 ether;    // faucet aggregate cap per window (drain bound)
     uint256 constant FAUCET_EPOCH_LENGTH = 1 days;        // rolling window length
@@ -92,7 +97,8 @@ contract DeployGovernance is Script {
         GembaVotes votes = new GembaVotes(address(timelock), excludedReserves);
 
         GembaGovernor governor = new GembaGovernor(
-            IVotes(address(votes)), timelock, VOTING_DELAY, VOTING_PERIOD, PROPOSAL_THRESHOLD, vm.envOr("QUORUM_PCT", uint256(50)), SUPERMAJORITY
+            IVotes(address(votes)), timelock, VOTING_DELAY, uint32(vm.envOr("VOTING_PERIOD", uint256(86400))),
+            PROPOSAL_THRESHOLD, vm.envOr("QUORUM_PCT", uint256(40)), SUPERMAJORITY, CRITICAL_QUORUM, CRITICAL_SUPERMAJORITY
         );
 
         // wire: Governor proposes/cancels; the deployer renounces the timelock admin so
