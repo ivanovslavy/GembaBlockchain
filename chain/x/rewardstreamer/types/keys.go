@@ -19,5 +19,9 @@ const (
 	RouterKey = ModuleName
 )
 
-// ParamsKey is the single KVStore key under which params are stored (JSON).
+// ParamsKey is the single KVStore key under which the legacy (fixed-stream) params are stored (JSON).
 var ParamsKey = []byte{0x01}
+
+// FormulaParamsKey stores the regenesis reward-formula params (JSON), separate from the legacy
+// proto Params so it carries cleanly across genesis without disturbing the MsgUpdateParams wire.
+var FormulaParamsKey = []byte{0x02}

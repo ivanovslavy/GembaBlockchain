@@ -27,7 +27,15 @@ func (k Keeper) BeginBlock(ctx sdk.Context) (err error) {
 			err = nil
 		}
 	}()
-	if _, e := k.StreamRewards(ctx); e != nil {
+	// Regenesis §4: when the reward FORMULA is active (params enabled + staking/distr keepers
+	// wired) use the per-validator capped payout; otherwise fall back to the legacy fixed stream
+	// (keeps existing devnets + tests working unchanged).
+	if k.FormulaActive(ctx) {
+		if _, e := k.StreamFormulaRewards(ctx); e != nil {
+			ctx.Logger().Error("rewardstreamer: StreamFormulaRewards failed; skipping this block", "err", e)
+			telemetry.IncrCounter(1, "gemba", "rewardstreamer", "skipped_blocks")
+		}
+	} else if _, e := k.StreamRewards(ctx); e != nil {
 		ctx.Logger().Error("rewardstreamer: StreamRewards failed; skipping this block", "err", e)
 		telemetry.IncrCounter(1, "gemba", "rewardstreamer", "skipped_blocks")
 	}

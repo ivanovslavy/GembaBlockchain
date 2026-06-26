@@ -20,6 +20,10 @@ type Keeper struct {
 	feeCollectorName string
 
 	bankKeeper types.BankKeeper
+	// Reward-formula keepers (regenesis §4). nil on a legacy build → BeginBlock falls back to the
+	// fixed StreamRewards. Injected via WithFormulaKeepers in the app wiring.
+	stakingKeeper types.FormulaStakingKeeper
+	distrKeeper   types.FormulaDistrKeeper
 }
 
 // NewKeeper builds the reward streamer keeper.
@@ -29,6 +33,46 @@ func NewKeeper(storeKey storetypes.StoreKey, bk types.BankKeeper) Keeper {
 		feeCollectorName: authtypes.FeeCollectorName,
 		bankKeeper:       bk,
 	}
+}
+
+// WithFormulaKeepers injects the staking + distribution keepers the reward FORMULA needs (per-
+// validator capped allocation). Called in the app wiring once both keepers exist. Returns a copy.
+func (k Keeper) WithFormulaKeepers(sk types.FormulaStakingKeeper, dk types.FormulaDistrKeeper) Keeper {
+	k.stakingKeeper = sk
+	k.distrKeeper = dk
+	return k
+}
+
+// GetFormulaParams reads the reward-formula params (JSON; default if unset).
+func (k Keeper) GetFormulaParams(ctx sdk.Context) types.FormulaParams {
+	bz := ctx.KVStore(k.storeKey).Get(types.FormulaParamsKey)
+	if bz == nil {
+		return types.DefaultFormulaParams()
+	}
+	var p types.FormulaParams
+	if err := json.Unmarshal(bz, &p); err != nil {
+		return types.DefaultFormulaParams()
+	}
+	return p
+}
+
+// SetFormulaParams validates + writes the reward-formula params (JSON).
+func (k Keeper) SetFormulaParams(ctx sdk.Context, p types.FormulaParams) error {
+	if err := p.Validate(); err != nil {
+		return err
+	}
+	bz, err := json.Marshal(p)
+	if err != nil {
+		return err
+	}
+	ctx.KVStore(k.storeKey).Set(types.FormulaParamsKey, bz)
+	return nil
+}
+
+// FormulaActive reports whether the reward FORMULA should drive rewards (params enabled + the
+// staking/distribution keepers wired). Otherwise BeginBlock uses the legacy fixed stream.
+func (k Keeper) FormulaActive(ctx sdk.Context) bool {
+	return k.stakingKeeper != nil && k.distrKeeper != nil && k.GetFormulaParams(ctx).Enabled
 }
 
 // ReserveAddress is the module account that holds the validator-reward reserve.
