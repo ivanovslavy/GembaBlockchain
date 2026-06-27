@@ -609,6 +609,9 @@ function App() {
             GitHub
           </a>
         </nav>
+        <p className="legal-links">
+          <a href="/terms/">Terms of Service</a> · <a href="/privacy/">Privacy Policy</a>
+        </p>
         <p className="copy">
           GembaBlockchain · Bulgaria's first blockchain · public decentralized PoS L1 ·
           built for society, not speculation

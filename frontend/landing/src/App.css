@@ -317,3 +317,6 @@ code {
 @media (max-width: 560px) { .contact-row { flex-direction: column; } }
 .buy-label { display:block; font-size:.8rem; color: var(--text-tertiary); margin: 0 0 4px 2px; }
 .contact-form input[readonly] { cursor: default; }
+.legal-links { text-align:center; font-size:.85rem; margin: 8px 0 0; }
+.legal-links a { color: var(--text-tertiary); }
+.legal-links a:hover { color: var(--text-secondary); }
