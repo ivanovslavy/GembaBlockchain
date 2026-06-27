@@ -17,11 +17,15 @@ const NET = {
   symbol: "GMB",
 };
 
-const FAUCET = "0x2baE94C0463bcdcCD0120A33D90E7fB5b5449584";
+// Single system faucet (2026-06-27): the combo faucet dispenses BOTH native GMB and the
+// test stablecoins (USDT/USDC/EURC) from one contract, with on-chain per-asset 24h cooldowns.
+// One faucet for everything is simpler than scattered per-asset/per-dApp faucets. educhain
+// keeps its own whitelist faucet; the 30M public reserve stays in the Cosmos faucet module.
+const FAUCET = "0x0147581e2351dD182edD651DFEfD955CB353f8aA"; // combo faucet — GMB + test stablecoins
 const TOKENS = [
-  { symbol: "USDT", name: "Tether USD (Test)", address: "0x0821EAAE0328b02d6f85C36925acb92E90ef680C", decimals: 6 },
-  { symbol: "USDC", name: "USD Coin (Test)", address: "0x131f3087ecabA6f7ae91439DDaF70f4269D4b9Ef", decimals: 6 },
-  { symbol: "EURC", name: "Euro Coin (Test)", address: "0x05003C73FfEC1c2f56021549501Dd7AD850e39C3", decimals: 6 },
+  { symbol: "USDT", name: "Tether USD (Test)", address: "0xF61647866ad7be8137230Ad688092D2f3F4A1666", decimals: 6 },
+  { symbol: "USDC", name: "USD Coin (Test)", address: "0xc9af98AD8ae78086620821F9Ceb05842Dd7950CF", decimals: 6 },
+  { symbol: "EURC", name: "Euro Coin (Test)", address: "0x7Ff43282d7939418a3f0A308E2d48Dd93536044e", decimals: 6 },
 ];
 const SEL = { claimGMB: "0xc89830b0", claimToken: "0x32f289cf" };
 const SELR = { gmbAvailableAt: "0x4a1303cb", tokenAvailableAt: "0x9de4bd3d" };

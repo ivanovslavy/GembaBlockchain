@@ -10,12 +10,12 @@ Fixed supply **100,000,000 GMB** — verified on-chain (`gembad q bank total` = 
 | FoundationTreasury | EVM `0x353CC67C2000fC9b142C0aa505a2e45DA693CDe0` | **15,000,000** | EVM contract, Timelock-owned |
 | DAOReserve | EVM `0x68093A1C9682df9D1C59586b2Cfc04ed132e7eE5` | **10,000,000** | EVM contract, Timelock-owned |
 | ContingencyReserve | EVM `0xCBbf84966335e0846cffB52d8624a9aeF58227b4` | **10,000,000** | EVM contract, Timelock-owned |
-| Founder / ops | EOA `0x5578c75F22dE0bf1caA4BdD46BA28406C696a5dC` | **~4,879,000** (5M − dApp funding/gas below) | EOA, non-voting |
+| Founder / ops | EOA `0x5578c75F22dE0bf1caA4BdD46BA28406C696a5dC` | **~4,870,000** (5M − dApp funding/gas below) | EOA, non-voting |
 | Validators (bonded stake) | val0–3 (4 × 10,000) | **40,000** | staked |
 | GembaTicket relayer (gas) | `0x8eB8Bf106EbC9834a2586D04F73866C7436Ce298` | **100,000** | dApp gas wallet |
-| DripFaucet (testnet drips) | EVM `0x0D16a7a490eB2f4766480424E28EE0187d5c74AB` | **10,000** | EVM contract |
+| **Main system faucet (`GembaFaucet`)** | EVM `0x0147581e2351dD182edD651DFEfD955CB353f8aA` | **10,000** | the single testnet faucet — dispenses GMB + mints stablecoins; used by landing/GembaWin/Escrow (`docs/faucet.md`) |
+| DripFaucet (dormant) | EVM `0x0D16a7a490eB2f4766480424E28EE0187d5c74AB` | **10,000** | governance-owned (Timelock) GMB reserve; no dApp links it — can't be key-swept (§3.6), no voting base to drain it |
 | GembaPass operator (gas) | `0xf886770683572DB6EFE69c76b0C865205C81C80e` | **10,000** | dApp gas wallet |
-| GembaWin faucet | EVM `0x0147581e2351dD182edD651DFEfD955CB353f8aA` | **1,000** | dApp faucet |
 | Faucet **contract** (EVM) | `0x9406B634Eae1856d13251245d7D472D9b6594F56` | **0** | the 30M sits in the Cosmos faucet module (Cosmos→EVM faucet seam pending) |
 | OnRamp | `0xC35E5F9AD571499785060aa63e3Eb492DbB3Fd17` | **0** | no public sale (publicSaleEnabled=false) |
 | **TOTAL** | | **100,000,000** | ✓ supply invariant holds |
