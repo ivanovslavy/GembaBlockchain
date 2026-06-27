@@ -16,8 +16,12 @@ TN_SELF_BOND_GMB="1000"          # 1,000 test GMB self-bonded per validator (= m
 # --- testnet drip faucet account (the faucet SERVICE controls this key) ---
 # The LIVE drip account must use a FRESH operator-generated key kept in the secret store —
 # NOT a public well-known mnemonic (audit finding #9). Sourced from env; no committed fallback.
+# NOTE (2026-06-27): the separate drip-faucet EOA is RETIRED — the live testnet/mainnet uses the
+# founder-owned combo GembaFaucet (docs/faucet.md), and grants draw from the Faucet contract via the
+# §4.1 mechanism. These TN_FAUCET_* vars are vestigial; do NOT reuse the old literal address below
+# (0x40a0cb1C… was COMPROMISED in pentest P-1 — docs/KEY-INVENTORY.md). Require it from env if ever needed.
 TN_FAUCET_MNEMONIC="${TN_FAUCET_MNEMONIC:?set TN_FAUCET_MNEMONIC in your env/secret store (fresh key for the live drip account)}"
-TN_FAUCET_ADDR_0X="0x40a0cb1C63e026A81B55EE1308586E21eec1eFa9"  # dev2
+TN_FAUCET_ADDR_0X="${TN_FAUCET_ADDR_0X:?set TN_FAUCET_ADDR_0X from your fresh drip key (the old 0x40a0cb1C… is compromised — never reuse)}"
 TN_FAUCET_ALLOC="2000000"       # 2,000,000 drip (carved from circulation); the 30M faucet reserve lives in the Faucet contract
 
 # --- allocation: EXACT mainnet §4.1 %s of 100M (corrected 2026-06-06, re-genesis path A) ---

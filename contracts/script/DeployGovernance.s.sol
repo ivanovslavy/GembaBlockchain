@@ -116,7 +116,11 @@ contract DeployGovernance is Script {
         // The founder sponsors a tiny gas buffer first, so each reserve EOA (which holds
         // EXACTLY its §4.1 amount) can transfer that full amount and the contract ends up
         // holding exactly its %.
-        _fund(founderPk, vm.envUint("FAUCETRESERVE_PK"), faucet, 30_000_000 ether);
+        // REGENESIS NOTE (2026-06-27): the faucet's 30M lives in the Cosmos faucet MODULE
+        // account (where the 60/40 feesplit + slash redirects accrue), NOT in an EOA — so we
+        // do NOT fund the EVM Faucet contract from an (empty) EOA here. The Cosmos↔EVM faucet
+        // seam (module -> contract top-up via governance) is the documented follow-up. The
+        // EVM Faucet contract is deployed (Timelock-owned) but seeded later via that seam.
         _fund(founderPk, vm.envUint("FOUNDATION_PK"), foundation, 15_000_000 ether);
         _fund(founderPk, vm.envUint("DAO_PK"), dao, 10_000_000 ether);
         _fund(founderPk, vm.envUint("CONTINGENCY_PK"), contingency, 10_000_000 ether);

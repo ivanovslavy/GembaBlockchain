@@ -28,11 +28,12 @@ export const gembaMainnet = defineChain({
 
 // GembaSwap (Uniswap V2) deployments per chain. Mainnet TBD at launch.
 export const DEX = {
+  // Regenesis 2026-06-27 — redeployed via deterministic CREATE2 (new addresses), verified on GembaScan.
   821207: {
-    router: "0x53D78A64D01fC38A7Cc3436b6ec81DB203836D65",
-    factory: "0x61224Ee338C3c62e1050838AB75c76A7cd6f95ed",
-    wgmb: "0x68b735671C0b6ab1a6B8Fe4eaBd532B8736E68b4",
-    locker: "0x88CB73797FFA34d6D469e855ea19A7bB28Ba1020",
+    router: "0x49Da581bf5C09aE24312574D4835d416EE5eEfd5",
+    factory: "0x15752A99d2e06d001F5d228AA158EbD687276DB4",
+    wgmb: "0x4A74DB9c9cE285960d01B53a626945DDd100e8d8",
+    locker: "0xa2bf89D6FDAA3d72310DD82A9da40032abd398c6",
   },
   821206: { router: "", factory: "", wgmb: "", locker: "" },
 };

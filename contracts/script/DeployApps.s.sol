@@ -20,9 +20,9 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 ///
 ///   FOUNDER_PK=<key> forge script script/DeployApps.s.sol --rpc-url <rpc> --broadcast
 contract DeployApps is Script {
-    // live testnet
-    address constant TIMELOCK = 0x4117ae45e76A77D1d54af57642aefD02A184cf90;
-    address constant USDC = 0x131f3087ecabA6f7ae91439DDaF70f4269D4b9Ef; // test USD Coin
+    // live testnet — regenesis 2026-06-27 CREATE2 Timelock
+    address constant TIMELOCK = 0xa75aC1AF72D54e34c5646534F985Be7a172C37C1;
+    address constant USDC = 0xc9af98AD8ae78086620821F9Ceb05842Dd7950CF; // test USD Coin (regenesis 2026-06-27)
     uint256 constant MAX_BONUS = 100_000 ether; // perks max bonus per call (drain bound)
 
     function run() external {

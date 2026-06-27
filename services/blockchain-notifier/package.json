@@ -1,0 +1,16 @@
+{
+  "name": "blockchain-notifier",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "GembaBlockchain email notifier (validators, GMB sales, uptime, risk alarms) — testnet & mainnet via one NETWORK switch",
+  "scripts": {
+    "start": "node src/index.js",
+    "once": "node src/index.js --once"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.0",
+    "nodemailer": "^6.9.14"
+  }
+}

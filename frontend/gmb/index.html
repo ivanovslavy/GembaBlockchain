@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#07090f" />
+  <link rel="icon" type="image/svg+xml" href="/gemba-favicon.svg" />
+  <link rel="canonical" href="https://gmb.gembachain.io/" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+  <meta name="author" content="GEMBA EOOD" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <title>GMB — the utility coin of GembaBlockchain · what it is & what you can do with it</title>
+  <meta name="description" content="GMB is the native utility coin of GembaBlockchain (Bulgaria's first blockchain). Pay 20% less for Gemba ecosystem services (GembaEscrow, GembaWin, GembaTicket, GembaTools and more) when you pay with GMB. Learn exactly what GMB can and cannot be used for, how to get it, and how to earn it by running a validator. Utility, not speculation — no buyback, no redemption, no trading by design." />
+  <meta name="keywords" content="GMB, Gemba coin, GembaBlockchain, utility coin, pay with GMB, 20% discount, GembaEscrow, GembaWin, GembaTicket, GembaTools, GembaKitchen, validator rewards, native token, Cosmos EVM, permissionless PoS" />
+
+  <meta property="og:site_name" content="GembaBlockchain" />
+  <meta property="og:title" content="GMB — the utility coin of GembaBlockchain" />
+  <meta property="og:description" content="What GMB is, what you can (and can't) do with it, how to get it, and how to earn it by running a validator. Pay 20% less for Gemba ecosystem services with GMB. Utility, not speculation." />
+  <meta property="og:url" content="https://gmb.gembachain.io/" />
+  <meta property="og:image" content="https://gembachain.io/gemba-icon.png" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="en" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="GMB — the utility coin of GembaBlockchain" />
+  <meta name="twitter:description" content="Pay 20% less for Gemba ecosystem services with GMB. Learn what GMB is, what it can and cannot do, and how to earn it as a validator. Utility, not speculation." />
+  <meta name="twitter:image" content="https://gembachain.io/gemba-icon.png" />
+
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@graph":[
+    {"@type":"WebPage","@id":"https://gmb.gembachain.io/#page","name":"GMB — the utility coin of GembaBlockchain","url":"https://gmb.gembachain.io/","description":"What GMB is, what you can and cannot do with it, how to get it, and how to earn it by running a validator.","inLanguage":"en","isPartOf":{"@type":"WebSite","name":"GembaBlockchain","url":"https://gembachain.io/"},"publisher":{"@type":"Organization","name":"GembaBlockchain","legalName":"GEMBA EOOD","url":"https://gembachain.io/"}},
+    {"@type":"FAQPage","@id":"https://gmb.gembachain.io/#faq","mainEntity":[
+      {"@type":"Question","name":"What is GMB?","acceptedAnswer":{"@type":"Answer","text":"GMB (Gemba) is the native utility coin of GembaBlockchain, a public, permissionless, EVM-compatible Proof-of-Stake L1. It is the gas and staking coin and is used to pay for services in the Gemba ecosystem at a 20% discount. Fixed supply of 100,000,000, zero inflation."}},
+      {"@type":"Question","name":"What can I use GMB for?","acceptedAnswer":{"@type":"Answer","text":"Paying for Gemba ecosystem services (GembaEscrow, GembaWin, GembaTools, and event-creation fees on GembaTicket) at 20% off, paying network gas fees, and staking to run or delegate to a validator. GembaKitchen and GembaSniperBot will accept GMB after mainnet."}},
+      {"@type":"Question","name":"Can I sell GMB back or redeem it for money?","acceptedAnswer":{"@type":"Answer","text":"No. GMB has no buyback and no fiat redemption. It is a utility coin meant to be used for services, not an investment. Gemba operates no exchange and seeds no liquidity. You can freely transfer or gift it to someone who will use it."}},
+      {"@type":"Question","name":"How do I get GMB?","acceptedAnswer":{"@type":"Answer","text":"On the public testnet you can claim GMB free from the faucet on gembachain.io. GMB is also sold for stablecoins so clients get cheaper access to services. There is no public speculative sale."}}
+    ]}
+  ]}
+  </script>
+
+  <style>
+    :root{
+      --bg:#07090f; --card:rgba(18,22,39,.6); --card-2:#121627; --border:rgba(255,255,255,.08);
+      --text:#9ba1b4; --text-dim:#5e6472; --heading:#e8e9ed; --indigo:#6366F1; --cyan:#06B6D4;
+      --ok:#34d399; --warn:#fbbf24; --glass:rgba(11,14,24,.55); --glow:rgba(99,102,241,.4);
+      --line-hi:rgba(99,102,241,.5);
+      --grad:linear-gradient(120deg,#6366F1,#06B6D4); --font-display:'Outfit',sans-serif;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;overflow-x:hidden;background:var(--bg);color:var(--text);line-height:1.6;
+      font-family:'DM Sans',system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+    h1,h2,h3{color:var(--heading);font-family:var(--font-display);letter-spacing:-.02em;line-height:1.12;margin:0;font-weight:700}
+    a{color:var(--heading);text-decoration:none}
+    ::selection{background:rgba(99,102,241,.3)}
+    .nodefield-bg{position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0;opacity:.5;pointer-events:none}
+    .wrap{position:relative;z-index:1;max-width:1040px;margin:0 auto;padding:0 20px}
+    /* nav */
+    .nav{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;
+      max-width:1040px;margin:0 auto;padding:18px 20px}
+    .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:800;font-size:20px;color:var(--heading)}
+    .brand img{width:28px;height:28px}
+    .nav-links{display:flex;align-items:center;gap:22px;font-size:14.5px}
+    .nav-links a{color:var(--text)}
+    .nav-links a:hover{color:var(--heading)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:12px 22px;
+      border-radius:999px;border:1px solid var(--border);background:var(--card-2);color:var(--heading);
+      font-size:14.5px;font-weight:600;cursor:pointer;box-shadow:0 6px 22px -8px var(--glow);
+      transition:transform .2s,box-shadow .3s,border-color .3s;font-family:inherit}
+    .btn:hover{transform:translateY(-3px);border-color:var(--line-hi);box-shadow:0 16px 36px -10px var(--glow)}
+    .btn-primary{background:var(--card-2)}
+    .btn-ghost{background:var(--card-2)}
+    .btn-sm{padding:8px 15px;font-size:13.5px}
+    /* hero */
+    .hero{text-align:center;padding:60px 0 36px;position:relative;z-index:1}
+    .pill{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--text);
+      border:1px solid var(--border);background:var(--glass);border-radius:999px;padding:6px 14px;margin-bottom:22px}
+    .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok)}
+    h1{font-size:clamp(32px,6vw,56px);font-weight:800}
+    .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+    .lead{max-width:680px;margin:18px auto 0;font-size:clamp(16px,2.2vw,19px);color:var(--text)}
+    .cta-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:30px}
+    /* sections */
+    section{position:relative;z-index:1;padding:46px 0;border-top:1px solid var(--border)}
+    section.first{border-top:none}
+    .eyebrow{font-family:var(--font-display);font-weight:600;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--indigo);margin-bottom:10px}
+    h2{font-size:clamp(24px,4vw,34px)}
+    .sub{max-width:720px;margin:12px 0 0;font-size:16px}
+    .framed{max-width:none;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px 24px;backdrop-filter:blur(8px);line-height:1.65}
+    /* facts grid */
+    .facts{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:28px}
+    .fact{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;backdrop-filter:blur(8px)}
+    .fact .v{font-family:var(--font-display);font-weight:700;font-size:24px;color:var(--heading)}
+    .fact .k{font-size:13px;color:var(--text-dim);margin-top:4px}
+    /* discount banner */
+    .banner{display:flex;align-items:center;gap:24px;flex-wrap:wrap;justify-content:space-between;
+      background:linear-gradient(120deg,rgba(99,102,241,.16),rgba(6,182,212,.10));border:1px solid var(--line-hi,rgba(99,102,241,.5));
+      border-radius:20px;padding:26px 30px;margin-top:10px}
+    .banner .big{font-family:var(--font-display);font-weight:800;font-size:clamp(26px,5vw,40px);color:var(--heading)}
+    .banner .big span{color:var(--cyan)}
+    /* cards */
+    .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:28px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;backdrop-filter:blur(8px);transition:transform .15s,border-color .2s;display:flex;flex-direction:column}
+    .card:hover{transform:translateY(-2px);border-color:rgba(99,102,241,.35)}
+    .card h3{font-size:18px;display:flex;align-items:center;gap:10px}
+    .card p{font-size:14.5px;margin:10px 0 0;flex:1}
+    .tag{font-family:var(--font-display);font-weight:600;font-size:11px;letter-spacing:.04em;text-transform:uppercase;
+      padding:4px 9px;border-radius:7px;display:inline-block;margin-top:14px;align-self:flex-start}
+    .tag.live{color:var(--ok);background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.3)}
+    .tag.soon{color:var(--warn);background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3)}
+    .card a.more{font-size:13.5px;color:var(--cyan);margin-top:12px}
+    /* lists */
+    .twocol{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:24px}
+    .list{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px 26px;backdrop-filter:blur(8px)}
+    .list h3{font-size:18px;margin-bottom:14px;display:flex;align-items:center;gap:9px}
+    .list ul{margin:0;padding:0;list-style:none}
+    .list li{position:relative;padding:8px 0 8px 28px;font-size:14.5px;border-bottom:1px solid var(--border)}
+    .list li:last-child{border-bottom:none}
+    .list li::before{position:absolute;left:0;top:8px;font-weight:700}
+    .can li::before{content:"✓";color:var(--ok)}
+    .cant li::before{content:"✕";color:#ef6a6a}
+    .list li b{color:var(--heading);font-weight:600}
+    /* validator metrics */
+    .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:24px}
+    .metric{background:var(--card-2);border:1px solid var(--border);border-radius:14px;padding:18px 20px}
+    .metric .v{font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--heading)}
+    .metric .k{font-size:13px;color:var(--text-dim);margin-top:4px}
+    .note{font-size:13px;color:var(--text-dim);margin-top:18px;padding:14px 16px;border:1px dashed var(--border);border-radius:12px}
+    /* footer */
+    footer{position:relative;z-index:1;border-top:1px solid var(--border);margin-top:30px;padding:34px 0 60px}
+    .foot-row{display:flex;justify-content:space-between;flex-wrap:wrap;gap:20px;font-size:14px}
+    .foot-links{display:flex;gap:20px;flex-wrap:wrap}
+    .foot-links a{color:var(--text)}
+    .foot-links a:hover{color:var(--heading)}
+    .muted{color:var(--text-dim);font-size:13px;margin-top:16px}
+    @media(max-width:860px){.facts{grid-template-columns:repeat(2,1fr)}.cards{grid-template-columns:1fr 1fr}.metrics{grid-template-columns:1fr}}
+    @media(max-width:620px){.nav-links a:not(.btn){display:none}.cards{grid-template-columns:1fr}.twocol{grid-template-columns:1fr}.facts{grid-template-columns:1fr 1fr}}
+  </style>
+</head>
+<body>
+  <canvas class="nodefield-bg" id="nf" aria-hidden="true"></canvas>
+
+  <nav class="nav">
+    <a class="brand" href="https://gembachain.io"><img src="/gemba-favicon.svg" alt="Gemba" />GembaBlockchain</a>
+    <div class="nav-links">
+      <a href="#what">What is GMB</a>
+      <a href="#use">Use GMB</a>
+      <a href="#validator">Validator</a>
+      <a href="https://gembachain.io" class="btn btn-primary btn-sm">Get GMB →</a>
+    </div>
+  </nav>
+
+  <header class="hero wrap">
+    <span class="pill"><span class="dot"></span>Testnet live · mainnet coming</span>
+    <h1>GMB — the <span class="grad">utility coin</span><br/>of GembaBlockchain</h1>
+    <p class="lead">GMB is the native coin of GembaBlockchain — Bulgaria's first blockchain. You use it
+      to pay for real services across the Gemba ecosystem <b style="color:var(--heading)">at 20% less</b>,
+      to pay network gas, and to run a validator. It is built to be <b style="color:var(--heading)">used,
+      not traded</b>: no buyback, no fiat redemption, no exchange operated by us.</p>
+    <div class="cta-row">
+      <a href="https://gembachain.io" class="btn btn-primary">Get GMB →</a>
+      <a href="#use" class="btn btn-ghost">What can I do with GMB?</a>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- WHAT IS GMB -->
+    <section class="first" id="what">
+      <div class="eyebrow">The basics</div>
+      <h2>What is GMB?</h2>
+      <p class="sub framed">GMB (Gemba) is the <b>native coin</b> of GembaBlockchain — a public, permissionless,
+        fully EVM-compatible Proof-of-Stake L1 (Cosmos&nbsp;EVM + CometBFT). It is the gas coin, the
+        staking coin and the utility coin of the whole ecosystem. It is <b>not</b> an ERC-20 token.</p>
+      <div class="facts">
+        <div class="fact"><div class="v">100,000,000</div><div class="k">fixed supply — minted once at genesis</div></div>
+        <div class="fact"><div class="v">0%</div><div class="k">inflation — never minted again</div></div>
+        <div class="fact"><div class="v">EVM 821206</div><div class="k">mainnet chainId (testnet 821207)</div></div>
+        <div class="fact"><div class="v">Utility</div><div class="k">for use, not speculation</div></div>
+      </div>
+    </section>
+
+    <!-- 20% DISCOUNT -->
+    <section id="discount">
+      <div class="banner">
+        <div>
+          <div class="eyebrow" style="margin-bottom:6px">The reason to hold GMB</div>
+          <div class="big">Pay <span>20% less</span> with GMB</div>
+          <p class="sub" style="margin-top:10px">Every Gemba ecosystem service that accepts GMB charges
+            you <b>20% less</b> than the standard fee when you pay in GMB. That discount is the whole
+            point of GMB — it makes the services you already use cheaper.</p>
+        </div>
+        <a href="https://gembachain.io" class="btn btn-primary">Get GMB →</a>
+      </div>
+    </section>
+
+    <!-- USE GMB / dApps -->
+    <section id="use">
+      <div class="eyebrow">Where it works</div>
+      <h2>dApps that accept GMB</h2>
+      <p class="sub">Pay with GMB in these Gemba ecosystem apps and get 20% off the standard fee. The
+        services and the discount are part of <a href="https://gembait.com" style="color:var(--cyan)">gembait.com</a>.</p>
+      <div class="cards">
+        <div class="card">
+          <h3>GembaEscrow</h3>
+          <p>Secure escrow for deals between parties. Pay the escrow service fee in GMB — 20% off.</p>
+          <span class="tag live">Accepts GMB · testnet</span>
+          <a class="more" href="https://escrow.gembait.com" target="_blank" rel="noopener">escrow.gembait.com ↗</a>
+        </div>
+        <div class="card">
+          <h3>GembaWin</h3>
+          <p>Win-win deals & rewards platform. Pay the service fee in GMB and save 20%.</p>
+          <span class="tag live">Accepts GMB · testnet</span>
+          <a class="more" href="https://win.gembait.com" target="_blank" rel="noopener">win.gembait.com ↗</a>
+        </div>
+        <div class="card">
+          <h3>GembaTicket</h3>
+          <p><b>Important:</b> the 20% discount applies <b>only to the fee for creating an event</b> —
+            <b>not</b> to buying tickets. Organizers pay the event-creation fee in GMB at 20% off.</p>
+          <span class="tag live">Event-creation fee only</span>
+          <a class="more" href="https://gembaticket.com" target="_blank" rel="noopener">gembaticket.com ↗</a>
+        </div>
+        <div class="card">
+          <h3>GembaTools</h3>
+          <p>Developer & on-chain tools. Pay for tool access in GMB — 20% off the standard price.</p>
+          <span class="tag live">Accepts GMB · testnet</span>
+          <a class="more" href="https://gembatools.gembait.com" target="_blank" rel="noopener">GembaTools ↗</a>
+        </div>
+        <div class="card">
+          <h3>GembaKitchen</h3>
+          <p>AI kitchen-operations SaaS. The 20% GMB discount is prepared and will go live <b>with
+            GembaBlockchain mainnet</b> (mainnet GMB is required).</p>
+          <span class="tag soon">Coming with mainnet</span>
+        </div>
+        <div class="card">
+          <h3>GembaSniperBot</h3>
+          <p>Trading helper bot. The 20% GMB discount is prepared and will go live <b>with
+            GembaBlockchain mainnet</b> (mainnet GMB is required).</p>
+          <span class="tag soon">Coming with mainnet</span>
+        </div>
+      </div>
+      <div class="note">GMB is accepted via GembaPay's native-GMB payment flow. Today the chain is on the
+        public testnet, so you pay with testnet GMB; the same flow carries over to mainnet. Accounting
+        is <b>1&nbsp;GMB = €1</b> internally for computing the discounted service fee — this is a fixed
+        utility rate for paying fees, <b>not</b> a market price, an exchange rate, or a promise that GMB
+        can be bought or sold at €1.</div>
+    </section>
+
+    <!-- CAN / CANNOT -->
+    <section id="rules">
+      <div class="eyebrow">Be clear & honest</div>
+      <h2>What GMB can and cannot do</h2>
+      <div class="twocol">
+        <div class="list can">
+          <h3>✓ You can</h3>
+          <ul>
+            <li>Pay for Gemba ecosystem services <b>20% cheaper</b> with GMB.</li>
+            <li>Pay <b>network gas fees</b> on GembaBlockchain in GMB.</li>
+            <li><b>Stake</b> GMB to run a validator or delegate to one, and earn rewards.</li>
+            <li><b>Freely transfer</b> GMB, or <b>gift</b> it to someone who will use it for services.</li>
+            <li>Get GMB <b>free on the testnet</b> from the faucet to try the chain and its dApps.</li>
+          </ul>
+        </div>
+        <div class="list cant">
+          <h3>✕ You cannot</h3>
+          <ul>
+            <li><b>Sell GMB back</b> to us — there is no buyback.</li>
+            <li><b>Redeem GMB for fiat</b> — no cash-out, ever.</li>
+            <li>Assume a <b>€1 market price</b> — 1&nbsp;GMB=€1 is only the internal fee-accounting rate.</li>
+            <li>Use the GembaTicket discount to <b>buy tickets</b> — it is only for event creation.</li>
+            <li>Treat GMB as an <b>investment</b> — Gemba seeds no liquidity and runs no exchange.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- GET GMB -->
+    <section id="get">
+      <div class="eyebrow">Getting GMB</div>
+      <h2>How to get GMB</h2>
+      <p class="sub">Two ways, depending on what you need.</p>
+      <div class="cards" style="grid-template-columns:1fr 1fr">
+        <div class="card">
+          <h3>Free on the testnet</h3>
+          <p>Claim GMB (and test stablecoins) from the public faucet on gembachain.io to try the chain,
+            the dApps and the 20% discount — no cost.</p>
+          <a class="more" href="https://gembachain.io" target="_blank" rel="noopener">Open the faucet ↗</a>
+        </div>
+        <div class="card">
+          <h3>Buy GMB for services</h3>
+          <p>GMB is sold for stablecoins so clients get <b>cheaper access</b> to services — you buy what
+            you need, use it for discounted fees, and it recirculates. <b>There is no public speculative
+            sale</b> and no fiat redemption; this is a utility purchase, not an investment.</p>
+          <a class="more" href="https://gembachain.io" target="_blank" rel="noopener">Get GMB ↗</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- TIPS -->
+    <section id="tips">
+      <div class="eyebrow">Good to know</div>
+      <h2>Smart tips for using GMB</h2>
+      <p class="sub">Get exactly what you need — and let the faucet cover your gas.</p>
+      <div class="banner" style="margin-top:24px;align-items:flex-start">
+        <div style="flex:1;min-width:260px">
+          <div style="font-family:var(--font-display);font-weight:700;color:var(--heading);font-size:18px;margin-bottom:10px">Worked example</div>
+          <ul style="margin:0;padding:0;list-style:none;font-size:15px">
+            <li style="padding:6px 0">A service is priced at <b style="color:var(--heading)">€10</b>.</li>
+            <li style="padding:6px 0">Pay in GMB with the <b style="color:var(--cyan)">20% discount</b> → just <b style="color:var(--heading)">8&nbsp;GMB</b>.</li>
+            <li style="padding:6px 0">Need gas? It costs a fraction of a cent — claim <b style="color:var(--heading)">0.1&nbsp;GMB free</b> from the testnet faucet to cover it.</li>
+            <li style="padding:6px 0">So you acquire only what the service needs — <b style="color:var(--heading)">no overbuying GMB just for gas</b>.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="twocol" style="margin-top:18px">
+        <div class="list">
+          <h3>Gas is on the house (testnet)</h3>
+          <ul>
+            <li>Gas on GembaBlockchain is tiny (a few gwei). The faucet hands out <b>0.1 GMB / 24h</b> — plenty to sign many transactions.</li>
+            <li>Don't buy extra GMB "for fees" — top up gas from the faucet and keep your GMB for the actual service.</li>
+          </ul>
+        </div>
+        <div class="list">
+          <h3>Buy just enough — or gift it</h3>
+          <ul>
+            <li>The 20% discount means a €X service costs <b>0.8&nbsp;×&nbsp;X GMB</b> — buy that, not more.</li>
+            <li>Got GMB you won't use? <b>Transfer or gift it</b> to someone who will spend it on services.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- VALIDATOR -->
+    <section id="validator">
+      <div class="eyebrow">Earn GMB</div>
+      <h2>Become a validator</h2>
+      <p class="sub framed">GembaBlockchain is a permissionless Proof-of-Stake chain: bond GMB, run a node, and
+        you join the active validator set — no approval, no KYC, just stake. Active validators earn
+        <b>protocol rewards</b> paid from a pre-minted 20M reward reserve (zero inflation). Use those
+        rewards however you like on GembaBlockchain — pay for
+        <a href="https://gembait.com" style="color:var(--cyan)">gembait.com</a> services at 20% off, cover
+        gas, deploy contracts, sign transactions, run tests… on a permissionless chain, only your
+        imagination is the limit.</p>
+      <div class="metrics">
+        <div class="metric"><div class="v">1,000 – 10,000 GMB</div><div class="k">to start a validator — minimum and maximum self-bond</div></div>
+        <div class="metric"><div class="v">10 – 100 GMB / day</div><div class="k">your daily validator reward — from 10 (min) up to 100 (max)</div></div>
+        <div class="metric"><div class="v">up to +50 GMB / day</div><div class="k">the most you can add to your own stake per day</div></div>
+      </div>
+      <div class="cta-row" style="justify-content:flex-start;margin-top:26px">
+        <a href="https://github.com/ivanovslavy/GembaBlockchain/tree/main/gemba-validator" class="btn btn-primary" target="_blank" rel="noopener">Run a validator →</a>
+        <a href="https://gembachain.io" class="btn btn-ghost">Get GMB →</a>
+      </div>
+      <div class="note"><b>No promises of profit.</b> GMB is a utility coin, not an investment. Validator
+        rewards depend on your stake, your uptime and network parameters, and exist to secure the chain
+        and to let you keep using Gemba services — not as a financial return.</div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="foot-row">
+        <div class="foot-links">
+          <a href="https://gembachain.io">gembachain.io</a>
+          <a href="https://addresses.gembachain.io">Addresses</a>
+          <a href="https://swap.gembachain.io">Swap</a>
+          <a href="https://gembachain.io/terms/">Terms</a>
+          <a href="https://gembait.com">gembait.com</a>
+        </div>
+        <a href="https://gembachain.io" class="btn btn-primary btn-sm">Get GMB →</a>
+      </div>
+      <p class="muted">GMB is the native utility coin of GembaBlockchain. Built for use, not speculation —
+        no liquidity, no trading, no fiat redemption by design. © GEMBA EOOD. Always verify contract
+        addresses on <a href="https://addresses.gembachain.io" style="color:var(--text)">addresses.gembachain.io</a>.</p>
+    </div>
+  </footer>
+
+  <script>
+    // ported node-field background (matches gembachain.io)
+    (function(){
+      var canvas=document.getElementById('nf'); if(!canvas) return;
+      var ctx=canvas.getContext('2d');
+      var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var w=0,h=0,dpr=Math.min(window.devicePixelRatio||1,2);
+      var N=window.innerWidth<768?46:78, R=240, nodes=[];
+      for(var i=0;i<N;i++){
+        var t=(i+0.5)/N, phi=Math.acos(1-2*t), theta=Math.PI*(1+Math.sqrt(5))*i;
+        var rr=R*(0.55+0.45*((i*9301+49297)%233280)/233280);
+        nodes.push({x:rr*Math.sin(phi)*Math.cos(theta),y:rr*Math.sin(phi)*Math.sin(theta),z:rr*Math.cos(phi),
+          s:0.6+((i*131)%100)/100*1.6, c:i%3===0?'#06B6D4':(i%3===1?'#6366F1':'#4F46E5')});
+      }
+      var rotX=-0.3,rotY=0,targetX=-0.3,targetY=0,t0=0,raf;
+      function resize(){w=canvas.clientWidth;h=canvas.clientHeight;canvas.width=w*dpr;canvas.height=h*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);}
+      resize(); window.addEventListener('resize',resize);
+      window.addEventListener('pointermove',function(e){var cx=(e.clientX/window.innerWidth-0.5),cy=(e.clientY/window.innerHeight-0.5);targetY=cx*0.6;targetX=-0.3+cy*0.4;});
+      function frame(ts){
+        var dt=t0?Math.min((ts-t0)/1000,0.05):0.016; t0=ts;
+        if(!reduce) rotY+=dt*0.18;
+        rotX+=(targetX-rotX)*0.05; rotY+=(targetY-rotY)*0.02;
+        ctx.clearRect(0,0,w,h);
+        var cx=w/2,cy=h/2,focal=620,sinY=Math.sin(rotY),cosY=Math.cos(rotY),sinX=Math.sin(rotX),cosX=Math.cos(rotX);
+        var proj=nodes.map(function(n){
+          var x=n.x*cosY-n.z*sinY, z=n.x*sinY+n.z*cosY, y=n.y*cosX-z*sinX; z=n.y*sinX+z*cosX;
+          var scale=focal/(focal+z+320);
+          return {sx:cx+x*scale,sy:cy+y*scale,scale:scale,z:z,c:n.c,s:n.s};
+        });
+        for(var i=0;i<proj.length;i++){for(var j=i+1;j<proj.length;j++){
+          var a=proj[i],b=proj[j],dx=a.sx-b.sx,dy=a.sy-b.sy,d2=dx*dx+dy*dy;
+          if(d2<11000){var al=(1-d2/11000)*0.22*Math.min(a.scale,b.scale);ctx.strokeStyle='rgba(99,102,241,'+al+')';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(a.sx,a.sy);ctx.lineTo(b.sx,b.sy);ctx.stroke();}
+        }}
+        proj.sort(function(a,b){return a.z-b.z;});
+        for(var k=0;k<proj.length;k++){var p=proj[k],r=p.s*p.scale*1.7;ctx.globalAlpha=Math.max(0.18,Math.min(1,p.scale));ctx.fillStyle=p.c;ctx.shadowColor=p.c;ctx.shadowBlur=10*p.scale;ctx.beginPath();ctx.arc(p.sx,p.sy,r,0,Math.PI*2);ctx.fill();}
+        ctx.globalAlpha=1; ctx.shadowBlur=0;
+        raf=requestAnimationFrame(frame);
+      }
+      raf=requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>

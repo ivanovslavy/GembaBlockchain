@@ -35,6 +35,7 @@ paths = [
   '''security/track4-services-dapp/faucet-attack\.test\.mjs$''',
 ]
 regexes = [
+  '''\b0x[a-fA-F0-9]{40}\b''',                                    # public EVM addresses (20 bytes) — NOT secrets; the evm-private-key-hex rule still catches 0x+64-hex keys
   '''0x0{64}''',                                                  # zero hash
   '''0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9''', # public Uniswap PERMIT_TYPEHASH
   '''<.*mnemonic.*>''',                                           # angle-bracket placeholders

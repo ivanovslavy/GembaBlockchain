@@ -37,7 +37,24 @@ contracts/test/adversarial/  # Track 1 Foundry suite (kept in the contracts proj
                              # compiles against src/ and runs with `forge test`)
 ```
 
-## Running
+## Running — END-TO-END (post-regenesis 2026-06-27)
+
+One command runs the whole non-destructive suite against the regenesis'd chain + the
+redeployed contracts/dApps. Addresses + endpoints live in `security/config.sh`.
+
+```bash
+bash security/e2e/run-e2e.sh            # all: t1 Foundry, t2 Go, t3 RPC/infra, t4 dApp, inv, dapp
+bash security/e2e/run-e2e.sh inv dapp   # just live invariants + dApp liveness (fast, read-only)
+bash security/e2e/live-invariants.sh    # 40 read-only assertions on the LIVE chain/contracts
+```
+
+`live-invariants.sh` proves the CLAUDE.md §3 invariants on the LIVE deployment (eth_call only,
+moves nothing): reserves Timelock-owned (not an EOA), reserves excluded from voting
+(`getVotes==0`), no public GMB sale, 2-tier governance (40/51/66), EmergencyPause exposes no
+fund-moving fn, all 20 protocol + dApp contracts verified on gembascan, dApp faucets funded.
+Last run: **40/40 PASS**; Foundry suite **122 pass / 0 fail**.
+
+## Running — per-track
 
 ```bash
 # Track 1 — treasury/governance adversarial suite (safe, local)
@@ -49,8 +66,13 @@ bash security/track3-rpc-infra/rpc-expose-probe.sh     # see report P-2/P-3
 # Track 3 — secret scan (working tree + history)
 bash security/track3-rpc-infra/secret-scan.sh          # see report P-1
 
-# Track 2 — local devnet for destructive consensus tests (TODO: build harness)
-# bash security/devnet/up.sh && bash security/track2-consensus/run.sh
+# Track 2 — DESTRUCTIVE consensus tests on a THROWAWAY devnet (gemba-1/821206, NOT live)
+bash security/track2-consensus/run.sh
+#   2a downtime-slash→faucet (supply-invariant) — LIVE on devnet, 4/4 PASS
+#   2b double-sign→tombstone — best-effort (live equivocation is timing/partition-dependent;
+#      you can't easily force an honest validator to double-sign — that's the point)
+#   2c x/slashfunds unit — DETERMINISTIC proof the slash→faucet redirect (both pools) preserves supply
+# devnet controls: security/devnet/up.sh | down.sh [--wipe]
 ```
 
 ## Status — COMPLETE (see docs/security-pentest-2026-06-24.md)

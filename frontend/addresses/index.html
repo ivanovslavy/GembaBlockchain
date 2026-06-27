@@ -73,41 +73,48 @@
       testnet: {
         chain: { name: "GembaBlockchain Testnet", cosmos: "gemba-testnet-1", evm: 821207, symbol: "GMB" },
         explorer: "https://testnet.gembascan.io",
+        note: "Regenesis 2026-06-27 — all testnet contracts were redeployed on the fresh chain (deterministic CREATE2 → new addresses). Everything below is the current, on-chain-verified set.",
         groups: [
           { title: "Genesis reserves (token-holding)", rows: [
-            ["Faucet — Public / Municipal Reserve", "0x0C6b72AC9ee4CBd132DF181468F7d905C6FD3a66", "30,000,000 GMB · Governor + Timelock custody"],
-            ["FoundationTreasury", "0x06Cb10aCe5BdB3B6dF301d3B4af4c78A42896f7F", "15,000,000 GMB"],
-            ["DAOReserve", "0x7E00f38DB8F01d442447b0C90Eea315329B0Abb8", "10,000,000 GMB"],
-            ["ContingencyReserve", "0xb5dEc9867a89c041345B56cE1a339415B5BE4696", "10,000,000 GMB"],
+            ["Faucet — Public / Municipal Reserve", "0x9406B634Eae1856d13251245d7D472D9b6594F56", "30,000,000 GMB held in the Cosmos faucet module; this contract is the EVM seam · Timelock custody"],
+            ["FoundationTreasury", "0x353CC67C2000fC9b142C0aa505a2e45DA693CDe0", "15,000,000 GMB"],
+            ["DAOReserve", "0x68093A1C9682df9D1C59586b2Cfc04ed132e7eE5", "10,000,000 GMB"],
+            ["ContingencyReserve", "0xCBbf84966335e0846cffB52d8624a9aeF58227b4", "10,000,000 GMB"],
             ["Founder (deployer, non-voting)", "0x5578c75F22dE0bf1caA4BdD46BA28406C696a5dC", "5,000,000 GMB"],
-            ["tnfaucet (drip faucet service)", "0x40a0cb1C63e026A81B55EE1308586E21eec1eFa9", "2,000,000 GMB"],
           ] },
           { title: "Governance", rows: [
-            ["GembaGovernor", "0x3DF48Ce0331b3322970deF66a6a116927059B4e7", "supermajority 66%, quorum 50%"],
-            ["GembaTimelock", "0x4117ae45e76A77D1d54af57642aefD02A184cf90", "execution delay"],
-            ["GembaVotes", "0xbD40Df2b3aEFFAc672A8B34B2615f4639c1C4b49", "1 GMB = 1 vote · reserves excluded"],
-            ["EmergencyPause", "0x2429828C0538328e87a96418E5C1cF68057d7dBD", "2-of-3 guardian, pause-only"],
+            ["GembaGovernor", "0xCCd9f78047E1BB8Bec419490E80409bfBf3B7b72", "supermajority 66%, quorum 50%"],
+            ["GembaTimelock", "0xa75aC1AF72D54e34c5646534F985Be7a172C37C1", "execution delay · reserve custody"],
+            ["GembaVotes", "0x0056ab3c91FF5ba8eCdBA8c7C453fd9F424F7F39", "1 GMB = 1 vote · reserves excluded"],
+            ["EmergencyPause", "0x372462Fc8e28c558E2A1bcE6b9CF56a47c71DeA0", "guardian, pause-only"],
           ] },
-          { title: "DEX & ecosystem", rows: [
-            ["GembaSwapRouter02", "0x53D78A64D01fC38A7Cc3436b6ec81DB203836D65", "Uniswap V2 router (full ABI)"],
-            ["GembaSwapFactory", "0x61224Ee338C3c62e1050838AB75c76A7cd6f95ed", "Uniswap V2 factory"],
-            ["WGMB — wrapped GMB", "0x68b735671C0b6ab1a6B8Fe4eaBd532B8736E68b4", "wrapped native coin"],
-            ["GembaNativePoolFactory", "0x432c733005Fb389b32B7813260c33c27745aDA2b", "native-GMB pools"],
-            ["LiquidityLocker", "0x88CB73797FFA34d6D469e855ea19A7bB28Ba1020", "LP lock"],
-            ["DemoToken (DEMO)", "0xD172E25ac8fAC629a171aF8dcf50FEb49e369592", "example dev token"],
-            ["DemoFeeToken (FEEDEMO)", "0x91CE1f91A845801db29568337A48075CDA6191F9", "5% fee-on-transfer demo"],
+          { title: "DEX & ecosystem (developer reference)", rows: [
+            ["GembaSwapRouter02", "0x49Da581bf5C09aE24312574D4835d416EE5eEfd5", "Uniswap V2 router (full ABI)"],
+            ["GembaSwapFactory", "0x15752A99d2e06d001F5d228AA158EbD687276DB4", "Uniswap V2 factory"],
+            ["WGMB — wrapped GMB", "0x4A74DB9c9cE285960d01B53a626945DDd100e8d8", "wrapped native coin"],
+            ["GembaNativePoolFactory", "0x92F048fDF7fB98F800C4cF3c78F779681A208a99", "native-GMB pools"],
+            ["LiquidityLocker", "0xa2bf89D6FDAA3d72310DD82A9da40032abd398c6", "LP lock"],
+            ["DemoToken (DEMO)", "0xDA9dFb87f77ED2176C00339da0cEae2Ac6E5e722", "example dev token"],
+          ] },
+          { title: "Application contracts", rows: [
+            ["GembaOnRamp", "0xC35E5F9AD571499785060aa63e3Eb492DbB3Fd17", "stablecoin → GMB (public sale OFF by design)"],
+            ["GembaTicketing", "0xDe541f5E11af36cAE643D04F2e49fA54Cf14B6ce", "ERC-1155 event tickets"],
+            ["GembaPerks", "0x0c4ab65FC5A295995A0ef50714aA4e2f33b6ada6", "employee perks & bonuses"],
+            ["AccessControlNFT", "0xE2DCB80ee598Dd0eb0dda8179A51c02b7C266a98", "soulbound workplace-access capability (no PII)"],
+            ["GembaForwarder", "0x5c7A951ed32c3ce77f4b6e6585018eB5b32C426E", "EIP-2771 sponsored-gas forwarder"],
+            ["WorkplaceCheckIn", "0xbD57C7CD844ad0aC23a4e1D6B9F016E3FE89bE19", "meta-tx check-in demo"],
           ] },
           { title: "Testnet faucet & test stablecoins", rows: [
-            ["GembaFaucet", "0x2baE94C0463bcdcCD0120A33D90E7fB5b5449584", "0.1 GMB + 10,000 of each stablecoin / 24h per wallet"],
-            ["USDT — Tether USD (Test)", "0x0821EAAE0328b02d6f85C36925acb92E90ef680C", "test stablecoin · 6 decimals · valueless"],
-            ["USDC — USD Coin (Test)", "0x131f3087ecabA6f7ae91439DDaF70f4269D4b9Ef", "test stablecoin · 6 decimals · valueless"],
-            ["EURC — Euro Coin (Test)", "0x05003C73FfEC1c2f56021549501Dd7AD850e39C3", "test stablecoin · 6 decimals · valueless"],
+            ["GembaFaucet", "0x0147581e2351dD182edD651DFEfD955CB353f8aA", "0.1 GMB + 10,000 of each stablecoin / 24h per wallet"],
+            ["USDT — Tether USD (Test)", "0xF61647866ad7be8137230Ad688092D2f3F4A1666", "test stablecoin · 6 decimals · valueless"],
+            ["USDC — USD Coin (Test)", "0xc9af98AD8ae78086620821F9Ceb05842Dd7950CF", "test stablecoin · 6 decimals · valueless"],
+            ["EURC — Euro Coin (Test)", "0x7Ff43282d7939418a3f0A308E2d48Dd93536044e", "test stablecoin · 6 decimals · valueless"],
           ] },
           { title: "Validators (operators)", rows: [
-            ["Validator 0", "0xE685734337FD4Dd6d0AcFA778e62EcF3C36efb4b", "1,000 GMB self-bond"],
-            ["Validator 1", "0x2D15EfA53C6B4B833DE158E88bb0c825C190219A", "1,000 GMB"],
-            ["Validator 2", "0x6748152eB8292003A468C7543bFFB8bC5c62718C", "1,000 GMB"],
-            ["Validator 3", "0x7b75ca2344eae5D0317CEB0bB6878Cc4354dBc84", "1,000 GMB"],
+            ["Validator 0 (regen)", "0xE685734337FD4Dd6d0AcFA778e62EcF3C36efb4b", "10,000 GMB self-bond"],
+            ["Validator 1 (regen)", "0x2D15EfA53C6B4B833DE158E88bb0c825C190219A", "10,000 GMB self-bond"],
+            ["Validator 2 (regen)", "0x6748152eB8292003A468C7543bFFB8bC5c62718C", "10,000 GMB self-bond"],
+            ["Validator 3 (regen)", "0x7b75ca2344eae5D0317CEB0bB6878Cc4354dBc84", "10,000 GMB self-bond"],
           ] },
         ],
       },
@@ -115,6 +122,7 @@
         chain: { name: "GembaBlockchain (mainnet)", cosmos: "gemba-1", evm: 821206, symbol: "GMB" },
         explorer: "https://gembascan.io",
         notLive: true,
+        todo: "At mainnet genesis these will be (re)deployed & verified here: genesis reserves, governance (Governor/Timelock/Votes/EmergencyPause), the GembaSwap DEX (Router02 / WGMB / Factory / NativePoolFactory / LiquidityLocker) and the application contracts. None exist on mainnet yet.",
       },
     };
 
@@ -130,8 +138,10 @@
     function render(net) {
       const d = DATA[net];
       let html = netCard(d.chain);
+      if (d.note) html += `<div class="net" style="border-style:dashed">${d.note}</div>`;
       if (d.notLive) {
-        html += `<div class="notlive"><b style="color:var(--head)">Mainnet is not launched yet.</b><br>The official mainnet addresses (reserves, governance, DEX) will be published here at mainnet genesis. EVM chainId ${d.chain.evm}.</div>`;
+        html += `<div class="notlive"><b style="color:var(--head)">Mainnet is not launched yet.</b><br>The official mainnet addresses (reserves, governance, DEX) will be published here at mainnet genesis. EVM chainId ${d.chain.evm}.` +
+          (d.todo ? `<br><br><span style="font-size:13px">${d.todo}</span>` : "") + `</div>`;
       } else {
         for (const g of d.groups) {
           html += `<div class="grp"><h2>${g.title}</h2><table>`;

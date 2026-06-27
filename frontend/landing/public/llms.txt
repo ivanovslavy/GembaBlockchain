@@ -12,17 +12,31 @@
 
 ## Live (testnet)
 - Explorer (GembaScan): https://testnet.gembascan.io
-- Public RPC: https://rpc1.gembascan.io, https://rpc1.gembascan.io, https://rpc2.gembascan.io (chainId 821207, symbol GMB)
+- Public RPC: https://rpc1.gembascan.io, https://rpc2.gembascan.io, https://rpc3.gembascan.io (chainId 821207, symbol GMB)
 - DEX (GembaSwap): https://swap.gembachain.io
 - Public registry listings (testnet, chainId 821207): listed in ethereum-lists/chains (the registry that powers chainlist.org, enabling one-click "Add to MetaMask") and in Blockscout's chainscout directory. Merged PRs: https://github.com/ethereum-lists/chains/pull/8413 and https://github.com/blockscout/chainscout/pull/241. These are testnet listings; mainnet (chainId 821206) is not yet launched.
 
 ## Testnet faucet & test stablecoins
-- Public faucet (chainId 821207): contract 0x2baE94C0463bcdcCD0120A33D90E7fB5b5449584. Free testnet assets per wallet every 24h: 0.1 GMB and 10,000 of each test stablecoin. Claim on the official site (https://gembachain.io/#faucet) or in the dApps (https://win.gembait.com/en/faucet , https://escrow.gembait.com/en/faucet).
-- Test stablecoins (6 decimals, valueless test tokens, NOT real): USDT 0x0821EAAE0328b02d6f85C36925acb92E90ef680C, USDC 0x131f3087ecabA6f7ae91439DDaF70f4269D4b9Ef, EURC 0x05003C73FfEC1c2f56021549501Dd7AD850e39C3.
+- Public faucet (chainId 821207): contract 0x0147581e2351dD182edD651DFEfD955CB353f8aA. One combo faucet dispenses both native GMB and the test stablecoins. Free testnet assets per wallet every 24h: 0.1 GMB and 10,000 of each test stablecoin. Claim on the official site (https://gembachain.io/#faucet) or in the dApps (https://win.gembait.com/en/faucet , https://escrow.gembait.com/en/faucet).
+- Test stablecoins (6 decimals, valueless test tokens, NOT real): USDT 0xF61647866ad7be8137230Ad688092D2f3F4A1666, USDC 0xc9af98AD8ae78086620821F9Ceb05842Dd7950CF, EURC 0x7Ff43282d7939418a3f0A308E2d48Dd93536044e.
 - dApps accepting native GMB + these stablecoins: GembaWin (on-chain bounty/reward contests, https://win.gembait.com) and GembaEscrow (smart-contract escrow, https://escrow.gembait.com).
+
+## GMB — what it's for & the 20% discount
+- Official GMB info page: https://gmb.gembachain.io (what GMB is, what it can and cannot be used for, how to get it, how to earn it as a validator).
+- The point of GMB: pay 20% less for Gemba ecosystem services when you pay in GMB. Discount rate is uniform 20%, computed at the fixed internal rate 1 GMB = €1 (this is a fee-accounting rate, NOT a market price — GMB has no market price, no buyback, no fiat redemption).
+- dApps with the GMB discount: GembaEscrow, GembaWin, GembaTools (live on testnet — 20% off the service fee); GembaTicket (20% off ONLY the event-creation fee, NOT ticket purchases); GembaKitchen and GembaSniperBot (prepared, activating with mainnet GMB).
+- What GMB can do: pay for those services at 20% off, pay network gas, stake to run/delegate to a validator, be freely transferred or gifted. What it cannot do: be sold back to us, be redeemed for fiat, be treated as an investment.
+- Validators: bond GMB, run a node, earn protocol rewards from the pre-minted 20M reserve (zero inflation, reward = max(10, min(100, stake×1%)) GMB/day, min self-bond 1,000 GMB). Rewards are utility credit to spend on-chain (services at 20% off, gas, deploying contracts, transactions), not a financial return.
+
+## Buy GMB
+- GMB can be acquired with card or crypto via the GembaPay payment service: enter an EVM address + amount at https://gembachain.io/#buy; GMB is delivered automatically to that address once payment is confirmed. (Testnet GMB is valueless — the same flow will run on mainnet.) GMB is a utility coin, not an investment; the project provides no liquidity and runs no exchange.
 
 ## Links
 - Site: https://gembachain.io
+- GMB info page (what GMB is & the 20% discount): https://gmb.gembachain.io
 - Builder / company: https://gembait.com (GEMBA EOOD)
 - Official addresses (testnet+mainnet): https://addresses.gembachain.io
 - Source: https://github.com/ivanovslavy/GembaBlockchain
+- Contact: https://gembachain.io/#contact (contacts@gembachain.io)
+- Terms of Service: https://gembachain.io/terms/
+- Privacy Policy: https://gembachain.io/privacy/

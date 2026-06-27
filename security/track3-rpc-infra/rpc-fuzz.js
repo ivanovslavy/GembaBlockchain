@@ -19,9 +19,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const RESULTS = join(__dirname, "..", "results", "rpc-fuzz.txt");
 
 const ENDPOINTS = [
-  { name: "archive", url: "https://testnet.gembascan.io/rpc" },
+  // post-regenesis: one public RPC per Contabo validator (the old testnet.gembascan.io/rpc
+  // archive endpoint is gone — 410). All three fuzzed.
   { name: "rpc1", url: "https://rpc1.gembascan.io" },
   { name: "rpc2", url: "https://rpc2.gembascan.io" },
+  { name: "rpc3", url: "https://rpc3.gembascan.io" },
 ];
 
 const REQ_TIMEOUT_MS = 10_000; // anything >10s counts as a "hang"

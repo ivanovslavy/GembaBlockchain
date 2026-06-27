@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import NodeField from "./NodeField.jsx";
 
@@ -17,11 +17,15 @@ const NET = {
   symbol: "GMB",
 };
 
-const FAUCET = "0x2baE94C0463bcdcCD0120A33D90E7fB5b5449584";
+// Single system faucet (2026-06-27): the combo faucet dispenses BOTH native GMB and the
+// test stablecoins (USDT/USDC/EURC) from one contract, with on-chain per-asset 24h cooldowns.
+// One faucet for everything is simpler than scattered per-asset/per-dApp faucets. educhain
+// keeps its own whitelist faucet; the 30M public reserve stays in the Cosmos faucet module.
+const FAUCET = "0x0147581e2351dD182edD651DFEfD955CB353f8aA"; // combo faucet — GMB + test stablecoins
 const TOKENS = [
-  { symbol: "USDT", name: "Tether USD (Test)", address: "0x0821EAAE0328b02d6f85C36925acb92E90ef680C", decimals: 6 },
-  { symbol: "USDC", name: "USD Coin (Test)", address: "0x131f3087ecabA6f7ae91439DDaF70f4269D4b9Ef", decimals: 6 },
-  { symbol: "EURC", name: "Euro Coin (Test)", address: "0x05003C73FfEC1c2f56021549501Dd7AD850e39C3", decimals: 6 },
+  { symbol: "USDT", name: "Tether USD (Test)", address: "0xF61647866ad7be8137230Ad688092D2f3F4A1666", decimals: 6 },
+  { symbol: "USDC", name: "USD Coin (Test)", address: "0xc9af98AD8ae78086620821F9Ceb05842Dd7950CF", decimals: 6 },
+  { symbol: "EURC", name: "Euro Coin (Test)", address: "0x7Ff43282d7939418a3f0A308E2d48Dd93536044e", decimals: 6 },
 ];
 const SEL = { claimGMB: "0xc89830b0", claimToken: "0x32f289cf" };
 const SELR = { gmbAvailableAt: "0x4a1303cb", tokenAvailableAt: "0x9de4bd3d" };
@@ -198,6 +202,194 @@ function ClaimButtons() {
   );
 }
 
+function BuyGmb() {
+  const [conf, setConf] = useState({ pricePerGmbEur: 1, minGmb: 10, maxGmb: 10000 });
+  const [addr, setAddr] = useState("");
+  const [gmb, setGmb] = useState(100);
+  const [phase, setPhase] = useState("form"); // form | creating | awaiting | success
+  const [formErr, setFormErr] = useState("");
+  const [txHash, setTxHash] = useState("");
+  const [boughtGmb, setBoughtGmb] = useState(0);
+  const [agreed, setAgreed] = useState(false);
+  const pollRef = useRef(null);
+
+  useEffect(() => {
+    fetch("/api/purchase/config").then((r) => r.json()).then((c) => c && setConf(c)).catch(() => {});
+    return () => clearInterval(pollRef.current);
+  }, []);
+
+  const eur = (Number(gmb) * (conf.pricePerGmbEur || 0) || 0).toFixed(2);
+  const isAddr = /^0x[a-fA-F0-9]{40}$/.test(addr.trim());
+  const valid = isAddr && Number(gmb) >= conf.minGmb && Number(gmb) <= conf.maxGmb;
+
+  const poll = (oid) => {
+    clearInterval(pollRef.current);
+    pollRef.current = setInterval(async () => {
+      try {
+        const r = await fetch(`/api/purchase/status/${oid}`);
+        const j = await r.json();
+        if (j.ok && j.status === "fulfilled") {
+          clearInterval(pollRef.current);
+          setTxHash(j.txHash || "");
+          setBoughtGmb(j.gmb || 0);
+          setPhase("success");
+        }
+      } catch { /* keep polling */ }
+    }, 4000);
+  };
+
+  const buy = async () => {
+    setFormErr("");
+    if (!valid) { setFormErr("Enter a valid 0x… address and an amount within range."); return; }
+    if (!agreed) { setFormErr("Please accept the Terms of Service to continue."); return; }
+    setPhase("creating");
+    try {
+      const r = await fetch("/api/purchase/create", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ evmAddress: addr.trim(), gmbAmount: Number(gmb) }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (j.ok && j.checkoutUrl) {
+        window.open(j.checkoutUrl, "_blank", "noopener,noreferrer");
+        setPhase("awaiting");
+        poll(j.orderId);
+      } else { setPhase("form"); setFormErr("Couldn't start checkout — please try again."); }
+    } catch { setPhase("form"); setFormErr("Couldn't start checkout — please try again."); }
+  };
+
+  const close = () => { clearInterval(pollRef.current); setPhase("form"); setTxHash(""); };
+
+  return (
+    <div className="contact-form">
+      <label className="buy-label">Your GembaBlockchain (EVM) address — GMB is sent here</label>
+      <input placeholder="0x…" value={addr} onChange={(e) => setAddr(e.target.value)} maxLength={42} spellCheck="false" />
+      <div className="contact-row">
+        <div>
+          <label className="buy-label">Amount of GMB</label>
+          <input type="number" min={conf.minGmb} max={conf.maxGmb} step="1" value={gmb} onChange={(e) => setGmb(e.target.value)} />
+        </div>
+        <div>
+          <label className="buy-label">You pay</label>
+          <input value={`€ ${eur}`} readOnly tabIndex={-1} style={{ opacity: 0.85 }} />
+        </div>
+      </div>
+      <label className="buy-consent">
+        <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
+        <span>I have read and agree to the <a href="/terms/" target="_blank" rel="noopener">Terms of Service</a>,
+        and I understand GMB is a <strong>utility coin</strong> for paying for services — there is
+        <strong> no buyback and no fiat redemption</strong> (<a href="https://gmb.gembachain.io" target="_blank" rel="noopener">learn about GMB</a>).</span>
+      </label>
+      <button className="btn" disabled={phase === "creating" || !agreed} onClick={buy}>
+        {phase === "creating" ? "Opening checkout…" : "Pay with GembaPay"}
+      </button>
+      <p className="form-msg muted" style={{ color: "var(--text-tertiary)" }}>
+        {conf.minGmb}–{conf.maxGmb} GMB · pay by card or crypto via GembaPay · GMB is delivered to your
+        address automatically once payment is confirmed.
+      </p>
+      {formErr && <p className="form-msg err">{formErr}</p>}
+
+      {(phase === "awaiting" || phase === "success") && (
+        <div className="pay-overlay" role="dialog" aria-modal="true">
+          <div className={`pay-card ${phase === "success" ? "ok" : ""}`}>
+            <button className="pay-close" onClick={close} aria-label="Close">×</button>
+            {phase === "awaiting" ? (
+              <>
+                <div className="pay-spinner" />
+                <h3>Awaiting payment…</h3>
+                <p>Complete your payment in the new tab. Your GMB is delivered automatically once payment
+                is confirmed — keep this window open.</p>
+              </>
+            ) : (
+              <>
+                <div className="pay-check">
+                  <svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" fill="none" /><path fill="none" d="M14 27l8 8 16-16" /></svg>
+                </div>
+                <h3>Payment successful</h3>
+                <p>{boughtGmb ? `${Number(boughtGmb).toLocaleString("en-US")} GMB` : "Your GMB"} has been sent to your address.</p>
+                {txHash && <a className="btn" href={`${NET.explorer}/tx/${txHash}`} target="_blank" rel="noopener">View GMB transfer ↗</a>}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const TURNSTILE_SITEKEY = "0x4AAAAAADr41oPreDMPGC0C";
+
+function ContactForm() {
+  const [f, setF] = useState({ name: "", email: "", subject: "", message: "" });
+  const [token, setToken] = useState("");
+  const [status, setStatus] = useState(""); // "" | sending | ok | error | invalid | captcha
+  const widgetRef = useRef(null);
+  const widgetId = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const render = () => {
+      if (cancelled) return;
+      if (window.turnstile && widgetRef.current && widgetId.current === null) {
+        widgetId.current = window.turnstile.render(widgetRef.current, {
+          sitekey: TURNSTILE_SITEKEY,
+          callback: (t) => setToken(t),
+          "error-callback": () => setToken(""),
+          "expired-callback": () => setToken(""),
+        });
+      } else if (!window.turnstile) {
+        setTimeout(render, 300);
+      }
+    };
+    render();
+    return () => { cancelled = true; };
+  }, []);
+
+  const onChange = (e) => setF((s) => ({ ...s, [e.target.name]: e.target.value }));
+  const resetCaptcha = () => {
+    if (window.turnstile && widgetId.current !== null) window.turnstile.reset(widgetId.current);
+    setToken("");
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!f.name.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email) || !f.message.trim()) {
+      setStatus("invalid"); return;
+    }
+    if (!token) { setStatus("captcha"); return; }
+    setStatus("sending");
+    try {
+      const r = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ...f, token }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok && j.ok) { setStatus("ok"); setF({ name: "", email: "", subject: "", message: "" }); }
+      else setStatus("error");
+    } catch { setStatus("error"); }
+    resetCaptcha();
+  };
+
+  return (
+    <form className="contact-form" onSubmit={submit}>
+      <div className="contact-row">
+        <input name="name" placeholder="Your name" value={f.name} onChange={onChange} maxLength={120} required />
+        <input name="email" type="email" placeholder="Your email" value={f.email} onChange={onChange} maxLength={160} required />
+      </div>
+      <input name="subject" placeholder="Subject (optional)" value={f.subject} onChange={onChange} maxLength={160} />
+      <textarea name="message" placeholder="Your message" rows={5} value={f.message} onChange={onChange} maxLength={5000} required />
+      <div className="turnstile-wrap"><div ref={widgetRef} /></div>
+      <button className="btn" type="submit" disabled={status === "sending"}>
+        {status === "sending" ? "Sending…" : "Send message"}
+      </button>
+      {status === "ok" && <p className="form-msg ok">Thanks — your message was sent. We emailed you a copy.</p>}
+      {status === "error" && <p className="form-msg err">Something went wrong — please try again.</p>}
+      {status === "invalid" && <p className="form-msg err">Please fill in your name, a valid email and a message.</p>}
+      {status === "captcha" && <p className="form-msg err">Please complete the verification below the message.</p>}
+    </form>
+  );
+}
+
 const FEATURES = [
   {
     title: "Permissionless PoS",
@@ -251,6 +443,7 @@ function App() {
             Swap
           </a>
           <a href="#faucet">Faucet</a>
+          <a href="#buy">Buy GMB</a>
           <a href={NET.explorer} target="_blank" rel="noopener">
             Explorer
           </a>
@@ -260,6 +453,7 @@ function App() {
           <a href={NET.docs} target="_blank" rel="noopener">
             Docs
           </a>
+          <a href="#contact">Contact</a>
           <a href={NET.github} target="_blank" rel="noopener">
             GitHub
           </a>
@@ -407,6 +601,35 @@ function App() {
           </div>
         </section>
 
+        <section className="details" id="buy">
+          <div className="details-inner">
+            <h2>Buy GMB</h2>
+            <p className="buy-discount">
+              Pay <strong>20% less</strong> for Gemba ecosystem services when you pay with GMB.{" "}
+              <a href="https://gmb.gembachain.io" target="_blank" rel="noopener">Learn what GMB is &amp; what you can do with it →</a>
+            </p>
+            <p className="muted">
+              Get GMB delivered straight to your wallet. Pay by card or crypto through
+              <strong> GembaPay</strong>; once the payment is confirmed, GMB is sent automatically
+              to the address you provide. GMB is a <strong>utility coin</strong> — used for cheaper
+              access to services, <strong>not</strong> for trading: no buyback, no fiat redemption.
+              (Testnet GMB has no monetary value — this is the same flow that will run on mainnet.)
+            </p>
+            <BuyGmb />
+          </div>
+        </section>
+
+        <section className="details" id="contact">
+          <div className="details-inner">
+            <h2>Get in touch</h2>
+            <p className="muted">
+              Questions about GembaBlockchain, running a validator, or integrating the chain?
+              Send us a message — you'll get a copy by email.
+            </p>
+            <ContactForm />
+          </div>
+        </section>
+
         <section className="note">
           <p>
             <strong>Not for speculation — by design.</strong> GembaBlockchain provides
@@ -432,6 +655,7 @@ function App() {
             Swap
           </a>
           <a href="#faucet">Faucet</a>
+          <a href="#buy">Buy GMB</a>
           <a href={NET.explorer} target="_blank" rel="noopener">
             Explorer
           </a>
@@ -444,10 +668,14 @@ function App() {
           <a href={NET.docs} target="_blank" rel="noopener">
             Docs
           </a>
+          <a href="#contact">Contact</a>
           <a href={NET.github} target="_blank" rel="noopener">
             GitHub
           </a>
         </nav>
+        <p className="legal-links">
+          <a href="/terms/">Terms of Service</a> · <a href="/privacy/">Privacy Policy</a>
+        </p>
         <p className="copy">
           GembaBlockchain · Bulgaria's first blockchain · public decentralized PoS L1 ·
           built for society, not speculation
