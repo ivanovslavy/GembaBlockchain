@@ -70,6 +70,26 @@ only whitelisted users may draw there).
 - `0x9406B634…4F56` — `Faucet.sol` EVM reserve mirror (0 GMB by design; the 30M lives in the
   Cosmos module — see below).
 
+## Mainnet plan (decided 2026-06-27)
+
+**Mainnet uses this exact scheme: the founder-owned `GembaFaucet` (combo — native GMB +
+test/utility tokens), `owner = founder`, and nothing more.** The convenience drip faucet is a
+small public faucet, not a treasury reserve, so it does **not** need Governor+Timelock
+governance on top of it.
+
+- The governance-owned `GembaDripFaucet` (Timelock-owned, GMB-only) is **removed — not
+  deployed on mainnet.** It added governance overhead (every refill/param change/withdrawal
+  needs a Governor proposal + a ~2-day vote) with no benefit for a faucet that just drips small
+  amounts. On testnet it is left dormant.
+- This does **not** weaken the security model: the large value (the **30M** Public/Municipal
+  Reserve, plus Foundation/DAO/Contingency) stays governance/Timelock- and Cosmos-module-
+  controlled. Only the small convenience faucet is founder-owned, with the same defences as the
+  audited testnet contract (ReentrancyGuard, Pausable, Ownable2Step, per-wallet cooldowns, and
+  the global rolling-24h GMB cap that bounds the maximum daily outflow even if the owner key
+  were misused — the cap is set in the contract, not by the owner per claim).
+- Owner-key hygiene for mainnet: the faucet `owner` should be a hardware-key / multisig EOA
+  (not a hot key), since `withdrawGMB` + `setGmbDailyCap` are owner-only.
+
 ## The 30M public/municipal reserve (separate from this faucet)
 
 The **30,000,000 GMB** Public/Municipal Reserve is **not** this faucet — it lives in the
