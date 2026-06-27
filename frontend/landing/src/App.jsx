@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import NodeField from "./NodeField.jsx";
 
@@ -202,6 +202,80 @@ function ClaimButtons() {
   );
 }
 
+const TURNSTILE_SITEKEY = "0x4AAAAAADr41oPreDMPGC0C";
+
+function ContactForm() {
+  const [f, setF] = useState({ name: "", email: "", subject: "", message: "" });
+  const [token, setToken] = useState("");
+  const [status, setStatus] = useState(""); // "" | sending | ok | error | invalid | captcha
+  const widgetRef = useRef(null);
+  const widgetId = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const render = () => {
+      if (cancelled) return;
+      if (window.turnstile && widgetRef.current && widgetId.current === null) {
+        widgetId.current = window.turnstile.render(widgetRef.current, {
+          sitekey: TURNSTILE_SITEKEY,
+          callback: (t) => setToken(t),
+          "error-callback": () => setToken(""),
+          "expired-callback": () => setToken(""),
+        });
+      } else if (!window.turnstile) {
+        setTimeout(render, 300);
+      }
+    };
+    render();
+    return () => { cancelled = true; };
+  }, []);
+
+  const onChange = (e) => setF((s) => ({ ...s, [e.target.name]: e.target.value }));
+  const resetCaptcha = () => {
+    if (window.turnstile && widgetId.current !== null) window.turnstile.reset(widgetId.current);
+    setToken("");
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!f.name.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email) || !f.message.trim()) {
+      setStatus("invalid"); return;
+    }
+    if (!token) { setStatus("captcha"); return; }
+    setStatus("sending");
+    try {
+      const r = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ...f, token }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok && j.ok) { setStatus("ok"); setF({ name: "", email: "", subject: "", message: "" }); }
+      else setStatus("error");
+    } catch { setStatus("error"); }
+    resetCaptcha();
+  };
+
+  return (
+    <form className="contact-form" onSubmit={submit}>
+      <div className="contact-row">
+        <input name="name" placeholder="Your name" value={f.name} onChange={onChange} maxLength={120} required />
+        <input name="email" type="email" placeholder="Your email" value={f.email} onChange={onChange} maxLength={160} required />
+      </div>
+      <input name="subject" placeholder="Subject (optional)" value={f.subject} onChange={onChange} maxLength={160} />
+      <textarea name="message" placeholder="Your message" rows={5} value={f.message} onChange={onChange} maxLength={5000} required />
+      <div className="turnstile-wrap"><div ref={widgetRef} /></div>
+      <button className="btn" type="submit" disabled={status === "sending"}>
+        {status === "sending" ? "Sending…" : "Send message"}
+      </button>
+      {status === "ok" && <p className="form-msg ok">Thanks — your message was sent. We emailed you a copy.</p>}
+      {status === "error" && <p className="form-msg err">Something went wrong — please try again.</p>}
+      {status === "invalid" && <p className="form-msg err">Please fill in your name, a valid email and a message.</p>}
+      {status === "captcha" && <p className="form-msg err">Please complete the verification below the message.</p>}
+    </form>
+  );
+}
+
 const FEATURES = [
   {
     title: "Permissionless PoS",
@@ -264,6 +338,7 @@ function App() {
           <a href={NET.docs} target="_blank" rel="noopener">
             Docs
           </a>
+          <a href="#contact">Contact</a>
           <a href={NET.github} target="_blank" rel="noopener">
             GitHub
           </a>
@@ -411,6 +486,17 @@ function App() {
           </div>
         </section>
 
+        <section className="details" id="contact">
+          <div className="details-inner">
+            <h2>Get in touch</h2>
+            <p className="muted">
+              Questions about GembaBlockchain, running a validator, or integrating the chain?
+              Send us a message — you'll get a copy by email.
+            </p>
+            <ContactForm />
+          </div>
+        </section>
+
         <section className="note">
           <p>
             <strong>Not for speculation — by design.</strong> GembaBlockchain provides
@@ -448,6 +534,7 @@ function App() {
           <a href={NET.docs} target="_blank" rel="noopener">
             Docs
           </a>
+          <a href="#contact">Contact</a>
           <a href={NET.github} target="_blank" rel="noopener">
             GitHub
           </a>
