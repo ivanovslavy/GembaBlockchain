@@ -203,13 +203,14 @@ function ClaimButtons() {
 }
 
 function BuyGmb() {
-  const [conf, setConf] = useState({ pricePerGmbEur: 0.1, minGmb: 10, maxGmb: 10000 });
+  const [conf, setConf] = useState({ pricePerGmbEur: 1, minGmb: 10, maxGmb: 10000 });
   const [addr, setAddr] = useState("");
   const [gmb, setGmb] = useState(100);
   const [phase, setPhase] = useState("form"); // form | creating | awaiting | success
   const [formErr, setFormErr] = useState("");
   const [txHash, setTxHash] = useState("");
   const [boughtGmb, setBoughtGmb] = useState(0);
+  const [agreed, setAgreed] = useState(false);
   const pollRef = useRef(null);
 
   useEffect(() => {
@@ -240,6 +241,7 @@ function BuyGmb() {
   const buy = async () => {
     setFormErr("");
     if (!valid) { setFormErr("Enter a valid 0x… address and an amount within range."); return; }
+    if (!agreed) { setFormErr("Please accept the Terms of Service to continue."); return; }
     setPhase("creating");
     try {
       const r = await fetch("/api/purchase/create", {
@@ -271,7 +273,13 @@ function BuyGmb() {
           <input value={`€ ${eur}`} readOnly tabIndex={-1} style={{ opacity: 0.85 }} />
         </div>
       </div>
-      <button className="btn" disabled={phase === "creating"} onClick={buy}>
+      <label className="buy-consent">
+        <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
+        <span>I have read and agree to the <a href="/terms/" target="_blank" rel="noopener">Terms of Service</a>,
+        and I understand GMB is a <strong>utility coin</strong> for paying for services — there is
+        <strong> no buyback and no fiat redemption</strong> (<a href="https://gmb.gembachain.io" target="_blank" rel="noopener">learn about GMB</a>).</span>
+      </label>
+      <button className="btn" disabled={phase === "creating" || !agreed} onClick={buy}>
         {phase === "creating" ? "Opening checkout…" : "Pay with GembaPay"}
       </button>
       <p className="form-msg muted" style={{ color: "var(--text-tertiary)" }}>
@@ -596,11 +604,16 @@ function App() {
         <section className="details" id="buy">
           <div className="details-inner">
             <h2>Buy GMB</h2>
+            <p className="buy-discount">
+              💸 Pay <strong>20% less</strong> for Gemba ecosystem services when you pay with GMB.{" "}
+              <a href="https://gmb.gembachain.io" target="_blank" rel="noopener">Learn what GMB is &amp; what you can do with it →</a>
+            </p>
             <p className="muted">
               Get GMB delivered straight to your wallet. Pay by card or crypto through
               <strong> GembaPay</strong>; once the payment is confirmed, GMB is sent automatically
-              to the address you provide. (Testnet GMB has no monetary value — this is the same flow
-              that will run on mainnet.)
+              to the address you provide. GMB is a <strong>utility coin</strong> — used for cheaper
+              access to services, <strong>not</strong> for trading: no buyback, no fiat redemption.
+              (Testnet GMB has no monetary value — this is the same flow that will run on mainnet.)
             </p>
             <BuyGmb />
           </div>

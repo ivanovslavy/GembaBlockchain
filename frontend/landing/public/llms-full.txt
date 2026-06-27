@@ -33,8 +33,8 @@
 - Explorer (GembaScan, Blockscout): https://testnet.gembascan.io
 - Public EVM JSON-RPC (redundant, chainId 821207):
   - https://rpc1.gembascan.io
-  - https://rpc1.gembascan.io
   - https://rpc2.gembascan.io
+  - https://rpc3.gembascan.io
 - DEX (GembaSwap, Uniswap-V2 style): https://swap.gembachain.io
 - Official addresses (all important contracts + genesis reserves, testnet+mainnet): https://addresses.gembachain.io
 - Add to MetaMask: RPC any of the above, Chain ID 821207, Currency GMB, Explorer https://testnet.gembascan.io
@@ -49,6 +49,17 @@
 - GembaSwap — token swap DEX.
 - GembaPass — workplace access-control SaaS (passes as soulbound NFTs; blockchain invisible to users).
 - EduChain — gamified Web3 education sandbox running on the testnet.
+- GembaEscrow, GembaWin, GembaTools — services payable in GMB at a 20% discount (see below).
+- GembaTicket — event ticketing; GMB discount applies only to the event-creation fee.
+- GembaKitchen, GembaSniperBot — GMB discount prepared, activating with mainnet GMB.
+
+## GMB — what it's for & the 20% discount
+- Official GMB info page: https://gmb.gembachain.io — what GMB is, what it can and cannot be used for, how to get it, how to earn it as a validator.
+- Purpose of GMB: pay 20% less for Gemba ecosystem services when paying in GMB. The discount is a uniform 20%, computed at the fixed internal rate 1 GMB = €1. This rate is for fee-accounting only — GMB has NO market price, NO buyback and NO fiat redemption.
+- dApps with the GMB discount: GembaEscrow, GembaWin, GembaTools (live on testnet, 20% off the service fee); GembaTicket (20% off ONLY the event-creation fee, NOT ticket purchases); GembaKitchen and GembaSniperBot (prepared, activating with mainnet GMB).
+- What you CAN do with GMB: pay for those services at 20% off; pay network gas; stake to run or delegate to a validator; freely transfer or gift it. What you CANNOT do: sell it back to the project, redeem it for fiat, or treat it as an investment.
+- Becoming a validator: bond GMB, run a node, join the active set (no KYC). Active validators earn protocol rewards from the pre-minted 20M reserve (zero inflation; reward = max(10, min(100, stake×1%)) GMB/day; minimum self-bond 1,000 GMB). Those rewards are utility credit to spend on-chain — on Gemba services at 20% off, on gas, on deploying contracts, on transactions — not a financial return or passive-income scheme.
+- Tip: gas is a fraction of a cent and the testnet faucet gives 0.1 GMB/24h, so you never need to overbuy GMB just to cover gas — acquire only what the service costs (e.g. a €10 service = 8 GMB with the 20% discount).
 
 ## Who
 - Built by GEMBA EOOD (https://gembait.com), a Bulgarian technology company in Varna.
