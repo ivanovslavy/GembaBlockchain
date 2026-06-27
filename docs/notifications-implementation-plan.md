@@ -47,9 +47,18 @@ These tighten as the set grows (25%/validator is normal at genesis — ADR-010).
 2. **SMTP** mailboxes + creds → service `.env`.
 3. Install `systemd/blockchain-notifier.service`, enable + start.
 
-## Status
-Built + validated in DRY-RUN: the **GMB-sale watcher was confirmed live** (it picked up a real
-`Dispensed` event and produced the correctly-labelled email). Validator/bonded watchers are
-implemented and degrade gracefully until the .137:1317 whitelist exists. **Not started** (per
-request) until SMTP is configured. The pre-written defensive governance proposal (§4 of the
-companion doc) is the remaining authoring task (text + params + ready `cast` script).
+## Status — LIVE on .162 (2026-06-27)
+Deployed + running (systemd, auto-restart), sending real email `testnet@gembachain.io →
+contacts@gembachain.io`:
+- **`blockchain-notifier.service`** — all four sources live: GMB sales (Dispensed event, verified
+  live), uptime, validators (new/jailed/unjailed) and risk alarms (share/Nakamoto/count/large-sale).
+- **`notifier-rest-tunnel.service`** — the chosen secure path: on the archive (.137) Cosmos REST
+  is enabled on **localhost only**; a persistent restricted SSH tunnel forwards `127.0.0.1:1317`
+  on .162 → .137 `localhost:1317`. **No public port, no firewall hole.** (The archive's REST was
+  off; enabled in `/root/.gembad-archive/config/app.toml` `[api] enable=true`, localhost bind.)
+- **Bonded-ratio alarm disabled on testnet** (`TH_BONDED_*=0`) — at bootstrap almost nothing is
+  staked vs the 100M supply, so the ratio sits ~0.1% and the alarm is noise. Mainnet re-enables it.
+- Contact form (`contact-form.service`) live behind `gembachain.io/api/contact`.
+
+The pre-written defensive governance proposal (§4 of the companion doc) remains the only authoring
+task — text + params + a ready `cast` script for incident response.
