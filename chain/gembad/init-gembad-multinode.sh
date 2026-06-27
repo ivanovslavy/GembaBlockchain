@@ -42,10 +42,15 @@ for b in foundation dao liquidity founder; do "$EVMD" keys add "$b" --keyring-ba
 # slice; they enter with exactly SELF_BOND_GMB (10K) each, and the freed circulation pool
 # (old 4x2.5M = 10M, minus the 4x10K self-bond) is FOLDED INTO the validator-reward reserve
 # (the user's "~8M idle on validators -> reward reserve"). Total stays 100M.
-VAL_ENTRY_TOTAL=$((N * SELF_BOND_GMB))                       # 4 x 10K = 40K to validators
-RECLAIMED=$((10000000 - VAL_ENTRY_TOTAL))                    # old 10M circulation - 40K = 9,960,000
-REGEN_VAL_RESERVE=$((ALLOC_VAL_RESERVE + RECLAIMED))         # 20M + 9.96M = 29,960,000
-for i in $(seq 0 $((N-1))); do gacct "val$i" "$SELF_BOND_GMB"; done
+# Each validator gets SELF_BOND_GMB + 1 GMB: the gentx self-bonds exactly SELF_BOND_GMB, and
+# the 5-gwei fee ante runs on the gentx at InitChain BEFORE the self-bond, so an exactly-
+# SELF_BOND balance can't cover both (delegate fails "insufficient funds"). The +1 GMB/validator
+# buffer (N total) comes out of the reward reserve, so the 100M total is unchanged.
+VAL_ALLOC=$((SELF_BOND_GMB + 1))                             # 10,001 each (1 GMB liquid for the genesis fee)
+VAL_ENTRY_TOTAL=$((N * VAL_ALLOC))                           # 4 x 10,001 = 40,004
+RECLAIMED=$((10000000 - VAL_ENTRY_TOTAL))                    # old 10M circulation - 40,004
+REGEN_VAL_RESERVE=$((ALLOC_VAL_RESERVE + RECLAIMED))         # 20M + reclaimed (total stays 100M)
+for i in $(seq 0 $((N-1))); do gacct "val$i" "$VAL_ALLOC"; done
 gacct "$RS_RESERVE_ADDR" "$REGEN_VAL_RESERVE"; gacct "$FAUCET_ADDR" "$ALLOC_FAUCET"
 gacct foundation "$ALLOC_FOUNDATION"; gacct dao "$ALLOC_DAO"; gacct liquidity "$ALLOC_LIQUIDITY"; gacct founder "$ALLOC_FOUNDER"
 echo ">> regenesis allocation: validators ${SELF_BOND_GMB} GMB each; reward reserve ${REGEN_VAL_RESERVE} GMB (20M + ${RECLAIMED} reclaimed circulation)"

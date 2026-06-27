@@ -66,8 +66,13 @@ bash security/track3-rpc-infra/rpc-expose-probe.sh     # see report P-2/P-3
 # Track 3 — secret scan (working tree + history)
 bash security/track3-rpc-infra/secret-scan.sh          # see report P-1
 
-# Track 2 — local devnet for destructive consensus tests (TODO: build harness)
-# bash security/devnet/up.sh && bash security/track2-consensus/run.sh
+# Track 2 — DESTRUCTIVE consensus tests on a THROWAWAY devnet (gemba-1/821206, NOT live)
+bash security/track2-consensus/run.sh
+#   2a downtime-slash→faucet (supply-invariant) — LIVE on devnet, 4/4 PASS
+#   2b double-sign→tombstone — best-effort (live equivocation is timing/partition-dependent;
+#      you can't easily force an honest validator to double-sign — that's the point)
+#   2c x/slashfunds unit — DETERMINISTIC proof the slash→faucet redirect (both pools) preserves supply
+# devnet controls: security/devnet/up.sh | down.sh [--wipe]
 ```
 
 ## Status — COMPLETE (see docs/security-pentest-2026-06-24.md)
