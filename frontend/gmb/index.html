@@ -54,7 +54,7 @@
     h1,h2,h3{color:var(--heading);font-family:var(--font-display);letter-spacing:-.02em;line-height:1.12;margin:0;font-weight:700}
     a{color:var(--heading);text-decoration:none}
     ::selection{background:rgba(99,102,241,.3)}
-    .nodefield-bg{position:fixed;inset:0;z-index:0;opacity:.5;pointer-events:none}
+    .nodefield-bg{position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0;opacity:.5;pointer-events:none}
     .wrap{position:relative;z-index:1;max-width:1040px;margin:0 auto;padding:0 20px}
     /* nav */
     .nav{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;
@@ -88,6 +88,7 @@
     .eyebrow{font-family:var(--font-display);font-weight:600;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--indigo);margin-bottom:10px}
     h2{font-size:clamp(24px,4vw,34px)}
     .sub{max-width:720px;margin:12px 0 0;font-size:16px}
+    .framed{max-width:none;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px 24px;backdrop-filter:blur(8px);line-height:1.65}
     /* facts grid */
     .facts{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:28px}
     .fact{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;backdrop-filter:blur(8px)}
@@ -169,7 +170,7 @@
     <section class="first" id="what">
       <div class="eyebrow">The basics</div>
       <h2>What is GMB?</h2>
-      <p class="sub">GMB (Gemba) is the <b>native coin</b> of GembaBlockchain — a public, permissionless,
+      <p class="sub framed">GMB (Gemba) is the <b>native coin</b> of GembaBlockchain — a public, permissionless,
         fully EVM-compatible Proof-of-Stake L1 (Cosmos&nbsp;EVM + CometBFT). It is the gas coin, the
         staking coin and the utility coin of the whole ecosystem. It is <b>not</b> an ERC-20 token.</p>
       <div class="facts">
@@ -334,7 +335,7 @@
     <section id="validator">
       <div class="eyebrow">Earn GMB</div>
       <h2>Become a validator</h2>
-      <p class="sub">GembaBlockchain is a permissionless Proof-of-Stake chain: bond GMB, run a node, and
+      <p class="sub framed">GembaBlockchain is a permissionless Proof-of-Stake chain: bond GMB, run a node, and
         you join the active validator set — no approval, no KYC, just stake. Active validators earn
         <b>protocol rewards</b> paid from a pre-minted 20M reward reserve (zero inflation). Use those
         rewards however you like on GembaBlockchain — pay for
@@ -342,9 +343,9 @@
         gas, deploy contracts, sign transactions, run tests… on a permissionless chain, only your
         imagination is the limit.</p>
       <div class="metrics">
-        <div class="metric"><div class="v">max(10, min(100, stake×1%))</div><div class="k">GMB/day reward (capped)</div></div>
-        <div class="metric"><div class="v">1,000 GMB</div><div class="k">minimum self-bond to validate</div></div>
-        <div class="metric"><div class="v">~66% target</div><div class="k">bonded ratio the network defends</div></div>
+        <div class="metric"><div class="v">1,000 – 10,000 GMB</div><div class="k">to start a validator — minimum and maximum self-bond</div></div>
+        <div class="metric"><div class="v">10 – 100 GMB / day</div><div class="k">your daily validator reward — from 10 (min) up to 100 (max)</div></div>
+        <div class="metric"><div class="v">up to +50 GMB / day</div><div class="k">the most you can add to your own stake per day</div></div>
       </div>
       <div class="cta-row" style="justify-content:flex-start;margin-top:26px">
         <a href="https://github.com/ivanovslavy/GembaBlockchain/tree/main/gemba-validator" class="btn btn-primary" target="_blank" rel="noopener">Run a validator →</a>
