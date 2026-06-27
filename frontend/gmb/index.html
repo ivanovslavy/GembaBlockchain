@@ -45,6 +45,7 @@
       --bg:#07090f; --card:rgba(18,22,39,.6); --card-2:#121627; --border:rgba(255,255,255,.08);
       --text:#9ba1b4; --text-dim:#5e6472; --heading:#e8e9ed; --indigo:#6366F1; --cyan:#06B6D4;
       --ok:#34d399; --warn:#fbbf24; --glass:rgba(11,14,24,.55); --glow:rgba(99,102,241,.4);
+      --line-hi:rgba(99,102,241,.5);
       --grad:linear-gradient(120deg,#6366F1,#06B6D4); --font-display:'Outfit',sans-serif;
     }
     *{box-sizing:border-box}
@@ -64,15 +65,14 @@
     .nav-links{display:flex;align-items:center;gap:22px;font-size:14.5px}
     .nav-links a{color:var(--text)}
     .nav-links a:hover{color:var(--heading)}
-    .btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-display);font-weight:600;
-      font-size:15px;padding:11px 22px;border-radius:12px;border:1px solid var(--border);background:var(--card-2);
-      color:var(--heading);cursor:pointer;transition:transform .15s,box-shadow .2s,border-color .2s}
-    .btn:hover{transform:translateY(-1px)}
-    .btn-primary{background:var(--grad);color:#06080f;border-color:transparent;box-shadow:0 8px 30px -8px var(--glow)}
-    .btn-primary:hover{box-shadow:0 12px 38px -8px var(--glow)}
-    .btn-ghost{background:transparent}
-    .btn-ghost:hover{border-color:var(--indigo)}
-    .btn-sm{padding:8px 16px;font-size:14px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:12px 22px;
+      border-radius:999px;border:1px solid var(--border);background:var(--card-2);color:var(--heading);
+      font-size:14.5px;font-weight:600;cursor:pointer;box-shadow:0 6px 22px -8px var(--glow);
+      transition:transform .2s,box-shadow .3s,border-color .3s;font-family:inherit}
+    .btn:hover{transform:translateY(-3px);border-color:var(--line-hi);box-shadow:0 16px 36px -10px var(--glow)}
+    .btn-primary{background:var(--card-2)}
+    .btn-ghost{background:var(--card-2)}
+    .btn-sm{padding:8px 15px;font-size:13.5px}
     /* hero */
     .hero{text-align:center;padding:60px 0 36px;position:relative;z-index:1}
     .pill{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--text);
@@ -304,7 +304,7 @@
       <p class="sub">Get exactly what you need — and let the faucet cover your gas.</p>
       <div class="banner" style="margin-top:24px;align-items:flex-start">
         <div style="flex:1;min-width:260px">
-          <div style="font-family:var(--font-display);font-weight:700;color:var(--heading);font-size:18px;margin-bottom:10px">💡 Worked example</div>
+          <div style="font-family:var(--font-display);font-weight:700;color:var(--heading);font-size:18px;margin-bottom:10px">Worked example</div>
           <ul style="margin:0;padding:0;list-style:none;font-size:15px">
             <li style="padding:6px 0">A service is priced at <b style="color:var(--heading)">€10</b>.</li>
             <li style="padding:6px 0">Pay in GMB with the <b style="color:var(--cyan)">20% discount</b> → just <b style="color:var(--heading)">8&nbsp;GMB</b>.</li>
@@ -315,14 +315,14 @@
       </div>
       <div class="twocol" style="margin-top:18px">
         <div class="list">
-          <h3>⛽ Gas is on the house (testnet)</h3>
+          <h3>Gas is on the house (testnet)</h3>
           <ul>
             <li>Gas on GembaBlockchain is tiny (a few gwei). The faucet hands out <b>0.1 GMB / 24h</b> — plenty to sign many transactions.</li>
             <li>Don't buy extra GMB "for fees" — top up gas from the faucet and keep your GMB for the actual service.</li>
           </ul>
         </div>
         <div class="list">
-          <h3>🎁 Buy just enough — or gift it</h3>
+          <h3>Buy just enough — or gift it</h3>
           <ul>
             <li>The 20% discount means a €X service costs <b>0.8&nbsp;×&nbsp;X GMB</b> — buy that, not more.</li>
             <li>Got GMB you won't use? <b>Transfer or gift it</b> to someone who will spend it on services.</li>

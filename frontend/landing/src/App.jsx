@@ -605,7 +605,7 @@ function App() {
           <div className="details-inner">
             <h2>Buy GMB</h2>
             <p className="buy-discount">
-              💸 Pay <strong>20% less</strong> for Gemba ecosystem services when you pay with GMB.{" "}
+              Pay <strong>20% less</strong> for Gemba ecosystem services when you pay with GMB.{" "}
               <a href="https://gmb.gembachain.io" target="_blank" rel="noopener">Learn what GMB is &amp; what you can do with it →</a>
             </p>
             <p className="muted">
