@@ -320,3 +320,25 @@ code {
 .legal-links { text-align:center; font-size:.85rem; margin: 8px 0 0; }
 .legal-links a { color: var(--text-tertiary); }
 .legal-links a:hover { color: var(--text-secondary); }
+
+/* ── pay overlay (blur + awaiting/success animation) ───────────── */
+.pay-overlay{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;
+  background:rgba(8,8,20,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);animation:payfade .25s ease}
+@keyframes payfade{from{opacity:0}to{opacity:1}}
+.pay-card{position:relative;max-width:420px;width:100%;text-align:center;padding:34px 26px;border-radius:18px;
+  background:rgba(18,18,36,.94);border:1px solid var(--border-color);box-shadow:0 24px 70px rgba(0,0,0,.55)}
+.pay-card h3{font-family:var(--font-display);margin:16px 0 6px;color:var(--text-primary)}
+.pay-card p{color:var(--text-secondary);font-size:.95rem;margin:0 auto 14px;max-width:330px;line-height:1.6}
+.pay-card .btn{margin-top:4px}
+.pay-close{position:absolute;top:8px;right:14px;background:none;border:none;color:var(--text-tertiary);font-size:1.6rem;cursor:pointer;line-height:1}
+.pay-close:hover{color:var(--text-primary)}
+.pay-spinner{width:58px;height:58px;margin:4px auto 0;border-radius:50%;
+  border:4px solid rgba(255,255,255,.12);border-top-color:var(--color-primary,#8b7cff);animation:payspin 1s linear infinite}
+@keyframes payspin{to{transform:rotate(360deg)}}
+.pay-card.ok{border-color:rgba(22,163,74,.55)}
+.pay-check{width:64px;height:64px;margin:0 auto}
+.pay-check svg{width:64px;height:64px}
+.pay-check circle{stroke:#16A34A;stroke-width:3;stroke-dasharray:151;stroke-dashoffset:151;animation:paycirc .5s ease forwards}
+.pay-check path{stroke:#16A34A;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:40;stroke-dashoffset:40;animation:paytick .35s .45s ease forwards}
+@keyframes paycirc{to{stroke-dashoffset:0}}
+@keyframes paytick{to{stroke-dashoffset:0}}

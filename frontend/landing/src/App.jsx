@@ -206,29 +206,56 @@ function BuyGmb() {
   const [conf, setConf] = useState({ pricePerGmbEur: 0.1, minGmb: 10, maxGmb: 10000 });
   const [addr, setAddr] = useState("");
   const [gmb, setGmb] = useState(100);
-  const [status, setStatus] = useState(""); // "" | loading | error | invalid
+  const [phase, setPhase] = useState("form"); // form | creating | awaiting | success
+  const [formErr, setFormErr] = useState("");
+  const [txHash, setTxHash] = useState("");
+  const [boughtGmb, setBoughtGmb] = useState(0);
+  const pollRef = useRef(null);
 
   useEffect(() => {
     fetch("/api/purchase/config").then((r) => r.json()).then((c) => c && setConf(c)).catch(() => {});
+    return () => clearInterval(pollRef.current);
   }, []);
 
   const eur = (Number(gmb) * (conf.pricePerGmbEur || 0) || 0).toFixed(2);
   const isAddr = /^0x[a-fA-F0-9]{40}$/.test(addr.trim());
   const valid = isAddr && Number(gmb) >= conf.minGmb && Number(gmb) <= conf.maxGmb;
 
+  const poll = (oid) => {
+    clearInterval(pollRef.current);
+    pollRef.current = setInterval(async () => {
+      try {
+        const r = await fetch(`/api/purchase/status/${oid}`);
+        const j = await r.json();
+        if (j.ok && j.status === "fulfilled") {
+          clearInterval(pollRef.current);
+          setTxHash(j.txHash || "");
+          setBoughtGmb(j.gmb || 0);
+          setPhase("success");
+        }
+      } catch { /* keep polling */ }
+    }, 4000);
+  };
+
   const buy = async () => {
-    if (!valid) { setStatus("invalid"); return; }
-    setStatus("loading");
+    setFormErr("");
+    if (!valid) { setFormErr("Enter a valid 0x… address and an amount within range."); return; }
+    setPhase("creating");
     try {
       const r = await fetch("/api/purchase/create", {
         method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({ evmAddress: addr.trim(), gmbAmount: Number(gmb) }),
       });
       const j = await r.json().catch(() => ({}));
-      if (j.ok && j.checkoutUrl) { window.location.href = j.checkoutUrl; }
-      else setStatus("error");
-    } catch { setStatus("error"); }
+      if (j.ok && j.checkoutUrl) {
+        window.open(j.checkoutUrl, "_blank", "noopener,noreferrer");
+        setPhase("awaiting");
+        poll(j.orderId);
+      } else { setPhase("form"); setFormErr("Couldn't start checkout — please try again."); }
+    } catch { setPhase("form"); setFormErr("Couldn't start checkout — please try again."); }
   };
+
+  const close = () => { clearInterval(pollRef.current); setPhase("form"); setTxHash(""); };
 
   return (
     <div className="contact-form">
@@ -244,15 +271,39 @@ function BuyGmb() {
           <input value={`€ ${eur}`} readOnly tabIndex={-1} style={{ opacity: 0.85 }} />
         </div>
       </div>
-      <button className="btn" disabled={status === "loading"} onClick={buy}>
-        {status === "loading" ? "Opening checkout…" : "Pay with GembaPay"}
+      <button className="btn" disabled={phase === "creating"} onClick={buy}>
+        {phase === "creating" ? "Opening checkout…" : "Pay with GembaPay"}
       </button>
       <p className="form-msg muted" style={{ color: "var(--text-tertiary)" }}>
         {conf.minGmb}–{conf.maxGmb} GMB · pay by card or crypto via GembaPay · GMB is delivered to your
         address automatically once payment is confirmed.
       </p>
-      {status === "invalid" && <p className="form-msg err">Enter a valid 0x… address and an amount within range.</p>}
-      {status === "error" && <p className="form-msg err">Couldn't start checkout — please try again.</p>}
+      {formErr && <p className="form-msg err">{formErr}</p>}
+
+      {(phase === "awaiting" || phase === "success") && (
+        <div className="pay-overlay" role="dialog" aria-modal="true">
+          <div className={`pay-card ${phase === "success" ? "ok" : ""}`}>
+            <button className="pay-close" onClick={close} aria-label="Close">×</button>
+            {phase === "awaiting" ? (
+              <>
+                <div className="pay-spinner" />
+                <h3>Awaiting payment…</h3>
+                <p>Complete your payment in the new tab. Your GMB is delivered automatically once payment
+                is confirmed — keep this window open.</p>
+              </>
+            ) : (
+              <>
+                <div className="pay-check">
+                  <svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" fill="none" /><path fill="none" d="M14 27l8 8 16-16" /></svg>
+                </div>
+                <h3>Payment successful</h3>
+                <p>{boughtGmb ? `${Number(boughtGmb).toLocaleString("en-US")} GMB` : "Your GMB"} has been sent to your address.</p>
+                {txHash && <a className="btn" href={`${NET.explorer}/tx/${txHash}`} target="_blank" rel="noopener">View GMB transfer ↗</a>}
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
