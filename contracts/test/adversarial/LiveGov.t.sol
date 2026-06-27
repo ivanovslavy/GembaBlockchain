@@ -26,11 +26,12 @@ interface IFaucet { function perGrantCap() external view returns (uint256); }
 interface IReserve { function release(address, uint256) external; function owner() external view returns (address); }
 
 contract LiveGov is Test {
-    address constant GOV    = 0x3DF48Ce0331b3322970deF66a6a116927059B4e7;
-    address constant TL     = 0x4117ae45e76A77D1d54af57642aefD02A184cf90;
-    address constant VOTES  = 0xbD40Df2b3aEFFAc672A8B34B2615f4639c1C4b49;
-    address constant FAUCET = 0x0C6b72AC9ee4CBd132DF181468F7d905C6FD3a66;
-    address constant RES    = 0x7E00f38DB8F01d442447b0C90Eea315329B0Abb8;
+    // Regenesis 2026-06-27 addresses (gemba-testnet-1 / EVM 821207) — see contracts/REGENESIS-ADDRESSES-2026-06-27.md
+    address constant GOV    = 0xCCd9f78047E1BB8Bec419490E80409bfBf3B7b72;
+    address constant TL     = 0xa75aC1AF72D54e34c5646534F985Be7a172C37C1;
+    address constant VOTES  = 0x0056ab3c91FF5ba8eCdBA8c7C453fd9F424F7F39;
+    address constant FAUCET = 0x9406B634Eae1856d13251245d7D472D9b6594F56;
+    address constant RES    = 0x68093A1C9682df9D1C59586b2Cfc04ed132e7eE5;
 
     // Fork-only: these target the LIVE deployment. Skip on a normal (non-forked) run.
     modifier onlyForked() {
