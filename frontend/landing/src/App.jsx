@@ -202,6 +202,61 @@ function ClaimButtons() {
   );
 }
 
+function BuyGmb() {
+  const [conf, setConf] = useState({ pricePerGmbEur: 0.1, minGmb: 10, maxGmb: 10000 });
+  const [addr, setAddr] = useState("");
+  const [gmb, setGmb] = useState(100);
+  const [status, setStatus] = useState(""); // "" | loading | error | invalid
+
+  useEffect(() => {
+    fetch("/api/purchase/config").then((r) => r.json()).then((c) => c && setConf(c)).catch(() => {});
+  }, []);
+
+  const eur = (Number(gmb) * (conf.pricePerGmbEur || 0) || 0).toFixed(2);
+  const isAddr = /^0x[a-fA-F0-9]{40}$/.test(addr.trim());
+  const valid = isAddr && Number(gmb) >= conf.minGmb && Number(gmb) <= conf.maxGmb;
+
+  const buy = async () => {
+    if (!valid) { setStatus("invalid"); return; }
+    setStatus("loading");
+    try {
+      const r = await fetch("/api/purchase/create", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ evmAddress: addr.trim(), gmbAmount: Number(gmb) }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (j.ok && j.checkoutUrl) { window.location.href = j.checkoutUrl; }
+      else setStatus("error");
+    } catch { setStatus("error"); }
+  };
+
+  return (
+    <div className="contact-form">
+      <label className="buy-label">Your GembaBlockchain (EVM) address — GMB is sent here</label>
+      <input placeholder="0x…" value={addr} onChange={(e) => setAddr(e.target.value)} maxLength={42} spellCheck="false" />
+      <div className="contact-row">
+        <div>
+          <label className="buy-label">Amount of GMB</label>
+          <input type="number" min={conf.minGmb} max={conf.maxGmb} step="1" value={gmb} onChange={(e) => setGmb(e.target.value)} />
+        </div>
+        <div>
+          <label className="buy-label">You pay</label>
+          <input value={`€ ${eur}`} readOnly tabIndex={-1} style={{ opacity: 0.85 }} />
+        </div>
+      </div>
+      <button className="btn" disabled={status === "loading"} onClick={buy}>
+        {status === "loading" ? "Opening checkout…" : "Pay with GembaPay"}
+      </button>
+      <p className="form-msg muted" style={{ color: "var(--text-tertiary)" }}>
+        {conf.minGmb}–{conf.maxGmb} GMB · pay by card or crypto via GembaPay · GMB is delivered to your
+        address automatically once payment is confirmed.
+      </p>
+      {status === "invalid" && <p className="form-msg err">Enter a valid 0x… address and an amount within range.</p>}
+      {status === "error" && <p className="form-msg err">Couldn't start checkout — please try again.</p>}
+    </div>
+  );
+}
+
 const TURNSTILE_SITEKEY = "0x4AAAAAADr41oPreDMPGC0C";
 
 function ContactForm() {
@@ -329,6 +384,7 @@ function App() {
             Swap
           </a>
           <a href="#faucet">Faucet</a>
+          <a href="#buy">Buy GMB</a>
           <a href={NET.explorer} target="_blank" rel="noopener">
             Explorer
           </a>
@@ -486,6 +542,19 @@ function App() {
           </div>
         </section>
 
+        <section className="details" id="buy">
+          <div className="details-inner">
+            <h2>Buy GMB</h2>
+            <p className="muted">
+              Get GMB delivered straight to your wallet. Pay by card or crypto through
+              <strong> GembaPay</strong>; once the payment is confirmed, GMB is sent automatically
+              to the address you provide. (Testnet GMB has no monetary value — this is the same flow
+              that will run on mainnet.)
+            </p>
+            <BuyGmb />
+          </div>
+        </section>
+
         <section className="details" id="contact">
           <div className="details-inner">
             <h2>Get in touch</h2>
@@ -522,6 +591,7 @@ function App() {
             Swap
           </a>
           <a href="#faucet">Faucet</a>
+          <a href="#buy">Buy GMB</a>
           <a href={NET.explorer} target="_blank" rel="noopener">
             Explorer
           </a>
