@@ -10,7 +10,8 @@ Fixed supply **100,000,000 GMB** — verified on-chain (`gembad q bank total` = 
 | FoundationTreasury | EVM `0x353CC67C2000fC9b142C0aa505a2e45DA693CDe0` | **15,000,000** | EVM contract, Timelock-owned |
 | DAOReserve | EVM `0x68093A1C9682df9D1C59586b2Cfc04ed132e7eE5` | **10,000,000** | EVM contract, Timelock-owned |
 | ContingencyReserve | EVM `0xCBbf84966335e0846cffB52d8624a9aeF58227b4` | **10,000,000** | EVM contract, Timelock-owned |
-| Founder / ops | EOA `0x5578c75F22dE0bf1caA4BdD46BA28406C696a5dC` | **~4,870,000** (5M − dApp funding/gas below) | EOA, non-voting |
+| Founder / ops | EOA `0x5578c75F22dE0bf1caA4BdD46BA28406C696a5dC` | **~4,769,000** (5M − dApp funding/gas below) | EOA, non-voting |
+| GembaPay GMB dispenser | EVM `0x0EB298466F862E548d2416a75d3D108E503bD2Cf` | **100,000** | holds GMB for GembaPay sales; owner-only dispense (`docs/gembapay-gmb-dispenser.md`) |
 | Validators (bonded stake) | val0–3 (4 × 10,000) | **40,000** | staked |
 | GembaTicket relayer (gas) | `0x8eB8Bf106EbC9834a2586D04F73866C7436Ce298` | **100,000** | dApp gas wallet |
 | **Main system faucet (`GembaFaucet`)** | EVM `0x0147581e2351dD182edD651DFEfD955CB353f8aA` | **10,000** | the single testnet faucet — dispenses GMB + mints stablecoins; used by landing/GembaWin/Escrow (`docs/faucet.md`) |
