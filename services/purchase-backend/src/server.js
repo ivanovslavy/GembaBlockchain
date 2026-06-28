@@ -95,7 +95,10 @@ app.post('/api/purchase/webhook', express.raw({ type: '*/*', limit: '64kb' }), a
     const body = JSON.parse(raw.toString('utf8'));
     const event = body.event || req.headers['x-gembapay-event'];
     const p = body.payment || {};
-    if (event !== 'payment.completed' || p.status !== 'completed') return res.json({ ok: true, ignored: true });
+    // The GembaPay webhook signals completion via the top-level `event`; the payment object
+    // does NOT carry a `status` field, so don't require p.status (that silently ignored every
+    // payment.completed webhook → GMB never dispensed).
+    if (event !== 'payment.completed') return res.json({ ok: true, ignored: true });
 
     const orderId = p.orderId;
     const o = orders[orderId];
