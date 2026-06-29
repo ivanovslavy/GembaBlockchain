@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0a0b16" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
   <link rel="canonical" href="https://addresses.gembachain.io/" />
   <meta name="robots" content="index, follow, max-image-preview:large" />
   <meta name="description" content="Official GembaBlockchain contract & genesis addresses — testnet and mainnet. Reserves, governance (Governor/Timelock), DEX (GembaSwap Router V2, WGMB, Factory), validators, faucet & test stablecoins (USDT/USDC/EURC). Verified on GembaScan." />
@@ -73,14 +73,16 @@
       testnet: {
         chain: { name: "GembaBlockchain Testnet", cosmos: "gemba-testnet-1", evm: 821207, symbol: "GMB" },
         explorer: "https://testnet.gembascan.io",
-        note: "Regenesis 2026-06-27 — all testnet contracts were redeployed on the fresh chain (deterministic CREATE2 → new addresses). Everything below is the current, on-chain-verified set.",
+        note: "Regenesis 2026-06-27 — all testnet contracts were redeployed on the fresh chain (deterministic CREATE2 → new addresses); every balance below is verified on-chain. Fixed supply: 100,000,000 GMB, minted once at genesis, 0% inflation forever. Full allocation: 30M public/municipal faucet reserve + 20M validator-reward reserve (both in key-less Cosmos module accounts) · 15M Foundation + 10M DAO + 10M Contingency (Timelock-owned contracts) · 10M circulation/liveness + 5M founder (non-voting). 100M total — nothing hidden.",
         groups: [
-          { title: "Genesis reserves (token-holding)", rows: [
-            ["Faucet — Public / Municipal Reserve", "0x9406B634Eae1856d13251245d7D472D9b6594F56", "30,000,000 GMB held in the Cosmos faucet module; this contract is the EVM seam · Timelock custody"],
-            ["FoundationTreasury", "0x353CC67C2000fC9b142C0aa505a2e45DA693CDe0", "15,000,000 GMB"],
-            ["DAOReserve", "0x68093A1C9682df9D1C59586b2Cfc04ed132e7eE5", "10,000,000 GMB"],
-            ["ContingencyReserve", "0xCBbf84966335e0846cffB52d8624a9aeF58227b4", "10,000,000 GMB"],
-            ["Founder (deployer, non-voting)", "0x5578c75F22dE0bf1caA4BdD46BA28406C696a5dC", "5,000,000 GMB"],
+          { title: "Genesis allocation — 100,000,000 GMB (fixed supply, minted once, 0% inflation)", rows: [
+            ["Faucet — Public / Municipal Reserve", "0x9406B634Eae1856d13251245d7D472D9b6594F56", "30,000,000 GMB. The reserve sits in the Cosmos faucet module account (0xf40b4c52…34720f9e) — key-less (no private key) and no mint/burn — which also collects 40% of all gas fees (zero-inflation refill). This EVM Faucet contract is deployed & governance-ready (owner = Timelock; rate-limited formula grants + pause-only EmergencyPause) but currently holds 0 GMB; it is the future on-chain grant endpoint, funded only by governance."],
+            ["Validator reward reserve", "0x8455bbefd87e7305d4f3943101d1339ab1556c65", "20,000,000 GMB at genesis — the rewardstreamer Cosmos module account; streams validator rewards from the pre-minted reserve (0% inflation). Holds ~30M now: idle liveness balances were consolidated here at the 2026-06-27 regenesis."],
+            ["FoundationTreasury", "0x353CC67C2000fC9b142C0aa505a2e45DA693CDe0", "15,000,000 GMB — held in this contract (on-chain verified). Owner = Timelock; released only via governance + timelock."],
+            ["DAOReserve", "0x68093A1C9682df9D1C59586b2Cfc04ed132e7eE5", "10,000,000 GMB — held in this contract (verified). Owner = Timelock; released via governance + timelock."],
+            ["ContingencyReserve", "0xCBbf84966335e0846cffB52d8624a9aeF58227b4", "10,000,000 GMB — held in this contract (verified). Owner = Timelock; unforeseen/strategic needs only, via governance + timelock."],
+            ["Circulation / liveness pool", "", "10,000,000 GMB at genesis (2,000,000 × 5 accounts) — seeds the 4 genesis validators and early on-chain activity plus a neutral voting base independent of the founder. Idle balances were consolidated into the reward reserve at regenesis; the validator operating accounts are listed under “Validators” below."],
+            ["Founder (deployer, non-voting)", "0x5578c75F22dE0bf1caA4BdD46BA28406C696a5dC", "5,000,000 GMB — operations & sale treasury. Excluded from voting, no protocol privilege, never validates with special power."],
           ] },
           { title: "Governance", rows: [
             ["GembaGovernor", "0xCCd9f78047E1BB8Bec419490E80409bfBf3B7b72", "supermajority 66%, quorum 50%"],
@@ -130,10 +132,12 @@
       return `<div class="net"><span>Network: <b>${c.name}</b></span><span>Cosmos chain-id: <b>${c.cosmos}</b></span><span>EVM chainId: <b>${c.evm}</b></span><span>Symbol: <b>${c.symbol}</b></span></div>`;
     }
     function row(name, addr, note, explorer) {
-      return `<tr><td class="name">${name}</td><td><div class="addr"><span class="mono">${addr}</span>` +
-        `<button class="ico" onclick="cp('${addr}',this)">copy</button>` +
-        `<a class="ico" href="${explorer}/address/${addr}" target="_blank" rel="noopener">view ↗</a></div>` +
-        `<div class="note">${note || ""}</div></td></tr>`;
+      const a = (addr && addr !== "—")
+        ? `<div class="addr"><span class="mono">${addr}</span>` +
+          `<button class="ico" onclick="cp('${addr}',this)">copy</button>` +
+          `<a class="ico" href="${explorer}/address/${addr}" target="_blank" rel="noopener">view ↗</a></div>`
+        : "";
+      return `<tr><td class="name">${name}</td><td>${a}<div class="note">${note || ""}</div></td></tr>`;
     }
     function render(net) {
       const d = DATA[net];

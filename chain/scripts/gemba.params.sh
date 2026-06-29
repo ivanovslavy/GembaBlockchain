@@ -67,22 +67,27 @@ BASE_FEE_CHANGE_DENOMINATOR="8"
 # GENESIS ALLOCATION — fixed total supply N = 100,000,000 GMB (CLAUDE.md §4.1)
 # =============================================================================
 # Whole-GMB amounts; the scripts multiply by 1e18 to get agmb. Sum MUST be 100M.
-# Only the circulation pool is a VOTING base once staked; every reserve bucket is
-# a plain (later: contract) account that holds supply but is NOT staked, so it
-# does NOT vote — invariant CLAUDE.md §3.4 / §7.
-ALLOC_FAUCET="30000000"          # 30% public/municipal reserve (the faucet)
-ALLOC_VAL_RESERVE="20000000"     # 20% validator rewards reserve (~10 yrs, ADR-008)
-ALLOC_FOUNDATION="15000000"      # 15% foundation
-ALLOC_DAO="10000000"             # 10% DAO reserve
-ALLOC_LIQUIDITY="10000000"       # 10% liquidity reserve
-ALLOC_FOUNDER="5000000"          #  5% founder / operations (non-voting, CLAUDE.md §3.5)
-ALLOC_CIRCULATION="10000000"     # 10% client/circulation pool — the VOTING base
+# Every reserve bucket holds supply but is NOT staked, so it does NOT vote
+# (invariant CLAUDE.md §3.4 / §7). MAINNET split (decision 2026-06-29): there is
+# NO standing circulation pool — the genesis validators' self-bond and early
+# participants are funded from the FOUNDER (5M) or the DAO reserve (10M).
+ALLOC_FAUCET="30000000"          # 30% public/municipal reserve -> Faucet contract
+ALLOC_VAL_RESERVE="20000000"     # 20% validator rewards reserve -> rewardstreamer module (~10 yrs, ADR-008)
+ALLOC_FOUNDATION="15000000"      # 15% -> FoundationTreasury contract
+ALLOC_DAO="10000000"             # 10% -> DAOReserve contract (also a source for early-participant grants)
+ALLOC_CONTINGENCY="20000000"     # 20% -> ContingencyReserve contract (absorbs the former 10% circulation, 2026-06-29)
+ALLOC_FOUNDER="5000000"          #  5% founder/operations EOA (non-voting, §3.5); seeds the validators + early participants
+# Sum: 30 + 20 + 15 + 10 + 20 + 5 = 100,000,000 GMB. (No ALLOC_CIRCULATION as of 2026-06-29.)
+# Devnet-only alias: the LOCAL devnet scripts (init-single-node/init-multinode, init-gembad) keep a
+# 10M test-circulation pool for dev/test accounts, so their contingency bucket stays 10M (sum=100M).
+# MAINNET + the launch/regenesis script (init-gembad-multinode.sh) use ALLOC_CONTINGENCY=20M and NO
+# circulation, funding the validators' self-bond + early participants from the FOUNDER / DAO reserve.
+ALLOC_LIQUIDITY="10000000"
 
-# How the 10% circulation pool is used on devnet:
-#  - each genesis validator self-bonds SELF_BOND_GMB out of circulation (so
-#    consensus power comes from circulation, never from a reserve), and
-#  - the remainder stays liquid in validator + client accounts.
+# Validator funding: each genesis validator self-bonds SELF_BOND_GMB carved from the FOUNDER
+# allocation (consensus power comes from founder-seeded stake, never from a reserve). The founder
+# EOA keeps ALLOC_FOUNDER minus the validators' entry. Early participants likewise receive GMB
+# from the founder / DAO reserve, not from a standing circulation bucket.
 SELF_BOND_GMB="10000"            # 10,000 GMB self-bonded per genesis validator (regenesis §11:
-                                 # the max entry self-bond; was 1,000,000 pre-regenesis but the
-                                 # valgate max-self-bond cap now rejects anything above 10,000)
+                                 # the max entry self-bond; the valgate max-self-bond cap rejects above 10,000)
 MIN_SELF_BOND_GMB="1000"   # x/valgate floor (gentx --min-self-delegation must be >= this)

@@ -25,6 +25,11 @@ TN_FAUCET_ADDR_0X="${TN_FAUCET_ADDR_0X:?set TN_FAUCET_ADDR_0X from your fresh dr
 TN_FAUCET_ALLOC="2000000"       # 2,000,000 drip (carved from circulation); the 30M faucet reserve lives in the Faucet contract
 
 # --- allocation: EXACT mainnet §4.1 %s of 100M (corrected 2026-06-06, re-genesis path A) ---
+# ⚠️ NOTE (2026-06-29): the MAINNET §4.1 split CHANGED — the 10% circulation pool is FOLDED INTO
+# the Contingency reserve (→20M) and the validators + early participants are funded from the
+# FOUNDER (5M) / DAO reserve (10M); no standing circulation pool. The numbers below are the
+# currently-DEPLOYED testnet (old split, with circulation); the NEXT testnet regenesis should
+# adopt the new split to stay a true dress rehearsal — see chain/scripts/gemba.params.sh + CLAUDE.md §4.1.
 # Each reserve EOA below holds its exact §4.1 amount and is transferred IN FULL into its
 # Solidity reserve contract right after genesis (Timelock custody), so every contract ends
 # up holding exactly its %. The testnet DRIP faucet is no longer a separate allocation — it

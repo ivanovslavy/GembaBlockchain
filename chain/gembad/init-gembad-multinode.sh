@@ -36,24 +36,23 @@ for i in $(seq 0 $((N-1))); do
   echo "${VAL_MNEMONICS[$i]}" | "$EVMD" keys add "val$i" --recover --keyring-backend "$KEYRING" --algo "$KEYALGO" --home "$H" >/dev/null 2>&1
   [ "$i" -ne 0 ] && echo "${VAL_MNEMONICS[$i]}" | "$EVMD" keys add "val$i" --recover --keyring-backend "$KEYRING" --algo "$KEYALGO" --home "$N0" >/dev/null 2>&1
 done
-for b in foundation dao liquidity founder; do "$EVMD" keys add "$b" --keyring-backend "$KEYRING" --algo "$KEYALGO" --home "$N0" >/dev/null 2>&1; done
+for b in foundation dao contingency founder; do "$EVMD" keys add "$b" --keyring-backend "$KEYRING" --algo "$KEYALGO" --home "$N0" >/dev/null 2>&1; done
 
-# allocation (fixed 100M GMB) — REGENESIS (§0/§40): validators no longer get the 2.5M circulation
-# slice; they enter with exactly SELF_BOND_GMB (10K) each, and the freed circulation pool
-# (old 4x2.5M = 10M, minus the 4x10K self-bond) is FOLDED INTO the validator-reward reserve
-# (the user's "~8M idle on validators -> reward reserve"). Total stays 100M.
-# Each validator gets SELF_BOND_GMB + 1 GMB: the gentx self-bonds exactly SELF_BOND_GMB, and
-# the 5-gwei fee ante runs on the gentx at InitChain BEFORE the self-bond, so an exactly-
-# SELF_BOND balance can't cover both (delegate fails "insufficient funds"). The +1 GMB/validator
-# buffer (N total) comes out of the reward reserve, so the 100M total is unchanged.
+# allocation (fixed 100M GMB) — MAINNET split (decision 2026-06-29): NO circulation pool. The 4
+# validators enter with exactly SELF_BOND_GMB (10K) each, funded from the FOUNDER 5% (consensus
+# power comes from founder-seeded stake, never from a reserve). The former 10% circulation is
+# folded into the Contingency reserve (now 20M); the validator-reward reserve stays at 20M. = 100M.
+# Each validator gets SELF_BOND_GMB + 1 GMB: the gentx self-bonds exactly SELF_BOND_GMB, and the
+# 5-gwei fee ante runs on the gentx at InitChain BEFORE the self-bond, so an exactly-SELF_BOND
+# balance can't cover both (delegate fails "insufficient funds"). The +1 GMB/validator buffer
+# (N total) comes out of the founder allocation, so the 100M total is unchanged.
 VAL_ALLOC=$((SELF_BOND_GMB + 1))                             # 10,001 each (1 GMB liquid for the genesis fee)
-VAL_ENTRY_TOTAL=$((N * VAL_ALLOC))                           # 4 x 10,001 = 40,004
-RECLAIMED=$((10000000 - VAL_ENTRY_TOTAL))                    # old 10M circulation - 40,004
-REGEN_VAL_RESERVE=$((ALLOC_VAL_RESERVE + RECLAIMED))         # 20M + reclaimed (total stays 100M)
+VAL_ENTRY_TOTAL=$((N * VAL_ALLOC))                           # 4 x 10,001 = 40,004 (carved from the founder 5M)
+FOUNDER_EOA=$((ALLOC_FOUNDER - VAL_ENTRY_TOTAL))            # founder keeps 5M - validators' entry (validators come from the founder 5%)
 for i in $(seq 0 $((N-1))); do gacct "val$i" "$VAL_ALLOC"; done
-gacct "$RS_RESERVE_ADDR" "$REGEN_VAL_RESERVE"; gacct "$FAUCET_ADDR" "$ALLOC_FAUCET"
-gacct foundation "$ALLOC_FOUNDATION"; gacct dao "$ALLOC_DAO"; gacct liquidity "$ALLOC_LIQUIDITY"; gacct founder "$ALLOC_FOUNDER"
-echo ">> regenesis allocation: validators ${SELF_BOND_GMB} GMB each; reward reserve ${REGEN_VAL_RESERVE} GMB (20M + ${RECLAIMED} reclaimed circulation)"
+gacct "$RS_RESERVE_ADDR" "$ALLOC_VAL_RESERVE"; gacct "$FAUCET_ADDR" "$ALLOC_FAUCET"
+gacct foundation "$ALLOC_FOUNDATION"; gacct dao "$ALLOC_DAO"; gacct contingency "$ALLOC_CONTINGENCY"; gacct founder "$FOUNDER_EOA"
+echo ">> mainnet-split allocation: validators ${SELF_BOND_GMB} GMB each (from founder); reward reserve ${ALLOC_VAL_RESERVE}; contingency ${ALLOC_CONTINGENCY} (incl. folded circulation)"
 
 GEN="$N0/config/genesis.json"; patch_economics "$GEN"
 TMP="$(mktemp)"

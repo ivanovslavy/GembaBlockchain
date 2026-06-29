@@ -166,23 +166,31 @@ from the testnet *drip* faucet; the former liquidity reserve is the **Contingenc
 | Public / municipal reserve (the **faucet**) | 30% | 30,000,000 | No | grants to institutions by formula + vesting; refilled by 40% of fees |
 | Validator rewards reserve (~10 yrs) | 20% | 20,000,000 | No | funds validator rewards with zero inflation |
 | Foundation (development, audits) | 15% | 15,000,000 | No | dev funding via governance |
-| DAO reserve (contingency) | 10% | 10,000,000 | No | unforeseen needs; released by governance |
-| **Contingency reserve** *(непредвиден)* | 10% | 10,000,000 | No | unforeseen/strategic needs; released via governance + timelock. Replaces the former liquidity reserve — **no liquidity is seeded** (§8) |
-| Client / circulation pool | 10% | 10,000,000 | **Yes** (when staked/delegated) | GMB in circulation from day 0 so the network is alive and has a voting base |
-| Founder / operations + sale | 5% | 5,000,000 | No (excluded) | working capital: sold for stablecoin → cheaper access, recirculates |
+| DAO reserve (contingency) | 10% | 10,000,000 | No | unforeseen needs; released by governance; **a source for grants to early participants** (2026-06-29) |
+| **Contingency reserve** *(непредвиден)* | 20% | 20,000,000 | No | unforeseen/strategic needs; released via governance + timelock. **Absorbs the former 10% client/circulation pool** (decision 2026-06-29); no liquidity is seeded (§8) |
+| Founder / operations + sale | 5% | 5,000,000 | No (excluded) | working capital sold for stablecoin → cheaper access; **also seeds the 4 genesis validators' self-bond (~10k each) + early-participant grants** |
 
-Founder contributed 10 of an original 15 points: +2% faucet, +1% foundation,
-+4% DAO, +3% contingency, keeping 5%.
+> **🔻 MAINNET ALLOCATION UPDATE (decided 2026-06-29).** The former **10% client/circulation
+> pool is removed** — folded into the **Contingency reserve (now 20%)**. The 4 genesis validators
+> are funded from the **founder's 5%** (self-bond, ~10k each — trivial vs 10M), and **early
+> participants receive GMB directly from the founder (5%) or the DAO reserve (10%)**, not from a
+> standing circulation pool. New split: **30 faucet / 20 validator-rewards / 15 foundation / 10
+> DAO / 20 contingency / 5 founder = 100M.** *Consequence (recorded on purpose — §16.2):* **no
+> day-0 neutral voting base** — at launch ~95% is in non-voting reserves and the remainder is
+> founder-sourced; governance leans entirely on high quorum + supermajority + long timelock until
+> GMB distributes via faucet/DAO grants and founder sales.
+
+Founder originally contributed 10 of 15 points (+2% faucet, +1% foundation, +4% DAO, +3%
+contingency, keeping 5%); the 2026-06-29 update folds the 10% circulation into contingency.
 
 **Only circulating, staked GMB votes** (section 7). All reserves are held in
 non-voting contracts/accounts.
 
-> **Client/circulation pool vs founder holding** — they differ by *intent*. The
-> founder holding (5%) is a **trading stock**: sold for stablecoin to give clients
-> cheaper access, it recirculates, founder-managed, **non-voting**. The
-> client/circulation pool (10%) is **seed-for-liveness**: distributed/distributable
-> to early users from day 0 so the chain has real activity and a neutral
-> **voting** base that is not tied to the founder.
+> **Founder holding (5%) — dual role.** It is the **trading stock** (sold for stablecoin to give
+> clients cheaper access; recirculates; founder-managed; **non-voting**) **and** the seed for the
+> 4 genesis validators' self-bond + early-participant grants (alongside the DAO reserve). As of
+> the 2026-06-29 update there is **no separate circulation pool** — liveness/voting GMB enters
+> circulation only as the founder and DAO distribute it, not from a standing bucket.
 
 ### 4.2 Zero inflation, no burn
 
@@ -469,6 +477,16 @@ Block explorer:  https://scan.gemba<...>    (Blockscout / GembaScan)
 
 Addresses are standard `0x...` (eth_secp256k1, coin type 60) — MetaMask works out of
 the box.
+
+> **⚙️ LIVE TESTNET RPC ENDPOINTS (operational — read this before debugging any RPC issue).**
+> The public EVM JSON-RPC is **`https://rpc1.gembascan.io`** (PRIMARY) with
+> **`rpc2`/`rpc3.gembascan.io`** as fallbacks. These run **ON the Contabo validator servers**
+> (`rpc1`→**.83**, `rpc2`→**.84**, `rpc3`→**.82**), reverse-proxied behind Cloudflare.
+> **The RPC is NOT on the `.162` host** — `.162` serves only the websites/dApps (gembachain.io,
+> swap, gembapay, addresses, …) and runs **no chain node**. The archive node (`.148.137`,
+> Blockscout/GembaScan) is **explorer-only and de-advertised**. The RPC domain is **`*.gembascan.io`**
+> — **`rpc.gembachain.io` is not a valid host; do not use it.** Mainnet follows the same model
+> (RPC on beefier validators, never on the archive/explorer host). See `docs/public-rpc-topology.md`.
 
 ---
 
