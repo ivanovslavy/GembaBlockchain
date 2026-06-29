@@ -1,0 +1,19 @@
+{
+  "name": "gemba-endurance",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "GembaBlockchain 24h endurance test — low, constant, varied, revert-safe load for the public testnet via the DNS RPCs.",
+  "scripts": {
+    "build": "node scripts/build-artifacts.mjs",
+    "gen-wallets": "node scripts/00-gen-wallets.js",
+    "deploy": "node scripts/01-deploy-suite.mjs",
+    "seed": "node scripts/02-seed-wallets.mjs",
+    "run": "node scripts/run.js --profile=ENDURANCE",
+    "drain": "node scripts/drain-to-founder.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.4"
+  }
+}
