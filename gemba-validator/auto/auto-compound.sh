@@ -55,9 +55,22 @@ if [ "$(echo "$reinvest > $MAX_DAILY_ADD" | bc)" = "1" ]; then
 fi
 if [ "$(echo "$reinvest < $MIN_REINVEST" | bc)" = "1" ]; then log "reinvest $reinvest < min $MIN_REINVEST — skip"; exit 0; fi
 
-if $GEMBAD tx staking delegate "$valoper" "${reinvest}${DENOM}" --from "$KEY" $COMMON $TX >/dev/null 2>&1; then
-  log "OK received=$received reinvest=$reinvest (${PCT}%) to $valoper"
-else
-  log "delegate FAILED for ${reinvest}${DENOM}"
-  exit 1
+# Submit the delegate, then VERIFY it actually executed on-chain — not just that it was
+# submitted. A delegate can pass CheckTx (get a hash) but REVERT in the block (e.g. the §6
+# 50-GMB/day bond-increase cap), and the bare CLI exit would mislead us into logging "OK".
+if ! out=$($GEMBAD tx staking delegate "$valoper" "${reinvest}${DENOM}" --from "$KEY" $COMMON $TX 2>&1); then
+  log "delegate submit error: $(printf '%s' "$out" | tail -c 200)"; exit 1
 fi
+submit_code=$(printf '%s' "$out" | jq -r '.code // 0' 2>/dev/null || echo 0)
+txhash=$(printf '%s' "$out" | jq -r '.txhash // empty' 2>/dev/null || echo "")
+if [ "$submit_code" != "0" ]; then
+  log "delegate rejected at submit code=$submit_code raw=$(printf '%s' "$out" | jq -r '.raw_log // empty' 2>/dev/null | head -c 160)"; exit 1
+fi
+sleep 8  # wait for the tx to be indexed, then read its EXECUTION result code
+exec_json=$($GEMBAD q tx "$txhash" --node "$NODE" -o json 2>/dev/null || echo '{}')
+exec_code=$(printf '%s' "$exec_json" | jq -r '.code // empty' 2>/dev/null || echo "")
+if [ -n "$exec_code" ] && [ "$exec_code" != "0" ]; then
+  log "delegate EXECUTION FAILED code=$exec_code txhash=$txhash raw=$(printf '%s' "$exec_json" | jq -r '.raw_log // empty' 2>/dev/null | head -c 160)"; exit 1
+fi
+# fail-safe: if the result couldn't be fetched, don't block — the clamp makes a cap-rejection unlikely
+log "OK received=$received reinvest=$reinvest (${PCT}%) to $valoper | confirmed txhash=${txhash:-?} exec_code=${exec_code:-unverified}"
