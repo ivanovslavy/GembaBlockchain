@@ -23,7 +23,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 /// │ limited-network exemption — ADR-001/009). The mechanics are built and     │
 /// │ tested on devnet/testnet with the flag toggled by the operator; do NOT    │
 /// │ ship it enabled to the public without that legal sign-off. Internal,      │
-/// │ closed formula grants to institutions go through the Faucet (Phase 3) and │
+/// │ closed formula grants to institutions go through the PublicReserve (Phase 3) and │
 /// │ are NOT gated here.                                                       │
 /// └─────────────────────────────────────────────────────────────────────────┘
 contract GembaOnRamp is Ownable, ReentrancyGuard {

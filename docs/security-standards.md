@@ -63,7 +63,7 @@ every function that makes an external value call). Summary:
 |---|---|---|---|---|
 | `GembaVotes` | CEI + `nonReentrant` on `withdrawTo` | ✓ | + zero-amount checks | native wrap/unwrap |
 | `BaseReserve`/reserves | CEI + `nonReentrant` on `release`/`grant` | ✓ | + zero-amount checks | UUPS, native holds |
-| `Faucet` | inherits BaseReserve guards | ✓ | + zero-amount on grant | capped grants |
+| `PublicReserve` | inherits BaseReserve guards | ✓ | + zero-amount on grant | capped grants |
 | `EmergencyPause` | + `nonReentrant` on `confirm`; CEI (round advanced pre-call) | ✓ | + target zero-check | external `pause()` call |
 | `GembaGovernor` | OZ + view-only override | OZ | constructor range check | OZ Governor |
 | `GembaTimelock` | OZ (`TimelockController`) | OZ | OZ | no custom code |

@@ -36,7 +36,7 @@ for i in $(seq 0 $((N-1))); do
   echo "${VAL_MNEMONICS[$i]}" | "$EVMD" keys add "val$i" --recover --keyring-backend "$KEYRING" --algo "$KEYALGO" --home "$H" >/dev/null 2>&1
   [ "$i" -ne 0 ] && echo "${VAL_MNEMONICS[$i]}" | "$EVMD" keys add "val$i" --recover --keyring-backend "$KEYRING" --algo "$KEYALGO" --home "$N0" >/dev/null 2>&1
 done
-for b in foundation dao contingency founder; do "$EVMD" keys add "$b" --keyring-backend "$KEYRING" --algo "$KEYALGO" --home "$N0" >/dev/null 2>&1; done
+for b in foundation dao contingency founder publicfaucet onramp; do "$EVMD" keys add "$b" --keyring-backend "$KEYRING" --algo "$KEYALGO" --home "$N0" >/dev/null 2>&1; done
 
 # allocation (fixed 100M GMB) — MAINNET split (decision 2026-06-29): NO circulation pool. The 4
 # validators enter with exactly SELF_BOND_GMB (10K) each, funded from the FOUNDER 5% (consensus
@@ -48,11 +48,16 @@ for b in foundation dao contingency founder; do "$EVMD" keys add "$b" --keyring-
 # (N total) comes out of the founder allocation, so the 100M total is unchanged.
 VAL_ALLOC=$((SELF_BOND_GMB + 1))                             # 10,001 each (1 GMB liquid for the genesis fee)
 VAL_ENTRY_TOTAL=$((N * VAL_ALLOC))                           # 4 x 10,001 = 40,004 (carved from the founder 5M)
-FOUNDER_EOA=$((ALLOC_FOUNDER - VAL_ENTRY_TOTAL))            # founder keeps 5M - validators' entry (validators come from the founder 5%)
+# The 3 OPEN channels (validators, public faucet, on-ramp sale) are all seeded FROM THE FOUNDER 5%
+# — the founder reduces its OWN balance; the 30M Public Reserve is NEVER touched for this. The
+# publicfaucet/onramp genesis accounts hold the day-1 seeds; the launch runbook deploys the tested
+# GembaFaucet + GembaOnRamp contracts and funds them from these accounts (genesis-laid, funded day 1).
+FOUNDER_EOA=$((ALLOC_FOUNDER - VAL_ENTRY_TOTAL - PUBLIC_FAUCET_SEED - ONRAMP_SALE_SEED))   # founder keeps ~4,700,000
 for i in $(seq 0 $((N-1))); do gacct "val$i" "$VAL_ALLOC"; done
-gacct "$RS_RESERVE_ADDR" "$ALLOC_VAL_RESERVE"; gacct "$FAUCET_ADDR" "$ALLOC_FAUCET"
-gacct foundation "$ALLOC_FOUNDATION"; gacct dao "$ALLOC_DAO"; gacct contingency "$ALLOC_CONTINGENCY"; gacct founder "$FOUNDER_EOA"
-echo ">> mainnet-split allocation: validators ${SELF_BOND_GMB} GMB each (from founder); reward reserve ${ALLOC_VAL_RESERVE}; contingency ${ALLOC_CONTINGENCY} (incl. folded circulation)"
+gacct "$RS_RESERVE_ADDR" "$ALLOC_VAL_RESERVE"; gacct "$FAUCET_ADDR" "$ALLOC_PUBLIC_RESERVE"   # 20M reward module, 30M Public Reserve
+gacct foundation "$ALLOC_FOUNDATION"; gacct dao "$ALLOC_DAO"; gacct contingency "$ALLOC_CONTINGENCY"
+gacct publicfaucet "$PUBLIC_FAUCET_SEED"; gacct onramp "$ONRAMP_SALE_SEED"; gacct founder "$FOUNDER_EOA"
+echo ">> mainnet split: validators ${SELF_BOND_GMB} each + public-faucet ${PUBLIC_FAUCET_SEED} + onramp ${ONRAMP_SALE_SEED} (all from founder); Public Reserve ${ALLOC_PUBLIC_RESERVE}; reward reserve ${ALLOC_VAL_RESERVE}; contingency ${ALLOC_CONTINGENCY}"
 
 GEN="$N0/config/genesis.json"; patch_economics "$GEN"
 TMP="$(mktemp)"

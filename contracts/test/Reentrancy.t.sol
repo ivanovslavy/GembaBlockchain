@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import {Test} from "forge-std/Test.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {GembaVotes} from "../src/governance/GembaVotes.sol";
-import {Faucet} from "../src/reserves/Faucet.sol";
+import {PublicReserve} from "../src/reserves/PublicReserve.sol";
 import {EmergencyPause} from "../src/governance/EmergencyPause.sol";
 
 /// Reentrancy-attack tests: every function that makes an external value/contract
@@ -33,12 +33,12 @@ contract VotesReentrant {
     }
 }
 
-// --- malicious granter that re-enters Faucet.grant from its receive() ---
+// --- malicious granter that re-enters PublicReserve.grant from its receive() ---
 contract GranterReentrant {
-    Faucet faucet;
+    PublicReserve faucet;
     bool armed;
 
-    function setFaucet(Faucet f) external {
+    function setFaucet(PublicReserve f) external {
         faucet = f;
     }
 
@@ -92,12 +92,12 @@ contract ReentrancyTest is Test {
         assertEq(address(votes).balance, votes.totalSupply());
     }
 
-    function test_FaucetGrantReentrancyBlocked() public {
+    function test_PublicReserveGrantReentrancyBlocked() public {
         GranterReentrant attacker = new GranterReentrant();
-        Faucet impl = new Faucet();
+        PublicReserve impl = new PublicReserve();
         bytes memory data =
-            abi.encodeCall(Faucet.initialize, (makeAddr("timelock"), makeAddr("pauser"), address(attacker), 1000 ether, 0, 0));
-        Faucet faucet = Faucet(payable(address(new ERC1967Proxy(address(impl), data))));
+            abi.encodeCall(PublicReserve.initialize, (makeAddr("timelock"), makeAddr("pauser"), address(attacker), 1000 ether, 0, 0));
+        PublicReserve faucet = PublicReserve(payable(address(new ERC1967Proxy(address(impl), data))));
         attacker.setFaucet(faucet);
         vm.deal(address(faucet), 100000 ether);
 

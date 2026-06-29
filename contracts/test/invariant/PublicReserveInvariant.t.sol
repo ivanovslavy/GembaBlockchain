@@ -3,15 +3,15 @@ pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {Faucet} from "../../src/reserves/Faucet.sol";
+import {PublicReserve} from "../../src/reserves/PublicReserve.sol";
 
-/// Drives the Faucet with random (caller, recipient, amount) sequences. Only the
+/// Drives the PublicReserve with random (caller, recipient, amount) sequences. Only the
 /// owner (Timelock) and the granter are authorized; only the granter/owner path is
 /// capped. The handler reduces its expected balance ONLY for authorized, in-cap
 /// disbursements — so if any UNauthorized or over-cap call ever succeeds, the live
 /// balance drops below the expected and the invariant fails.
-contract FaucetHandler is Test {
-    Faucet public faucet;
+contract PublicReserveHandler is Test {
+    PublicReserve public faucet;
     address public timelock;
     address public granter;
     uint256 public expectedBalance;
@@ -19,7 +19,7 @@ contract FaucetHandler is Test {
 
     address[4] callers;
 
-    constructor(Faucet f, address t, address g, uint256 initial) {
+    constructor(PublicReserve f, address t, address g, uint256 initial) {
         faucet = f;
         timelock = t;
         granter = g;
@@ -57,20 +57,20 @@ contract FaucetHandler is Test {
     }
 }
 
-contract FaucetInvariantTest is Test {
-    Faucet faucet;
-    FaucetHandler handler;
+contract PublicReserveInvariantTest is Test {
+    PublicReserve faucet;
+    PublicReserveHandler handler;
     uint256 constant INITIAL = 100000 ether;
 
     function setUp() public {
         address timelock = makeAddr("timelock");
         address granter = makeAddr("granter");
-        Faucet impl = new Faucet();
-        bytes memory data = abi.encodeCall(Faucet.initialize, (timelock, makeAddr("pauser"), granter, 1000 ether, 0, 0));
-        faucet = Faucet(payable(address(new ERC1967Proxy(address(impl), data))));
+        PublicReserve impl = new PublicReserve();
+        bytes memory data = abi.encodeCall(PublicReserve.initialize, (timelock, makeAddr("pauser"), granter, 1000 ether, 0, 0));
+        faucet = PublicReserve(payable(address(new ERC1967Proxy(address(impl), data))));
         vm.deal(address(faucet), INITIAL);
 
-        handler = new FaucetHandler(faucet, timelock, granter, INITIAL);
+        handler = new PublicReserveHandler(faucet, timelock, granter, INITIAL);
         targetContract(address(handler));
     }
 

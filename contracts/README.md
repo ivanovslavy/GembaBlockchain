@@ -13,7 +13,7 @@ them (proxy + Timelock).
 | Contract | Responsibility |
 |---|---|
 | `Governor` + `Timelock` | treasury/contract governance; **1 GMB = 1 vote** excluding reserve contracts; quorum, supermajority, delay |
-| `Faucet` | public/municipal reserve; intake of 40% of fees; formula + vesting grants; per-grant cap |
+| `PublicReserve` | public/municipal reserve; intake of 40% of fees; formula + vesting grants; per-grant cap |
 | `FoundationTreasury` | dev funding, released by governance |
 | `DAOReserve` | contingency funds, released by governance |
 | `ContingencyReserve` | holds the 10% contingency GMB (unforeseen needs; **no liquidity seeded — by design**, CLAUDE.md §8); released only by governance + timelock |
@@ -37,7 +37,7 @@ require an audit before mainnet genesis.
 | `GembaVotes` (vGMB) | `src/governance/GembaVotes.sol` | 1-GMB-1-vote: ERC20Votes wrapper of native GMB; reserves excluded (can't hold it, 0 votes) |
 | `GembaTimelock` | `src/governance/GembaTimelock.sol` | TimelockController; owns every reserve; open execution after delay |
 | `GembaGovernor` | `src/governance/GembaGovernor.sol` | high quorum + **supermajority** (66–75%) + timelock |
-| `Faucet` | `src/reserves/Faucet.sol` | UUPS; receives feesplit's 40%; capped formula grants + governance `release` |
+| `PublicReserve` | `src/reserves/PublicReserve.sol` | UUPS; receives feesplit's 40%; capped formula grants + governance `release` |
 | `FoundationTreasury` / `DAOReserve` / `ContingencyReserve` | `src/reserves/` | UUPS reserves; release only by Timelock |
 | `BaseReserve` | `src/reserves/BaseReserve.sol` | shared UUPS base: owner=Timelock, upgrade authority Timelock-only, Pausable |
 | `EmergencyPause` | `src/governance/EmergencyPause.sol` | m-of-n guardian; **pause-only**, guardians replaceable by governance |

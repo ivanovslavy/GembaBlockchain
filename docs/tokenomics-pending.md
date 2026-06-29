@@ -7,7 +7,7 @@
 
 | Bucket | % | GMB (of 100M) | Held by |
 |---|---|---|---|
-| Public/Municipal Reserve | 30% | 30M | `Faucet` contract |
+| Public/Municipal Reserve | 30% | 30M | `PublicReserve` contract |
 | Validator Rewards | 20% | 20M | `rewardstreamer` Cosmos module (not a Solidity contract) |
 | Foundation | 15% | 15M | `FoundationTreasury` contract |
 | DAO Reserve | 10% | 10M | `DAOReserve` contract |
@@ -69,22 +69,25 @@ Cosmos module — see the fix section below).
 
 | # | Bucket | GMB | Where at genesis (block 0) | Controlled by | Votes? |
 |---|---|---:|---|---|---|
-| 1 | Faucet — public/municipal reserve | 30,000,000 | **Faucet CONTRACT** (predeployed via CREATE2, GMB allocated straight to its address) | Timelock (`release`, uncapped) + capped `granter` (formula) + EmergencyPause (pause-only) | No (excluded) |
+| 1 | **Public Reserve** (public/municipal) | 30,000,000 | **PublicReserve CONTRACT** (predeployed via CREATE2, GMB allocated straight to its address) | Timelock (`release`, uncapped) + capped `granter` (formula) + EmergencyPause (pause-only) | No (excluded) |
 | 2 | Validator reward reserve | 20,000,000 | `rewardstreamer` Cosmos module account | the module — auto-streams ~2M/yr, 0% inflation | No |
 | 3 | Foundation | 15,000,000 | `FoundationTreasury` contract | Governor + Timelock | No (excluded) |
 | 4 | DAO reserve | 10,000,000 | `DAOReserve` contract — **also a source for early-participant grants** | Governor + Timelock | No (excluded) |
 | 5 | Contingency | 20,000,000 | `ContingencyReserve` contract — **absorbs the former 10M circulation pool (2026-06-29)** | Governor + Timelock | No (excluded) |
-| 6 | Founder — ops & sale | 5,000,000 | founder EOA — **seeds the 4 validators' self-bond (~10k each) + early-participant grants** | founder | No (excluded) |
+| 6 | Founder — ops & sale | 5,000,000 | founder EOA. From day 1 the founder seeds the OPEN channels from its **own** 5M (the 30M Public Reserve untouched): **100k → public faucet (GembaFaucet), 160k → GembaOnRamp sale, ~40k → the 4 validators**; keeps ~4.7M | founder | No (excluded) |
 
-**No standing circulation pool** (decision 2026-06-29): the genesis validators and early
-participants are funded from the **founder (5M)** or the **DAO reserve (10M)** — voting GMB
-enters circulation only as those are distributed.
+**No standing circulation pool** (decision 2026-06-29). GMB reaches anyone via OPEN channels seeded
+by the founder's own 5M on day 1 — a **public faucet** (100k, `GembaFaucet`, anyone claims a little),
+a **public on-ramp sale** (160k, `GembaOnRamp`, GMB for USE: Gemba dApps @20% off + validator entry,
+non-commercial/for-society), the **4 validators** (~40k, permissionless), plus formula grants from the
+Public Reserve and ecosystem grants from the DAO reserve. The `GembaFaucet`/`GembaOnRamp` contracts are
+tested and funded day 1; nothing is hoarded.
 
 **Genesis mechanics (the fixes vs the testnet):**
 1. **Predeploy the 4 reserve contracts in genesis** (bytecode + CREATE2) and **allocate GMB
-   directly to the contract addresses** → the 30M faucet lives in the Faucet CONTRACT from
+   directly to the contract addresses** → the 30M faucet lives in the PublicReserve CONTRACT from
    block 0, not a key-less module. No migration, no stuck funds.
-2. **`feesplit.faucet_account` → the Faucet CONTRACT address** so the 40% fee inflow flows
+2. **`feesplit.faucet_account` → the PublicReserve CONTRACT address** so the 40% fee inflow flows
    straight into the contract (requires the code fix below).
 3. **All 4 reserve contracts + the founder excluded from `GembaVotes` at genesis** (invariant
    §3.4 — reserves never vote; closes the testnet defense-in-depth gap).
@@ -102,15 +105,15 @@ Cosmos `faucet` module account** (`0xf40b…`), and `feesplit.faucet_account` is
 point ONLY at that module (`DefaultFaucetAccount`, `chain/x/feesplit/types/params.go`). So both
 the 30M genesis reserve AND the 40% fee inflow land in a module with **no withdraw path** —
 module accounts are send-blocked and there is no faucet-keeper disbursement, so **a plain
-governance vote cannot move them out**. Safe (no private key) but stuck. The EVM `Faucet` contract
+governance vote cannot move them out**. Safe (no private key) but stuck. The EVM `PublicReserve` contract
 (`0x9406…` on testnet) is deployed, **Timelock-owned** and governance-ready but holds **0 GMB**.
 
 **Fix:**
 - Relax `feesplit` `Params.Validate` so `FaucetAccount` may be **either** the registered module
   account **or a contract address**, and have the keeper deposit to whichever is set → the 40%
-  then flows into the `Faucet` contract (which already expects it — `src/reserves/Faucet.sol`
+  then flows into the `PublicReserve` contract (which already expects it — `src/reserves/PublicReserve.sol`
   NatSpec). This is the mainnet design (and a clean testnet behaviour going forward).
 - **Moving the existing testnet 30M out of the module is NOT a plain spend vote** — it requires a
   governance-voted **`MsgSoftwareUpgrade`** whose handler does a one-time faucet-module →
-  Faucet-contract transfer (a coordinated node-operator upgrade). Otherwise leave the 30M key-less
+  PublicReserve-contract transfer (a coordinated node-operator upgrade). Otherwise leave the 30M key-less
   (safe) and fund the contract correctly at the next regenesis / at mainnet genesis.

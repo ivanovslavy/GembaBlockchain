@@ -5,10 +5,10 @@ import {Test} from "forge-std/Test.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
-import {Faucet} from "../src/reserves/Faucet.sol";
+import {PublicReserve} from "../src/reserves/PublicReserve.sol";
 
-contract FaucetTest is Test {
-    Faucet faucet;
+contract PublicReserveTest is Test {
+    PublicReserve faucet;
     address timelock = makeAddr("timelock");
     address pauser = makeAddr("pauser");
     address granter = makeAddr("granter");
@@ -17,9 +17,9 @@ contract FaucetTest is Test {
     uint256 cap = 1000 ether;
 
     function setUp() public {
-        Faucet impl = new Faucet();
-        bytes memory data = abi.encodeCall(Faucet.initialize, (timelock, pauser, granter, cap, 0, 0));
-        faucet = Faucet(payable(address(new ERC1967Proxy(address(impl), data))));
+        PublicReserve impl = new PublicReserve();
+        bytes memory data = abi.encodeCall(PublicReserve.initialize, (timelock, pauser, granter, cap, 0, 0));
+        faucet = PublicReserve(payable(address(new ERC1967Proxy(address(impl), data))));
         vm.deal(address(faucet), 100000 ether);
     }
 
@@ -32,13 +32,13 @@ contract FaucetTest is Test {
 
     function test_GrantAboveCapReverts() public {
         vm.prank(granter);
-        vm.expectRevert(Faucet.AboveCap.selector);
+        vm.expectRevert(PublicReserve.AboveCap.selector);
         faucet.grant(inst, cap + 1);
     }
 
     function test_OnlyGranterOrOwnerGrants() public {
         vm.prank(attacker);
-        vm.expectRevert(Faucet.OnlyGranter.selector);
+        vm.expectRevert(PublicReserve.OnlyGranter.selector);
         faucet.grant(inst, 1 ether);
 
         // owner (governance) may also grant within the cap
@@ -66,14 +66,14 @@ contract FaucetTest is Test {
         vm.prank(timelock);
         faucet.setPerGrantCap(5 ether);
         vm.prank(granter);
-        vm.expectRevert(Faucet.AboveCap.selector);
+        vm.expectRevert(PublicReserve.AboveCap.selector);
         faucet.grant(inst, 6 ether);
 
         address newGranter = makeAddr("newGranter");
         vm.prank(timelock);
         faucet.setGranter(newGranter);
         vm.prank(granter);
-        vm.expectRevert(Faucet.OnlyGranter.selector);
+        vm.expectRevert(PublicReserve.OnlyGranter.selector);
         faucet.grant(inst, 1 ether);
     }
 
@@ -91,7 +91,7 @@ contract FaucetTest is Test {
         vm.prank(granter);
         faucet.grant(inst, 1000 ether); // single call at the per-grant cap
         vm.prank(granter);
-        vm.expectRevert(Faucet.AboveEpochCap.selector);
+        vm.expectRevert(PublicReserve.AboveEpochCap.selector);
         faucet.grant(inst, 600 ether); // 1000 + 600 > 1500 window cap
         assertEq(inst.balance, 1000 ether);
         // window resets after epochLength
@@ -108,7 +108,7 @@ contract FaucetTest is Test {
         faucet.grant(inst, 1000 ether);
         for (uint256 i = 0; i < 3; i++) {
             vm.prank(granter);
-            vm.expectRevert(Faucet.AboveEpochCap.selector);
+            vm.expectRevert(PublicReserve.AboveEpochCap.selector);
             faucet.grant(inst, 1 ether); // hard daily bound, not per-call only
         }
         assertEq(inst.balance, 1000 ether);
@@ -123,7 +123,7 @@ contract FaucetTest is Test {
     // audit finding #6: a non-zero cap with a zero window would void the aggregate bound
     function test_InvalidEpochConfigReverts() public {
         vm.prank(timelock);
-        vm.expectRevert(Faucet.InvalidEpochConfig.selector);
+        vm.expectRevert(PublicReserve.InvalidEpochConfig.selector);
         faucet.setEpochLimit(1000 ether, 0);
     }
 }

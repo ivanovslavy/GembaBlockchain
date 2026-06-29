@@ -18,7 +18,7 @@
 | `GembaVotes` (1 GMB = 1 vGMB, excludes reserves) | `0x0056ab3c91FF5ba8eCdBA8c7C453fd9F424F7F39` | — |
 | `GembaGovernor` (supermajority 66%, quorum 50%) | `0xCCd9f78047E1BB8Bec419490E80409bfBf3B7b72` | — |
 | `EmergencyPause` (guardian, pause-only) | `0x372462Fc8e28c558E2A1bcE6b9CF56a47c71DeA0` | — |
-| `Faucet` — Public/Municipal Reserve | `0x9406B634Eae1856d13251245d7D472D9b6594F56` | 30,000,000 GMB* |
+| `PublicReserve` — Public/Municipal Reserve | `0x9406B634Eae1856d13251245d7D472D9b6594F56` | 30,000,000 GMB* |
 | `FoundationTreasury` | `0x353CC67C2000fC9b142C0aa505a2e45DA693CDe0` | 15,000,000 GMB |
 | `DAOReserve` | `0x68093A1C9682df9D1C59586b2Cfc04ed132e7eE5` | 10,000,000 GMB |
 | `ContingencyReserve` | `0xCBbf84966335e0846cffB52d8624a9aeF58227b4` | 10,000,000 GMB |

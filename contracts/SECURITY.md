@@ -36,7 +36,7 @@ All Phase 3 & 4 contracts were reviewed against the standards. Changes:
 - **`GembaVotes`** — added `ZeroAmount` custom error; `depositFor` now validates
   `to != 0` and `msg.value != 0`; `withdrawTo` now validates `amount != 0`. CEI
   (burn before send) + `nonReentrant` documented.
-- **`BaseReserve`** (and `Faucet`/`FoundationTreasury`/`DAOReserve`/`ContingencyReserve`)
+- **`BaseReserve`** (and `PublicReserve`/`FoundationTreasury`/`DAOReserve`/`ContingencyReserve`)
   — added `ZeroAmount`; `_release` now validates `amount != 0` (single validated
   exit, reached by `release` and `Faucet.grant`).
 - **`EmergencyPause`** — now `is ReentrancyGuard`; `confirm()` is `nonReentrant`
@@ -70,7 +70,7 @@ findings from the pass).
 - **"Low-level call" — `_release`, `GembaVotes.withdrawTo`.** Native GMB transfers
   must use `call{value:}` (the only safe way to send native value post-EIP-1884).
   All are guarded by `nonReentrant` and revert on failure.
-- **Missing zero-check — `Faucet` `granter`.** A zero granter is **valid and
+- **Missing zero-check — `PublicReserve` `granter`.** A zero granter is **valid and
   intentional**: it disables the formula/automation path, leaving only governance
   `release()`. Not a bug.
 - **"Costly operations in a loop" — `EmergencyPause` constructor.** Runs once at

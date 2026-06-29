@@ -12,7 +12,7 @@ import {GembaGovernor} from "../../src/governance/GembaGovernor.sol";
 import {EmergencyPause} from "../../src/governance/EmergencyPause.sol";
 import {FoundationTreasury} from "../../src/reserves/FoundationTreasury.sol";
 import {BaseReserve} from "../../src/reserves/BaseReserve.sol";
-import {Faucet} from "../../src/reserves/Faucet.sol";
+import {PublicReserve} from "../../src/reserves/PublicReserve.sol";
 
 /// @dev A backdoored reserve implementation an attacker would try to upgrade the
 /// proxy to: it adds a `loot()` that drains the reserve to an arbitrary address.
@@ -179,15 +179,15 @@ contract Track1TreasuryAttackTest is Test {
         assertEq(votes.getVotes(address(reserve)), 0, "reserve has zero votes, always");
     }
 
-    // ── ATTACK 5: compromised Faucet granter — drain is bounded, then halted ──────
+    // ── ATTACK 5: compromised PublicReserve granter — drain is bounded, then halted ──────
     // A stolen granter key is the §16.5 accepted risk. Prove the rolling-window cap
     // bounds the bleed to epochCap per window, and EmergencyPause stops it dead.
     function test_Attack_CompromisedGranterBoundedThenPaused() public {
-        Faucet fImpl = new Faucet();
+        PublicReserve fImpl = new PublicReserve();
         // perGrantCap 1000, epochCap 1000/day → max bleed = 1000 GMB/day
         bytes memory init =
-            abi.encodeCall(Faucet.initialize, (address(timelock), pauser, attacker, 1000 ether, 1000 ether, 1 days));
-        Faucet faucet = Faucet(payable(address(new ERC1967Proxy(address(fImpl), init))));
+            abi.encodeCall(PublicReserve.initialize, (address(timelock), pauser, attacker, 1000 ether, 1000 ether, 1 days));
+        PublicReserve faucet = PublicReserve(payable(address(new ERC1967Proxy(address(fImpl), init))));
         vm.deal(address(faucet), 1_000_000 ether);
 
         // attacker (the compromised granter) loots up to the window cap…
@@ -196,7 +196,7 @@ contract Track1TreasuryAttackTest is Test {
         // …and is then hard-stopped within the window, no matter how many calls
         for (uint256 i = 0; i < 5; i++) {
             vm.prank(attacker);
-            vm.expectRevert(Faucet.AboveEpochCap.selector);
+            vm.expectRevert(PublicReserve.AboveEpochCap.selector);
             faucet.grant(attacker, 1 ether);
         }
         assertEq(attacker.balance, 1000 ether, "bleed bounded to one window cap");

@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {BaseReserve} from "./BaseReserve.sol";
 
-/// @title Faucet
+/// @title PublicReserve
 /// @notice The 30% public/municipal reserve (CLAUDE.md §4.1, §6). It receives the
 /// 40% fee inflow from the `x/feesplit` Go module (the Cosmos↔EVM seam: feesplit
 /// deposits native GMB straight into this contract's address — see
@@ -18,7 +18,7 @@ import {BaseReserve} from "./BaseReserve.sol";
 ///
 /// You govern the *tap*, not water already poured (§6): control is the cap + the
 /// granter appointment, both revocable by governance.
-contract Faucet is BaseReserve {
+contract PublicReserve is BaseReserve {
     /// @notice formula/automation actor allowed to make capped grants (0 = none).
     address public granter;
     /// @notice maximum GMB a single `grant` call may disburse.

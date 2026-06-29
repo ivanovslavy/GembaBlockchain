@@ -71,12 +71,18 @@ BASE_FEE_CHANGE_DENOMINATOR="8"
 # (invariant CLAUDE.md §3.4 / §7). MAINNET split (decision 2026-06-29): there is
 # NO standing circulation pool — the genesis validators' self-bond and early
 # participants are funded from the FOUNDER (5M) or the DAO reserve (10M).
-ALLOC_FAUCET="30000000"          # 30% public/municipal reserve -> Faucet contract
+ALLOC_PUBLIC_RESERVE="30000000"  # 30% PUBLIC RESERVE (public/municipal grants by formula + vesting; refilled by 40% of fees)
+ALLOC_FAUCET="$ALLOC_PUBLIC_RESERVE"  # back-compat: the consumers' "faucet" account = the Public Reserve contract (NOT the small public faucet below)
 ALLOC_VAL_RESERVE="20000000"     # 20% validator rewards reserve -> rewardstreamer module (~10 yrs, ADR-008)
 ALLOC_FOUNDATION="15000000"      # 15% -> FoundationTreasury contract
 ALLOC_DAO="10000000"             # 10% -> DAOReserve contract (also a source for early-participant grants)
 ALLOC_CONTINGENCY="20000000"     # 20% -> ContingencyReserve contract (absorbs the former 10% circulation, 2026-06-29)
-ALLOC_FOUNDER="5000000"          #  5% founder/operations EOA (non-voting, §3.5); seeds the validators + early participants
+ALLOC_FOUNDER="5000000"          #  5% founder/operations EOA (non-voting, §3.5).
+# The FOUNDER's 5M seeds the OPEN distribution channels from day 1 — the founder reduces its OWN
+# balance; the 30M Public Reserve is NEVER touched for this (decision 2026-06-29):
+PUBLIC_FAUCET_SEED="100000"      #   100k -> small PUBLIC faucet (GembaFaucet, the tested testnet contract) — anyone claims a little, day 1
+ONRAMP_SALE_SEED="160000"        #   160k -> GembaOnRamp public sale (GMB for USE: Gemba dApps @20% off + validator entry; non-commercial, for society)
+# Validators: 4 x SELF_BOND_GMB (~40k) also from the founder. Founder EOA keeps ~5M - 100k - 160k - 40k = ~4,700,000.
 # Sum: 30 + 20 + 15 + 10 + 20 + 5 = 100,000,000 GMB. (No ALLOC_CIRCULATION as of 2026-06-29.)
 # Devnet-only alias: the LOCAL devnet scripts (init-single-node/init-multinode, init-gembad) keep a
 # 10M test-circulation pool for dev/test accounts, so their contingency bucket stays 10M (sum=100M).

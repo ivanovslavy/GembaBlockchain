@@ -3,10 +3,10 @@ pragma solidity ^0.8.24;
 
 /// @title SeamProbe
 /// @notice Phase 3 devnet probe for the Cosmos<->EVM seam. It exists only to
-/// answer one question before we write the real Faucet: when the `x/feesplit` Go
+/// answer one question before we write the real PublicReserve: when the `x/feesplit` Go
 /// module deposits GMB at the bank layer into this contract's address, does the
 /// contract (a) see it as native balance and (b) control it (spend it)? If yes,
-/// `feesplit` can deposit straight into the Faucet contract's address.
+/// `feesplit` can deposit straight into the PublicReserve contract's address.
 contract SeamProbe {
     /// @notice deployer — the only address allowed to spend (forward) probe funds.
     address public immutable owner;

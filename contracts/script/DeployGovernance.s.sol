@@ -9,7 +9,7 @@ import {GembaVotes} from "../src/governance/GembaVotes.sol";
 import {GembaTimelock} from "../src/governance/GembaTimelock.sol";
 import {GembaGovernor} from "../src/governance/GembaGovernor.sol";
 import {EmergencyPause} from "../src/governance/EmergencyPause.sol";
-import {Faucet} from "../src/reserves/Faucet.sol";
+import {PublicReserve} from "../src/reserves/PublicReserve.sol";
 import {FoundationTreasury} from "../src/reserves/FoundationTreasury.sol";
 import {DAOReserve} from "../src/reserves/DAOReserve.sol";
 import {ContingencyReserve} from "../src/reserves/ContingencyReserve.sol";
@@ -65,9 +65,9 @@ contract DeployGovernance is Script {
         // Deployed BEFORE GembaVotes so their addresses can be excluded at genesis (finding #10).
         address faucet = address(
             new ERC1967Proxy{salt: keccak256(bytes("gemba.faucet.v1"))}(
-                address(new Faucet{salt: keccak256(bytes("gemba.faucet.impl.v1"))}()),
+                address(new PublicReserve{salt: keccak256(bytes("gemba.faucet.impl.v1"))}()),
                 abi.encodeCall(
-                    Faucet.initialize,
+                    PublicReserve.initialize,
                     (address(timelock), address(pause), deployer, PER_GRANT_CAP, FAUCET_EPOCH_CAP, FAUCET_EPOCH_LENGTH)
                 )
             )
@@ -118,9 +118,9 @@ contract DeployGovernance is Script {
         // holding exactly its %.
         // REGENESIS NOTE (2026-06-27): the faucet's 30M lives in the Cosmos faucet MODULE
         // account (where the 60/40 feesplit + slash redirects accrue), NOT in an EOA — so we
-        // do NOT fund the EVM Faucet contract from an (empty) EOA here. The Cosmos↔EVM faucet
+        // do NOT fund the EVM PublicReserve contract from an (empty) EOA here. The Cosmos↔EVM faucet
         // seam (module -> contract top-up via governance) is the documented follow-up. The
-        // EVM Faucet contract is deployed (Timelock-owned) but seeded later via that seam.
+        // EVM PublicReserve contract is deployed (Timelock-owned) but seeded later via that seam.
         _fund(founderPk, vm.envUint("FOUNDATION_PK"), foundation, 15_000_000 ether);
         _fund(founderPk, vm.envUint("DAO_PK"), dao, 10_000_000 ether);
         _fund(founderPk, vm.envUint("CONTINGENCY_PK"), contingency, 10_000_000 ether);
@@ -129,7 +129,7 @@ contract DeployGovernance is Script {
         console2.log("GembaVotes", address(votes));
         console2.log("GembaGovernor", address(governor));
         console2.log("EmergencyPause", address(pause));
-        console2.log("Faucet", faucet);
+        console2.log("PublicReserve", faucet);
         console2.log("FoundationTreasury", foundation);
         console2.log("DAOReserve", dao);
         console2.log("ContingencyReserve", contingency);

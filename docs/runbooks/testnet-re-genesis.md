@@ -15,7 +15,7 @@
 
 | EOA / module | GMB | Then transferred to | % |
 |---|---|---|---|
-| `faucetreserve` EOA | 30M | `Faucet` contract | 30 |
+| `faucetreserve` EOA | 30M | `PublicReserve` contract | 30 |
 | `rewardstreamer` module | 20M | (stays — validator rewards) | 20 |
 | `foundation` EOA | 15M | `FoundationTreasury` | 15 |
 | `dao` EOA | 10M | `DAOReserve` | 10 |
@@ -23,7 +23,7 @@
 | 5 validators × 2M | 10M | (circulation / self-bond) | 10 |
 | `founder` EOA | 5M | (stays — non-voting) | 5 |
 
-The testnet drip faucet draws from the `Faucet` contract via the §4.1 grant mechanism (no
+The testnet drip faucet draws from the `PublicReserve` contract via the §4.1 grant mechanism (no
 separate drip allocation).
 
 ## Procedure
@@ -39,7 +39,7 @@ separate drip allocation).
    `genesis.json`, restart. The chain starts at height 0 with the new allocation.
 4. **Re-deploy contracts** (now at 100M block gas, normal forge gas works):
    - Governance: `GembaVotes`, `GembaTimelock`, `GembaGovernor`, `EmergencyPause`.
-   - Reserves (UUPS proxies): `Faucet`, `FoundationTreasury`, `DAOReserve`, `ContingencyReserve`
+   - Reserves (UUPS proxies): `PublicReserve`, `FoundationTreasury`, `DAOReserve`, `ContingencyReserve`
      — `initialize(owner=Timelock, pauser=EmergencyPause, …)`.
    - DEX: GembaSwap (`WGMB`, factory, router02), `GembaNativePoolFactory`, `LiquidityLocker`.
 5. **Fund the reserves**: from each reserve EOA, transfer its FULL balance to its contract

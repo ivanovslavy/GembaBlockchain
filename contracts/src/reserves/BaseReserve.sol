@@ -9,7 +9,7 @@ import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/ut
 
 /// @title BaseReserve
 /// @notice Base for all GembaBlockchain reserve/treasury contracts (Foundation,
-/// DAO, Contingency, Faucet). Holds native GMB and enforces the §3.6 invariant:
+/// DAO, Contingency, PublicReserve). Holds native GMB and enforces the §3.6 invariant:
 /// **no unilateral control of reserves.**
 ///
 /// - **Upgradeable (UUPS):** the implementation can evolve, but the upgrade
@@ -67,7 +67,7 @@ abstract contract BaseReserve is
     }
 
     /// @dev Single validated exit for native value. Validates inputs first, then
-    /// the external call last (CEI). All callers (`release`, `Faucet.grant`) are
+    /// the external call last (CEI). All callers (`release`, `PublicReserve.grant`) are
     /// `nonReentrant`, so the post-call event is safe.
     function _release(address payable to, uint256 amount) internal {
         if (to == address(0)) revert ZeroAddress();
