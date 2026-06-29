@@ -16,10 +16,10 @@ The confirmed findings are **3 medium** and **9 low** severity. None are launch 
 The themes are consistent and unsurprising for a system at this maturity:
 
 - **Operational robustness gaps in backend services** (the access-control API and testnet faucet) — blocking RPC calls inside DB transactions, a spoofable rate limiter, GDPR erasure that aborts on a transient chain error. These are the highest-impact real issues and all live off-consensus.
-- **Spec-vs-code drift** — controls described in docs/comments as existing (a Faucet "rate-limited tap," "governance-tunable" chain params, "reserves explicitly excluded" from voting) that are not actually wired up. The protections largely hold *structurally*, but the documented enforcement is missing, which is both a hardening gap and a maintenance hazard.
+- **Spec-vs-code drift** — controls described in docs/comments as existing (a PublicReserve "rate-limited tap," "governance-tunable" chain params, "reserves explicitly excluded" from voting) that are not actually wired up. The protections largely hold *structurally*, but the documented enforcement is missing, which is both a hardening gap and a maintenance hazard.
 - **Reference-DEX hardening** — the non-project-operated `GembaNativePool` deviates from the bundled Uniswap V2 in ways that break on exotic tokens. Blast radius is one opt-in pool per token, never the shared DEX.
 
-Notably, the most alarming-sounding candidate findings were **downgraded after verification** rather than confirmed at face value (e.g. the Faucet drain requires a *compromised privileged key*, not a public call; the reserve-voting gap is redundant with structural protections). The report below reflects those honest, adjusted severities.
+Notably, the most alarming-sounding candidate findings were **downgraded after verification** rather than confirmed at face value (e.g. the PublicReserve drain requires a *compromised privileged key*, not a public call; the reserve-voting gap is redundant with structural protections). The report below reflects those honest, adjusted severities.
 
 ---
 
@@ -29,7 +29,7 @@ Notably, the most alarming-sounding candidate findings were **downgraded after v
 |---|----------|-----------|-------|
 | 1 | Medium | Backend (access-control) | Blockchain calls inside open Postgres/RLS transaction — pool-exhaustion DoS + state inconsistency |
 | 2 | Medium | Backend (access-control) | GDPR erasure aborts entirely if any on-chain revoke fails |
-| 3 | Medium | Reserves (Faucet) | Per-grant cap is per-call only — compromised granter key can drain the faucet |
+| 3 | Medium | Reserves (PublicReserve) | Per-grant cap is per-call only — compromised granter key can drain the faucet |
 | 4 | Low | Backend (testnet-faucet) | Per-IP rate limit bypassable via `X-Forwarded-For` spoofing |
 | 5 | Low | Chain Go modules | feesplit/rewardstreamer/tailreward params not governance-tunable (no `MsgUpdateParams`) |
 | 6 | Low | Tickets/Perks | `buy()` lets the public mint price-0 ("not for sale") events for free |
@@ -68,11 +68,11 @@ Notably, the most alarming-sounding candidate findings were **downgraded after v
 
 ---
 
-### Finding 3 — Faucet per-grant cap is per-call only; compromised granter can drain the reserve
-**Severity:** Medium · **Component:** Reserves (Faucet)
-**Location:** `contracts/src/reserves/Faucet.sol:46-52` (`grant()`), `perGrantCap` field (line 25); deploy value `DeployGovernance.s.sol:29`.
+### Finding 3 — PublicReserve per-grant cap is per-call only; compromised granter can drain the reserve
+**Severity:** Medium · **Component:** Reserves (PublicReserve)
+**Location:** `contracts/src/reserves/PublicReserve.sol:46-52` (`grant()`), `perGrantCap` field (line 25); deploy value `DeployGovernance.s.sol:29`.
 
-**Description.** `grant()` enforces only `if (amount > perGrantCap) revert AboveCap();` — a single-transaction cap (1000 ether at deploy). There is no per-epoch/per-time/cumulative outflow limit anywhere in `Faucet` or `BaseReserve`; `totalGranted` is incremented but never compared to any budget (telemetry only). No vesting/streaming exists despite CLAUDE.md §6 describing grants that "drip over time." The contract NatSpec calls itself the "routine, rate-limited tap" (lines 15, 44), a rate limit the implementation does not provide. The granter is explicitly a hot "formula/automation actor"; that key (or anyone who compromises it) can loop `grant()` with each call ≤ `perGrantCap` and drain the full 30M GMB (≈30,000 calls), bounded only by post-hoc detection + `setGranter` revoke or `EmergencyPause`.
+**Description.** `grant()` enforces only `if (amount > perGrantCap) revert AboveCap();` — a single-transaction cap (1000 ether at deploy). There is no per-epoch/per-time/cumulative outflow limit anywhere in `PublicReserve` or `BaseReserve`; `totalGranted` is incremented but never compared to any budget (telemetry only). No vesting/streaming exists despite CLAUDE.md §6 describing grants that "drip over time." The contract NatSpec calls itself the "routine, rate-limited tap" (lines 15, 44), a rate limit the implementation does not provide. The granter is explicitly a hot "formula/automation actor"; that key (or anyone who compromises it) can loop `grant()` with each call ≤ `perGrantCap` and drain the full 30M GMB (≈30,000 calls), bounded only by post-hoc detection + `setGranter` revoke or `EmergencyPause`.
 
 **Impact.** Full drain of the 30% public/municipal reserve via a compromised or malicious **granter key** (not an unauthenticated public call — `grant()` is access-controlled). The documented "govern the tap rate" control does not actually bound flow rate; no §16 ADR records this as an accepted trade-off.
 
@@ -80,7 +80,7 @@ Notably, the most alarming-sounding candidate findings were **downgraded after v
 
 ---
 
-### Finding 4 — Faucet per-IP rate limit bypassable via `X-Forwarded-For` spoofing
+### Finding 4 — PublicReserve per-IP rate limit bypassable via `X-Forwarded-For` spoofing
 **Severity:** Low · **Component:** Backend services (testnet-faucet)
 **Location:** `services/testnet-faucet/src/server.js:23,38` (`app.set('trust proxy', true)`; `ip = req.ip`).
 
@@ -197,7 +197,7 @@ These strengths were observed and verified, and materially contribute to the low
 - **"Reserves never vote" holds structurally,** independent of the missing exclusion wiring (Finding 10): reserves have no `depositFor`/`delegate` path and `ERC20Votes` requires explicit self-delegation.
 - **Postgres RLS isolation is real and `FORCE`d.** Each tenant's identity rows are isolated by row-level security enforced in `db.js`, independent of the (devnet-placeholder) tenant header; the error-message leak (Finding 12) does not breach it.
 - **Solidity contracts follow the project security standards** broadly — CEI + `nonReentrant` on value/external-call paths, custom errors, events on state changes, `SafeERC20`. The bundled GembaSwap is a faithful Uniswap V2 (FoT-safe pair); the deviations are confined to the custom `GembaNativePool`.
-- **Access control is correct where it matters.** Faucet `grant()`, valgate param updates, and EmergencyPause (pause-only, governance-replaceable signers) are properly gated; the confirmed Faucet risk (Finding 3) requires compromising a *privileged* key, not a public call.
+- **Access control is correct where it matters.** PublicReserve `grant()`, valgate param updates, and EmergencyPause (pause-only, governance-replaceable signers) are properly gated; the confirmed PublicReserve risk (Finding 3) requires compromising a *privileged* key, not a public call.
 - **No critical/high findings.** Adversarial verification *downgraded* the scariest candidates rather than confirming them — a sign the design's structural protections are doing real work.
 
 ---

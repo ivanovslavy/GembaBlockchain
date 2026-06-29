@@ -33,7 +33,7 @@ The remaining issues are Low/Info: standard AMM FoT semantics on third-party DEX
 | 5 | Low | Chain Go modules (rewardstreamer, tailreward) | `BeginBlock` halts chain on any send error (inconsistent with feesplit fail-soft) |
 | 6 | Low | Backend (access-control) | GDPR revocation outbox is write-only — failed on-chain revocations never retried |
 | 7 | Low | Backend (testnet-faucet) | Address-based rate limit trivially bypassable; no global drain cap |
-| 8 | Low | Backend (testnet-faucet) | Faucet wallet has no nonce serialization — concurrent drips can collide |
+| 8 | Low | Backend (testnet-faucet) | PublicReserve wallet has no nonce serialization — concurrent drips can collide |
 | 9 | Low | Secret hygiene (testnet) | Live testnet drip account keyed by well-known committed cosmos/evm dev mnemonic |
 | 10 | Info | Harness (stress) | 300 worker private keys written to `wallets.json` in plaintext (no `chmod 600`) |
 
@@ -89,7 +89,7 @@ The remaining issues are Low/Info: standard AMM FoT semantics on third-party DEX
 - **Impact:** After erasure, if the RPC was unavailable, the on-chain capability NFT may remain unrevoked, retaining physical access until a manual fix. **Mitigated:** `eraseEmployee` returns a per-cap `{ok:false, error}` array sent synchronously in the DELETE HTTP response (the institution is told immediately which revocations failed); the outbox durably stores `wallet + zone + reason` for manual re-issue; it fires only on operational RPC failure (not adversary-controlled); and the legal GDPR obligation (PII deletion) succeeds independently first — the stale token is already de-identified. An eventual-consistency / incomplete-feature gap, not a directly exploitable vuln.
 - **Recommendation:** Add a worker/cron selecting `revocation_outbox` rows where `retried_at IS NULL` (or past a backoff), calling `chain.revokeAccess` and setting `retried_at`/deleting on success. Add a metric/alert on outbox depth and age.
 
-### Finding 7 — Faucet rate limit bypassable; no global drain cap *(Low)*
+### Finding 7 — PublicReserve rate limit bypassable; no global drain cap *(Low)*
 
 - **Component:** Backend (testnet-faucet)
 - **Location:** `services/testnet-faucet/src/server.js:37-63` (`/drip`) + `src/ratelimit.js` (`CooldownLimiter`).
@@ -97,7 +97,7 @@ The remaining issues are Low/Info: standard AMM FoT semantics on third-party DEX
 - **Impact:** An actor with many IPs (proxies/botnet) or a process restart can drain the drip account faster than intended. **Valueless testnet tokens**, in-memory limitation is documented — blast radius is operational (faucet runs dry), no financial/consensus impact.
 - **Recommendation:** Back the limiter with a shared durable TTL store (Redis), add a global daily drip budget and a minimum-balance guard, and consider lightweight PoW/captcha to raise per-request cost.
 
-### Finding 8 — Faucet wallet has no nonce serialization *(Low)*
+### Finding 8 — PublicReserve wallet has no nonce serialization *(Low)*
 
 - **Component:** Backend (testnet-faucet)
 - **Location:** `services/testnet-faucet/src/faucet.js:22-28` (`drip`), `server.js /drip`.

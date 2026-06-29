@@ -24,7 +24,7 @@ Severities reflect the **post-verification adjusted** ratings.
 
 | ID | Severity | Component | Title |
 |----|----------|-----------|-------|
-| L-1 | Low | Reserves & UUPS upgradeability | Faucet granter EOA can rate-limited-drain to arbitrary destinations; "cannot drain" comment overstates protection |
+| L-1 | Low | Reserves & UUPS upgradeability | PublicReserve granter EOA can rate-limited-drain to arbitrary destinations; "cannot drain" comment overstates protection |
 | L-2 | Low | DEX (GembaSwap V2 / NativePool) | `GembaNativePool` allows zero-output "dust" swap that takes funds for nothing when `amountOutMin == 0` |
 | L-3 | Low | Access NFT + Paymaster | No on-chain tenant isolation: single contract + single `ISSUER_ROLE` + flat global zone-id namespace |
 | L-4 | Low | Backend (access-control) | Employee PII (`full_name`, `email`) stored plaintext at rest, no app-level encryption |
@@ -37,11 +37,11 @@ Severities reflect the **post-verification adjusted** ratings.
 
 ## 3. Detailed Findings
 
-### L-1 — Faucet granter EOA: rate-limited (not absolute) drain; misleading in-code comment
+### L-1 — PublicReserve granter EOA: rate-limited (not absolute) drain; misleading in-code comment
 - **Severity:** Low
-- **Component:** Reserves & UUPS upgradeability (Faucet/Foundation/DAO/Contingency)
-- **Location:** `contracts/src/reserves/Faucet.sol` — `grant()` (lines 76–91), comment lines 29–32; `contracts/script/DeployGovernance.s.sol:59` (granter = deployer/founder EOA)
-- **Description:** At genesis the Faucet granter is the founder EOA. `grant()` lets the granter send up to `perGrantCap` per call to any `to`, bounded only by the rolling `epochCap` (deploy values: 1,000 GMB/call, 100,000 GMB/day on a 30,000,000 GMB reserve). `totalGranted` (line 88) is telemetry only — there is **no cumulative lifetime cap**. The comment at lines 29–32 claims "even a stolen granter key cannot drain the reserve," which is literally inaccurate: the epoch cap bounds **rate**, not eventual total.
+- **Component:** Reserves & UUPS upgradeability (PublicReserve/Foundation/DAO/Contingency)
+- **Location:** `contracts/src/reserves/PublicReserve.sol` — `grant()` (lines 76–91), comment lines 29–32; `contracts/script/DeployGovernance.s.sol:59` (granter = deployer/founder EOA)
+- **Description:** At genesis the PublicReserve granter is the founder EOA. `grant()` lets the granter send up to `perGrantCap` per call to any `to`, bounded only by the rolling `epochCap` (deploy values: 1,000 GMB/call, 100,000 GMB/day on a 30,000,000 GMB reserve). `totalGranted` (line 88) is telemetry only — there is **no cumulative lifetime cap**. The comment at lines 29–32 claims "even a stolen granter key cannot drain the reserve," which is literally inaccurate: the epoch cap bounds **rate**, not eventual total.
 - **Impact:** A compromised granter key could siphon ~100,000 GMB/day to attacker addresses and, undetected, drain the 30M faucet over ~300 days. Per-incident exposure = `epochCap × detection-and-response time`. The "no EOA key can drain reserves" invariant holds only in the slow-drain sense.
 - **Mitigations already present (why this is Low):** `grant()` is access-controlled and `whenNotPaused`; `setGranter` (`onlyOwner`, line 104) revokes a compromised key instantly; `setEpochLimit`/`setPerGrantCap` throttle; EmergencyPause (2-of-3 guardians) can halt all grants without governance; large/uncapped transfers are gated to owner/Timelock via `release()`. This matches the consciously accepted trade-off in CLAUDE.md §16.5.
 - **Recommendation:** Reword the comment to "rate-limited, not drain-proof." Prefer setting granter to a contract/multisig over the founder EOA; consider a destination allowlist and/or a cumulative lifetime cap; add a §16 decentralization-KPI monitoring alert when faucet outflow approaches `epochCap`.
@@ -108,11 +108,11 @@ Severities reflect the **post-verification adjusted** ratings.
 
 These strengths were observed directly in code and are genuinely well-implemented:
 
-- **Reserve access control & throttling.** `Faucet.grant()` is access-controlled, `whenNotPaused`, per-call capped, and rolling-window capped; `setGranter` allows instant revocation of a compromised key; large transfers are gated to owner/Timelock. Reserve contracts are non-voting per design.
+- **Reserve access control & throttling.** `PublicReserve.grant()` is access-controlled, `whenNotPaused`, per-call capped, and rolling-window capped; `setGranter` allows instant revocation of a compromised key; large transfers are gated to owner/Timelock. Reserve contracts are non-voting per design.
 - **UUPS upgrades gated by Timelock.** Upgrade authority is Governor + Timelock, never an EOA (per Phase-3 principles), with supermajority Governor and a pause-only EmergencyPause that can halt but not move funds.
 - **Soulbound access NFTs done right.** `AccessControlNFT` enforces `onlyRole` on grant/revoke, blocks transfers via `_update`, and validates zero-address / already-granted / not-granted conditions. No PII on-chain (§10 respected).
 - **Off-chain tenant isolation.** PostgreSQL FORCE RLS isolates each institution's identity rows; `assertSafeDbRole()` refuses to start on a superuser/BYPASSRLS role; PII is deletable off-chain to satisfy GDPR erasure.
-- **Faucet hard floor.** The testnet faucet's `MIN_BALANCE_WEI` check is stateless and evaluated against live on-chain balance on every drip — a durable anti-drain control that survives restarts and multi-instance deployment.
+- **PublicReserve hard floor.** The testnet faucet's `MIN_BALANCE_WEI` check is stateless and evaluated against live on-chain balance on every drip — a durable anti-drain control that survives restarts and multi-instance deployment.
 - **Secret hygiene for mainnet.** Mainnet-class secrets are env-sourced with no committed fallbacks (e.g. `TN_FAUCET_MNEMONIC`); the only committed mnemonics are the well-known cosmos/evm dev keys, explicitly flagged as never-for-mainnet. The one live exposure (L-7) is testnet-only and valueless.
 - **DEX faithfulness.** The Uniswap V2 fork preserves upstream invariants on the router path (`INSUFFICIENT_OUTPUT_AMOUNT` revert on zero output); the lone gap (L-2) is confined to the bespoke native-pool wrapper and is a one-line fix.
 
@@ -133,7 +133,7 @@ No supply-inflation, minting, reentrancy, or consensus-level defects survived ve
 ## Remediation & acceptance (2026-06-08)
 
 **FIXED in code:**
-- **L-1** Faucet: comment corrected — the epoch cap bounds RATE, not lifetime total; it is NOT
+- **L-1** PublicReserve: comment corrected — the epoch cap bounds RATE, not lifetime total; it is NOT
   drain-proof (the real responses are setGranter revoke + EmergencyPause). Accepted trade-off §16.5.
 - **L-2** GembaNativePool: both swaps now `revert InsufficientOutputAmount()` when `amountOut == 0`
   (no more zero-output dust swap that takes funds for nothing). 100/100 forge tests.
@@ -149,7 +149,7 @@ No supply-inflation, minting, reentrancy, or consensus-level defects survived ve
 - **L-4** PII at-rest encryption: §10's PII guard is RLS + off-chain deletability; full-disk +
   encrypted-backup is a mandated infra control. App-layer envelope encryption of name/email is a
   tracked hardening enhancement (KMS), not a blocker.
-- **L-5** Faucet rate-limit durability: in-process by design for the single-instance testnet drip;
+- **L-5** PublicReserve rate-limit durability: in-process by design for the single-instance testnet drip;
   back with Redis before any multi-instance/value-bearing use. The min-balance breaker (stateless,
   on-chain) already hard-floors the account.
 - **L-7** Live testnet drip account uses the public dev2 key: **operational rotation task** — re-fund

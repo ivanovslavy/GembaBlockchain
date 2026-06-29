@@ -65,7 +65,7 @@ contract DeployGovernance is Script {
         // Deployed BEFORE GembaVotes so their addresses can be excluded at genesis (finding #10).
         address faucet = address(
             new ERC1967Proxy{salt: keccak256(bytes("gemba.faucet.v1"))}(
-                address(new PublicReserve{salt: keccak256(bytes("gemba.faucet.impl.v1"))}()),
+                address(new PublicReserve{salt: keccak256(bytes("gemba.publicreserve.impl.v1"))}()),
                 abi.encodeCall(
                     PublicReserve.initialize,
                     (address(timelock), address(pause), deployer, PER_GRANT_CAP, FAUCET_EPOCH_CAP, FAUCET_EPOCH_LENGTH)

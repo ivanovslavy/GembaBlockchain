@@ -106,7 +106,7 @@ power.
 **Not built for speculation or trading — by design.** GembaBlockchain **provides no
 liquidity for GMB**, operates **no exchange/DEX**, and does not redeem GMB for fiat.
 GMB exists to be *used*, not speculated on. There IS a **public on-ramp** (`GembaOnRamp`,
-§6) where anyone can buy GMB at a fixed rate **to USE** — Gemba dApp services at a 20%
+§6) where anyone can buy GMB **via GembaPay at a fixed 1 GMB = 1 EUR** (the only way to buy GMB) **to USE** — Gemba dApp services at a 20%
 discount (GembaPay, GembaEscrow, GembaWin, GembaTools, GembaKitchen, GembaSniperBot) or to
 become a validator earning daily GMB rewards (themselves spendable on those services). This
 sale is **non-commercial, made solely for the benefit of society** — a fixed-rate utility
@@ -180,7 +180,7 @@ from the testnet *drip* faucet; the former liquidity reserve is the **Contingenc
 > **The chain is decentralized and openly distributable from day 1** — the reserves are *public,
 > non-voting, and held in readiness to be distributed, not hoarded*, and GMB reaches anyone via
 > **OPEN channels seeded by the founder's OWN 5% on day 1 (the 30M Public Reserve is untouched):**
-> - **Public faucet (100k)** — the tested `GembaFaucet`; anyone claims a little, permissionlessly.
+> - **Public faucet (100k)** — the tested `GembaFaucet`; **0.1 GMB/day per account**, permissionless — if it runs low the founder tops it up (or it is refilled from the Public Reserve).
 > - **Public on-ramp sale (160k)** — `GembaOnRamp`; anyone buys GMB to USE Gemba dApps at a 20%
 >   discount or to become a validator (non-commercial, for society — §6/§16.1).
 > - **Validators (~40k)** — the 4 genesis validators' self-bond; entry is permissionless for all.
@@ -562,7 +562,7 @@ the box.
   stablecoin→GMB sale, `nonReentrant` + SafeERC20, 8 Foundry tests; built/tested on
   devnet (demo swaps 50 stablecoin → 500 GMB).* **Mainnet (decision 2026-06-29):
   `publicSaleEnabled` is set TRUE — a PUBLIC on-ramp sale, seeded with 160k GMB from the
-  founder's 5% on day 1.** It sells GMB at a fixed rate to anyone **to USE**: Gemba dApp
+  founder's 5% on day 1.** It sells GMB **via GembaPay at a fixed 1 GMB = 1 EUR** to anyone **to USE**: Gemba dApp
   services at a 20% discount (GembaPay, GembaEscrow, GembaWin, GembaTools, GembaKitchen,
   GembaSniperBot) or to become a validator earning daily GMB rewards. **Non-commercial,
   made solely for the benefit of society** — not a market/liquidity/speculative offering

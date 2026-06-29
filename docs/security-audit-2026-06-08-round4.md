@@ -71,7 +71,7 @@ There were **zero Critical** findings. The single HIGH is a credential-rotation 
 
 ---
 
-### L-3 — Faucet cooldown bypassable: `tryAcquire()` return discarded + TOCTOU across an `await`
+### L-3 — PublicReserve cooldown bypassable: `tryAcquire()` return discarded + TOCTOU across an `await`
 
 - **Severity:** Low (initially Medium)
 - **Component:** Backend services (testnet-faucet)
