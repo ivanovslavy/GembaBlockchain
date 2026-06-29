@@ -495,8 +495,7 @@ the box.
 > **`rpc2`/`rpc3.gembascan.io`** as fallbacks. These run **ON the Contabo validator servers**
 > (`rpc1`→**.83**, `rpc2`→**.84**, `rpc3`→**.82**), reverse-proxied behind Cloudflare.
 > **The RPC is NOT on the `.162` host** — `.162` serves only the websites/dApps (gembachain.io,
-> swap, gembapay, addresses, …) and runs **no chain node**. The archive node (`.148.137`,
-> Blockscout/GembaScan) is **explorer-only and de-advertised**. The RPC domain is **`*.gembascan.io`**
+> swap, gembapay, addresses, …) and runs **no chain node**. The archive node (`.148.137`) is **archive-only**; **GembaScan/Blockscout was MOVED to its own box `213.136.85.32`** (Contabo VPS 20 NVMe) on 2026-06-29, reaching the archive over a private autossh tunnel — see `docs/public-rpc-topology.md` / `docs/SERVER-TOPOLOGY.md`. The RPC domain is **`*.gembascan.io`**
 > — **`rpc.gembachain.io` is not a valid host; do not use it.** Mainnet follows the same model
 > (RPC on beefier validators, never on the archive/explorer host). See `docs/public-rpc-topology.md`.
 
@@ -511,7 +510,10 @@ the box.
   integration; self-hosted ⇒ you control rate limits.
 - Optional **Cosmos-side explorer** (e.g. ping.pub) for staking/governance/validator
   views, since those live in Cosmos modules, not the EVM.
-- **Later phase** — stand up chain + contracts first.
+- **Live (Phase 7 done).** GembaScan runs on a **dedicated box** — testnet: **`213.136.85.32`**
+  (Contabo VPS 20 NVMe, since 2026-06-29), reading a separate archive node over a private tunnel;
+  **never co-located with a validator or the archive's heavy serving load** (§11,
+  `docs/public-rpc-topology.md`, `docs/SERVER-TOPOLOGY.md`).
 
 ---
 
@@ -599,6 +601,13 @@ the box.
   (rate-limited drip of test GMB, verified live), and `docs/runbooks/testnet-deploy.md`
   + `testnet-launch-checklist.md` for the 5 geo-separated Hetzner validators. Same
   binary/economics as mainnet; run for weeks before planning the public launch.
+  **Testnet → mainnet transition (DECIDED 2026-06-29):** the public testnet is **not** kept running
+  alongside mainnet. When mainnet is prepared, `gemba-testnet-1` is **stopped and its servers
+  (validators + archive `.137` + the dedicated explorer box `213.136.85.32`) are reused for `gemba-1`**
+  — no separate fleet is bought. Ongoing upgrade testing thereafter runs **locally on the `.100`
+  (jellyfin) box as an on-demand 4-validator testnet**, spun up from the genesis generators only to
+  rehearse a binary/consensus upgrade before it touches the value-bearing mainnet, then torn down.
+  Details: `docs/public-rpc-topology.md`, `docs/SERVER-TOPOLOGY.md`.
 
 ---
 

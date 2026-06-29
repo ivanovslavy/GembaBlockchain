@@ -11,6 +11,26 @@ overloaded it (the stress-test lesson). They were **migrated to a dedicated Cont
 to `46.225.1.162` (gembait box). Explorer reads **locally** from its co-located archive
 (`host.docker.internal:8545`), no external API calls.
 
+## Update 2026-06-29 — GembaScan (explorer) moved to its OWN NVMe box
+
+Blockscout was **split off `.137` onto a dedicated box** to end the CPU/RAM contention that made the
+indexer lag (on the 6c/12GB `.137` the gembad archive + Elixir indexer + Postgres starved each other —
+measured 9.6/12GB RAM used, load ~4.5; disk only 12–33% busy ⇒ the bottleneck was CPU+RAM, not disk).
+
+- **New explorer box: `213.136.85.32`** — Contabo **Cloud VPS 20 NVMe** (6 vCPU / 12GB / 100GB,
+  "Hub Europe", Ubuntu 24.04, key-only SSH, ufw 443-from-Cloudflare-only). Runs the `gembascan`
+  Blockscout stack **only** (backend 9.0.2 / frontend v2.3.0 / postgres 16 / redis 7 / verifier 1.9.0).
+- **`.137` becomes archive-only** — keeps the `pruning=nothing` gembad archive; no Blockscout on it anymore.
+- **Archive RPC link:** the new box reaches `.137`'s archive RPC over a hardened **autossh tunnel**
+  (`archive-rpc-tunnel.service`): `0.0.0.0:8545+8546` on the new box → `.137` `127.0.0.1:8545/8546`,
+  via a dedicated key restricted on `.137` with `restrict,permitopen="127.0.0.1:8545",permitopen="127.0.0.1:8546"`.
+  The archive RPC stays **private, never public** (hard rule). 1.16ms between the boxes ⇒ indexing isn't slowed.
+- **Procedure:** [`runbooks/explorer-migration.md`](runbooks/explorer-migration.md).
+- **Cutover:** the public hostnames (`testnet.gembascan.io`, `gembascan.io`) flip to the new box in
+  Cloudflare once it finishes re-indexing. Because these records are **Cloudflare-proxied (orange)**,
+  switching the origin IP propagates at the CF edge in **seconds — no DNS TTL change needed**. `.137`
+  stays up for instant rollback; the table below flips on cutover.
+
 ## Public endpoints (EVM JSON-RPC, chainId **821207**)
 **Primary = `rpc1`; fallbacks `rpc2`, `rpc3`.** As of **2026-06-25** the archive node is **no longer
 a public wallet RPC** — it serves the explorer only. The old `testnet.gembascan.io/rpc` was overloaded
@@ -72,6 +92,15 @@ locked down:
 Runs gembad via **Docker** with `--json-rpc.enable=true --json-rpc.address 0.0.0.0:8545` baked
 into its systemd `ExecStart` → RPC is **LAN-exposed** (pre-existing; app.toml is ignored for it).
 Not part of the public set. Behind home NAT (not internet-reachable). Fine as a personal/LAN node.
+Today it also runs **testnet val3** (Docker `gembad-node2`).
+
+**Future strategic role (DECIDED 2026-06-29):** after mainnet launch, `.100` becomes the **on-demand
+testnet host**. The always-on public `gemba-testnet-1` is **retired when mainnet is prepared** (its
+Contabo servers are reused for mainnet — see "Testnet → mainnet transition" below). Thereafter a small
+**4-validator testnet** is spun up **locally on `.100`** (i3-13100 / 15GB / real NVMe — benchmarks
+better on disk than the Contabo VPSs) **only to rehearse a binary/consensus upgrade before it touches
+the value-bearing mainnet**, then torn down. Recreate it from the genesis generators on demand. Never
+test an upgrade directly on mainnet.
 
 ## Archive on a home/residential box? — No
 Technically a node catches up after **short** outages (block-sync from peers); but for an
@@ -141,3 +170,18 @@ Other notes:
 - The mainnet archive will be **heavier** (real traffic) → size disk/RAM bigger.
 - One well-resourced box can co-host mainnet + testnet explorer+archive (separate processes/ports/
   data-dirs); testnet can be downsized after mainnet launch.
+
+## Testnet → mainnet transition (DECIDED 2026-06-29)
+
+**The public testnet is NOT kept running in parallel with mainnet.** When mainnet is prepared:
+1. **`gemba-testnet-1` is stopped** and its **Contabo servers are reused for mainnet** — validators
+   `.82/.83/.84`, archive `.137`, and the dedicated explorer box `213.136.85.32` are cleaned and
+   re-provisioned for `gemba-1` (EVM `821206`). No separate fleet is bought.
+2. **Ongoing testing thereafter is local:** a **4-validator testnet on the home box `.100`** (jellyfin),
+   spun up **on demand** from the genesis generators **only to rehearse a binary/consensus upgrade
+   before applying it to the value-bearing mainnet**, then torn down. (For a single non-consensus
+   upgrade a 1-validator devnet suffices; use 4 to exercise BFT/coordination.)
+
+Rationale: at launch there are ~no users and ~no GMB value, so paying to keep a full parallel public
+testnet is waste; the rule "never test an upgrade on mainnet first" is satisfied by the cheap on-demand
+local testnet. Mirrored in `docs/SERVER-TOPOLOGY.md` and `CLAUDE.md §13`.

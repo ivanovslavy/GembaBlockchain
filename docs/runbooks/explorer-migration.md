@@ -6,6 +6,13 @@ CPU/RAM. This is the testnet rehearsal of the mainnet split (see
 [`public-rpc-topology.md`](../public-rpc-topology.md) → "Mainnet hardware plan"): one box runs
 the **archive node only**, the other runs **Blockscout only**.
 
+> **EXECUTED on testnet 2026-06-29.** New explorer box: **`213.136.85.32`** (Contabo Cloud VPS 20
+> NVMe, Ubuntu 24.04). Phases 1–3 done: base + ufw (443 CF-only) + Docker, key-only SSH, `gembascan`
+> config copied, **autossh tunnel** `archive-rpc-tunnel.service` to `.137` archive (ports 8545+8546),
+> Blockscout up and re-indexing from genesis via the tunnel. **Pending:** finish catch-up → flip the
+> Cloudflare origin (`testnet.gembascan.io`/`gembascan.io` → the new box; records are proxied, so the
+> flip is instant — **no TTL change needed**) → after 24–48 h stable, stop Blockscout on `.137`. Inventory: `docs/SERVER-TOPOLOGY.md`.
+
 > **Why this is needed.** On `.137` (6c/12GB) the stack measured **9.6GB/12GB RAM used (only
 > 2.1GB free)** and load ~4.5 — `gembad` (5.4GB) and Blockscout (beam.smp + Postgres + verifier
 > + frontend + redis ≈ 4GB) starve each other. The archive's disk was only 12–33% busy, so the

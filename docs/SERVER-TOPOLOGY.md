@@ -17,8 +17,8 @@ jellyfin (.100) and the archive (.137) have **no** public RPC.
 ## Archive + explorer
 | Role | IP | Home/Dir | Service | Notes |
 |---|---|---|---|---|
-| Archive (pruning=nothing) | 13.140.148.137 | /root/.gembad-archive | gembad-archive.service | EVM JSON-RPC :8545 (local), feeds the explorer. |
-| Explorer (Blockscout "gembascan") | 13.140.148.137 | /root/gembascan | docker compose | scan via gembascan.io; targets the local archive :8545. |
+| Archive (pruning=nothing) | 13.140.148.137 | /root/.gembad-archive | gembad-archive.service | EVM JSON-RPC :8545 (local). Feeds the explorer; **explorer moved OFF this box 2026-06-29 → now archive-only**. |
+| Explorer (Blockscout "gembascan") | **213.136.85.32** (Cloud VPS 20 NVMe, Hub Europe) | /root/gembascan | docker compose | **Moved off .137 on 2026-06-29** to end CPU/RAM contention. Reaches the .137 archive `:8545/:8546` over a hardened **autossh tunnel** (`archive-rpc-tunnel.service`); Blockscout 9.0.2 / frontend v2.3.0. DNS cutover (`testnet.gembascan.io`/`gembascan.io` → this box) pending re-index; records are CF-proxied so the origin flip is instant (no TTL change). See `docs/public-rpc-topology.md`. |
 | Dev archive | local dev box (192.168.100.x) | ~/.gembad-testnet-archive | gembad-archive.service | RPC :8565 — used for contract deploys (allow-unprotected-txs=true). |
 
 ## dApp production server
@@ -28,9 +28,20 @@ jellyfin (.100) and the archive (.137) have **no** public RPC.
 
 ## Auth
 - Validators (.82/.83/.84), archive (.137): `root` via SSH key `~/.ssh/gemba_claude`.
+- Explorer (213.136.85.32): `slavy` (sudo NOPASSWD) via keys `~/.ssh/gemba_claude` + `~/.ssh/id_rsa`; **root login + password auth disabled (key-only)**. The tunnel to .137 uses a dedicated `~/.ssh/tunnel_to_137` key (restricted to port-forward :8545/:8546 only).
 - jellyfin: `slavy` via key (LAN 192.168.100.100).
 - dApp server .162: `slavy` / password (in wallet-backup, gitignored), sudo.
 - Private keys: `wallet-backup/PRIVATE-KEYS.md` (gitignored) + `scratchpad/founder.pk`. Never committed.
 
 ## Contracts (CREATE2, 2026-06-27)
 See `contracts/REGENESIS-ADDRESSES-2026-06-27.md`.
+
+## Testnet → mainnet transition (DECIDED 2026-06-29)
+
+The public testnet is **not** run in parallel with mainnet. When mainnet (`gemba-1`, EVM `821206`) is
+prepared: `gemba-testnet-1` is **stopped** and its boxes (validators `.82/.83/.84`, archive `.137`,
+explorer `213.136.85.32`) are **cleaned and reused for mainnet** — no new fleet is bought. Ongoing
+upgrade testing thereafter runs **locally on jellyfin `.100`** as an **on-demand 4-validator testnet**,
+spun up from the genesis generators only to rehearse a binary/consensus upgrade before it touches the
+value-bearing mainnet, then torn down. (`.100` already runs testnet val3 today.) Full rationale:
+`docs/public-rpc-topology.md` and `CLAUDE.md §13`.

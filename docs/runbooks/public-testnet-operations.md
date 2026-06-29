@@ -6,6 +6,12 @@
 > and exact keys are **not** here (gitignored `.env` / local secret store).
 > Status snapshot: [`../testnet-status.md`](../testnet-status.md).
 
+> **UPDATE 2026-06-29 — the §1 table below is partly historical.** Archive + explorer no longer live on
+> a validator: the **archive** runs on `.137` and **GembaScan/Blockscout moved to its OWN box
+> `213.136.85.32`** (Contabo VPS 20 NVMe) reaching the archive over a private autossh tunnel — never a
+> public RPC. Current canonical inventory: **`docs/SERVER-TOPOLOGY.md`**; explorer move procedure:
+> `docs/runbooks/explorer-migration.md`.
+
 ## 1. Current topology (4 validators)
 
 | moniker | host | role |

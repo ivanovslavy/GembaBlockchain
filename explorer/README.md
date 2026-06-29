@@ -8,6 +8,11 @@ Self-hosted block explorers for GembaBlockchain (Phase 7).
 - **ping.pub** (optional) for the **Cosmos side**: staking / governance / validator
   views (those live in Cosmos modules, not the EVM).
 
+> **Production note (2026-06-29):** on the live testnet the Blockscout stack runs on a **dedicated box**
+> (`213.136.85.32`, Contabo VPS 20 NVMe) **separate from the archive node** (`.137`), reaching the
+> archive's RPC over a private **autossh tunnel** (`host.docker.internal:8545/8546`) — never co-located,
+> never a public RPC. Inventory: `docs/SERVER-TOPOLOGY.md`; procedure: `docs/runbooks/explorer-migration.md`.
+
 ## CRITICAL: the explorer points at an ARCHIVE node, not a validator
 
 Blockscout indexes **all** history — every block, every historical account state,
