@@ -58,11 +58,17 @@ if [ "$(echo "$reinvest < $MIN_REINVEST" | bc)" = "1" ]; then log "reinvest $rei
 # Submit the delegate, then VERIFY it actually executed on-chain — not just that it was
 # submitted. A delegate can pass CheckTx (get a hash) but REVERT in the block (e.g. the §6
 # 50-GMB/day bond-increase cap), and the bare CLI exit would mislead us into logging "OK".
-if ! out=$($GEMBAD tx staking delegate "$valoper" "${reinvest}${DENOM}" --from "$KEY" $COMMON $TX 2>&1); then
-  log "delegate submit error: $(printf '%s' "$out" | tail -c 200)"; exit 1
+# Capture stdout (the JSON result) and stderr (gas-estimate noise) SEPARATELY — mixing them with
+# 2>&1 made the JSON unparseable, so txhash came back empty and the verification fell to "unverified".
+_err=$(mktemp)
+if ! out=$($GEMBAD tx staking delegate "$valoper" "${reinvest}${DENOM}" --from "$KEY" $COMMON $TX 2>"$_err"); then
+  log "delegate submit error: $(tail -c 200 "$_err")"; rm -f "$_err"; exit 1
 fi
+rm -f "$_err"
 submit_code=$(printf '%s' "$out" | jq -r '.code // 0' 2>/dev/null || echo 0)
-txhash=$(printf '%s' "$out" | jq -r '.txhash // empty' 2>/dev/null || echo "")
+txhash=$(printf '%s' "$out" | jq -r '.txhash // empty' 2>/dev/null || true)
+# fallback: if the CLI still prepended any noise, grep the 64-hex tx hash out of the raw output
+if [ -z "$txhash" ]; then txhash=$(printf '%s' "$out" | grep -oiE '[0-9A-F]{64}' | head -1 || true); fi
 if [ "$submit_code" != "0" ]; then
   log "delegate rejected at submit code=$submit_code raw=$(printf '%s' "$out" | jq -r '.raw_log // empty' 2>/dev/null | head -c 160)"; exit 1
 fi
