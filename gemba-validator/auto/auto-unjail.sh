@@ -34,7 +34,14 @@ jailed=$($GEMBAD query staking validator "$valoper" --node "$NODE" -o json 2>/de
          | jq -r '(.validator.jailed // .jailed) // "unknown"')
 [ "$jailed" = "true" ] || exit 0  # not jailed → nothing to do
 
-catching=$(curl -s --max-time 5 "$RPC/status" | jq -r '.result.sync_info.catching_up // "true"')
+# Query catching-up through $GEMBAD (host `gembad` OR `docker exec <ctr> gembad`), NOT a host-side
+# curl: when the node's RPC is only reachable inside a container, `curl localhost:26657` fails.
+# Also read the boolean DIRECTLY — jq's `//` treats boolean false as empty, so the old
+# `.catching_up // "true"` wrongly yielded "true" even when caught up, so it never unjailed.
+# Only a literal "false" (caught up) proceeds; anything else (catching up / unreachable) stays
+# "true" so we never unjail a node that cannot sign.
+catching=$($GEMBAD status 2>/dev/null | jq -r '(.sync_info // .SyncInfo).catching_up' 2>/dev/null)
+[ "$catching" = "false" ] || catching="true"
 if [ "$catching" = "true" ]; then log "jailed but still catching up — NOT unjailing yet"; exit 0; fi
 
 if $GEMBAD tx slashing unjail --from "$KEY" $COMMON $TX >/dev/null 2>&1; then
