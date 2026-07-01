@@ -52,13 +52,17 @@ test` proves every op family is revert-safe (23 passed / 0 failed).
 
 ## Funding & cleanup
 
-- Funded **100 worker wallets** (top-up to a 15 GMB target each ⇒ **≈1,500 GMB**), paid by the
-  **testnet founder** key — valueless test GMB.
-- After the run the pool holds **≈1,270 GMB** (avg 12.7/wallet); the ~230 GMB delta = the ~210 GMB
-  of gas + test GMB parked inside wrap/DEX/liquidity contracts by the workload.
-- **Leftover NOT yet returned to the founder** — the `scripts/drain-to-founder.mjs` sweep (worker
-  GMB → founder) has not been run for this run. (Once run, the ~1,270 GMB test GMB returns to the
-  founder key.)
+- Funded **100 worker wallets** (top-up to a 15 GMB target each ⇒ **≈1,500 GMB**) plus **≈110 GMB**
+  seeded as native DEX liquidity, paid by the **testnet founder** key — all valueless test GMB.
+- **Cleanup (done, and now automated):**
+  - `scripts/drain-to-founder.mjs` swept worker native GMB back → **1,270.02 GMB returned**.
+  - `scripts/reclaim-locked.mjs` (new) unwound the DEX pool liquidity + WGMB → **≈115.8 GMB returned**
+    (`nativePool` 110.12 → 34 wei, `wgmb` 5.68 → 32 wei; only **66 wei** unrecoverable dust — the
+    pool's `MINIMUM_LIQUIDITY`, by design). The public faucet was left untouched.
+  - **≈1,386 GMB total returned to the founder;** the whole 24 h run's net cost is just the **~210 GMB
+    of gas fees** (valueless test GMB).
+- **Automated going forward:** `scripts/run.js` now auto-runs `reclaim-locked` → `drain-to-founder`
+  after every run (env `AUTO_CLEANUP`, default on), so future runs self-clean.
 
 ## Verdict
 
