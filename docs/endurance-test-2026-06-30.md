@@ -1,0 +1,61 @@
+# GembaBlockchain — 24-hour endurance / soak test (2026-06-29 → 06-30)
+
+First full **24-hour endurance (soak)** run against the live public testnet
+(`gemba-testnet-1`, EVM chainId 821207). Where the [stress test](./stress-test-2026-06-07.md)
+found the *throughput ceiling*, this run tests **sustained reliability**: diverse EVM traffic,
+continuously, for a full day.
+
+Harness: [`endurance/`](../endurance) (Node + ethers, 16 deployed contracts, ~70 realistic
+operation types, JSONL logging + summary). Runner: the operator box (`nft-ticket-server`,
+84.242.164.248) against the public RPC. 100 wallets, 20 s settle window.
+Run `ENDURANCE-2026-06-29T19-26-14-352Z`, finished `2026-06-30T19:31:18Z` (**24 h 5 m**).
+
+## Headline result — flawless
+
+- **346,322 transactions submitted → 346,322 mined = 100.0 %** over 24 hours.
+- **0 failed submits · 0 reverted · 0 timed out · 0 pending at the end** — clean finish, not a single stuck tx.
+- Hard errors: **none** (`errors: {}`). Rebroadcasts: 0.
+- **Inclusion latency (submit → mined): p50 2.38 s · p95 3.68 s · p99 4.09 s** — inside a single ~5 s block, all day long.
+- Only **143 soft/transient events** (31 nonce races + 112 coalesce), every one auto-recovered (mined == submitted; `softErrors` only).
+- Soak pacing held ~6 tx/s mined — this run measures **reliability under continuous load**, not peak TPS (the ceiling ≈112 TPS is in the stress-test doc).
+
+## Verdict
+
+The chain carried continuous, diverse EVM load for a full day with **zero lost or failed
+transactions** and sub-block-time inclusion latency throughout — no latency creep, no
+consensus stalls, no mempool build-up, no stuck transactions at the end. This clears the
+**sustained-load reliability** bar for mainnet.
+
+> Public launch is still gated by the remaining `CLAUDE.md` §16 hard blockers (upstream audit +
+> security-budget tail). This test is **one readiness milestone met**, not the whole gate.
+
+Raw logs are large and not committed (`endurance/logs/` is git-ignored) — they live on the
+runner at `endurance/logs/ENDURANCE-2026-06-29T19-26-14-352Z/` (`tx.jsonl` 49 MB,
+`blocks.jsonl`, `metrics.jsonl`). The machine-readable summary:
+
+```json
+{
+  "runId": "ENDURANCE-2026-06-29T19-26-14-352Z",
+  "profile": "ENDURANCE",
+  "finishedAt": "2026-06-30T19:31:18.800Z",
+  "wallets": 100,
+  "settleMs": 20000,
+  "submitted": 346322,
+  "mined": 346322,
+  "failedSubmit": 0,
+  "softSubmit": 143,
+  "reverted": 0,
+  "timedOut": 0,
+  "inflight": 0,
+  "submitTps": 3.2,
+  "minedTps": 6,
+  "p50": 2379,
+  "p95": 3677,
+  "p99": 4093,
+  "errors": {},
+  "softErrors": { "nonce": 31, "coalesce": 112 },
+  "minedPct": 100,
+  "rebroadcasts": 0,
+  "pendingAtEnd": 0
+}
+```

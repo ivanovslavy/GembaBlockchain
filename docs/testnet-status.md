@@ -58,6 +58,20 @@ The test chain is producing blocks and the full EVM surface is live:
   the transfer on the home page, the transactions list, and the transaction
   detail page.
 
+## Load & endurance
+
+Two load campaigns against the live testnet:
+
+- **Peak throughput** — [stress test, 2026-06-07](./stress-test-2026-06-07.md): sustained
+  **≈112 TPS mined** (max 764 EVM tx/block), blocks stable ~5.4 s, not gas-limited.
+- **24-hour endurance / soak** — [2026-06-30](./endurance-test-2026-06-30.md): **346,322
+  transactions, 100.0 % mined, 0 failed · 0 reverted · 0 timed out** over a full day;
+  inclusion latency p50 2.4 s · p99 4.1 s (under one block); clean finish, no stuck tx.
+
+→ The chain is **proven reliable under sustained real-world load** — a mainnet-readiness
+milestone met. Public launch remains gated by the `CLAUDE.md` §16 hard blockers (upstream
+audit + security-budget tail).
+
 ## First transaction
 
 The first native GMB transfer on the GembaBlockchain test network, as indexed and
