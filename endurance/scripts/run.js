@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { Interface, Contract, Wallet, getCreateAddress, getCreate2Address, toBeHex, zeroPadValue } from "ethers";
 import { readFileSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { makeProviders } from "../lib/provider.js";
@@ -249,4 +250,19 @@ console.log(`\n✓ done. submitted ${final.submitted} | mined ${final.mined} (${
 console.log(`  byType:`, JSON.stringify(metrics.byType));
 if (Object.keys(final.errors).length) console.log(`  submit errors:`, JSON.stringify(final.errors));
 console.log(`  logs: ${logger.dir}`);
+
+// ── Auto-cleanup (default ON; set AUTO_CLEANUP=false to disable) ──────────────
+// Return funds after the run, in ORDER: reclaim-locked THEN drain-to-founder.
+// reclaim FIRST so LP/WGMB positions unwind while the workers still hold gas and
+// the founder can pay for top-ups; drain SECOND to sweep every worker's native.
+// Spawned as the standalone scripts so they stay independently runnable too.
+if (String(env.AUTO_CLEANUP ?? "true").toLowerCase() !== "false") {
+  for (const s of ["reclaim-locked.mjs", "drain-to-founder.mjs"]) {
+    console.log(`\n▶ auto-cleanup: node scripts/${s}`);
+    const r = spawnSync("node", [join(root, "scripts", s)], { stdio: "inherit", cwd: root, env: process.env });
+    if (r.status !== 0) console.log(`  ⚠ ${s} exited with status ${r.status} (continuing)`);
+  }
+} else {
+  console.log("\n  AUTO_CLEANUP=false → skipping reclaim-locked + drain-to-founder");
+}
 process.exit(0);
