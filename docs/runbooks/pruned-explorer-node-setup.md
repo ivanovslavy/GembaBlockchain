@@ -172,6 +172,64 @@ The real test: repoint while the 5× (or any high-load) run is live and watch th
 pruned node holds near the tip (explorer lag stays ~minutes, not growing), it's validated —
 worst case handled.
 
+## Option B — transparent archive fallback (optional)
+
+Gives you **pruned speed + archive completeness**, transparently: Blockscout points at a tiny
+RPC router; the router sends everything to the **pruned** node and only retries on the **`.137`
+archive** when the pruned node reports it doesn't have that historical state. The rare deep
+queries hit the archive; everything else stays on the pruned node. The archive's tip-lag is
+irrelevant here (deep queries are for OLD blocks the archive already has).
+
+Blockscout won't do this alone — you run a ~50-line failover proxy in front of both upstreams
+(on the explorer box; both nodes reached over the existing SSH-tunnel pattern).
+
+`gemba-rpc-fallback.js` (no deps beyond node's http):
+```js
+// Primary = pruned (real-time). Fallback = .137 archive, used ONLY on state-miss errors.
+const http = require('http');
+const PRUNED  = process.env.PRUNED_RPC  || 'http://127.0.0.1:8545'; // pruned node (tunnel)
+const ARCHIVE = process.env.ARCHIVE_RPC || 'http://127.0.0.1:8547'; // .137 archive (tunnel)
+const PORT    = Number(process.env.PORT || 8600);
+// substrings meaning "pruned node lacks that historical state" — VERIFY against gembad's
+// actual error text and adjust:
+const STATE_MISS = ['missing trie node','required historical state','state not available',
+                    'header not found','not available on pruned'];
+const forward = (url, body) => new Promise((res, rej) => {
+  const u = new URL(url);
+  const r = http.request({hostname:u.hostname, port:u.port, path:u.pathname||'/', method:'POST',
+    headers:{'content-type':'application/json','content-length':Buffer.byteLength(body)}},
+    x => { let d=''; x.on('data',c=>d+=c); x.on('end',()=>res(d)); });
+  r.on('error', rej); r.write(body); r.end();
+});
+const needsArchive = t => { const s=t.toLowerCase(); return STATE_MISS.some(m=>s.includes(m)); };
+http.createServer((creq, cres) => {
+  let body=''; creq.on('data',c=>body+=c);
+  creq.on('end', async () => {
+    try {
+      let out = await forward(PRUNED, body);
+      if (needsArchive(out)) out = await forward(ARCHIVE, body); // fallback only on state-miss
+      cres.writeHead(200,{'content-type':'application/json'}); cres.end(out);
+    } catch (e) { cres.writeHead(502); cres.end(JSON.stringify({error:String(e)})); }
+  });
+}).listen(PORT, '127.0.0.1', () => console.log(`rpc-fallback :${PORT} pruned=${PRUNED} archive=${ARCHIVE}`));
+```
+
+Wire-up:
+- Tunnel the pruned node to `127.0.0.1:8545` and the `.137` archive to `127.0.0.1:8547` on the
+  explorer box.
+- Run the proxy under systemd (`node gemba-rpc-fallback.js`), listening on `127.0.0.1:8600`.
+- Point Blockscout `ETHEREUM_JSONRPC_HTTP_URL` + `ETHEREUM_JSONRPC_TRACE_URL` at
+  `http://host.docker.internal:8600`; recreate backend.
+
+Caveats:
+- **Verify `STATE_MISS`** against gembad's real error strings (`curl` an `eth_call` at a very
+  old block against the pruned node and copy the error text) — the fallback only fires on a match.
+- **Batch requests** (JSON-RPC array): this skeleton resends the *whole* batch to the archive if
+  any part misses — fine at low volume; split per-item if it ever matters.
+- **WebSocket** (`:8546`) isn't proxied here — point WS straight at the pruned node.
+- Adds one small component to maintain. On testnet, plain pruned + manual `.137` for the rare
+  deep lookup is also fine; Option B shines on **mainnet**, where deep-history must be seamless.
+
 ## Rollback
 Repoint the tunnel + `ETHEREUM_JSONRPC_HTTP_URL` back to `.137`, recreate backend. The archive
 was never stopped, so this is instant.
