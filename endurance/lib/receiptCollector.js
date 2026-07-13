@@ -75,10 +75,37 @@ export class ReceiptCollector {
           continue;
         }
         const ok = Number(r.status) === 1;
-        if (!ok) { this.metrics.onRevert(); this.logger.write("errors", { kind: "revert", hash: job.hash, type: job.type, block: job.block }); }
+        if (!ok) {
+          this.metrics.onRevert();
+          const reason = await this._revertReason(job.hash, job.block); // best-effort; null if it can't be recovered
+          this.logger.write("errors", { kind: "revert", hash: job.hash, type: job.type, block: job.block, reason: reason || "unknown", gasUsed: r.gasUsed?.toString() });
+        }
         this.onResolve?.(job.hash, ok); // CONFIRMATION-GATE: apply producer effect ONLY on success
       } catch {}
     }
+  }
+  // Best-effort revert-reason recovery: replay the mined tx via eth_call against the
+  // state before its block and decode the revert. A tx that does NOT revert on replay
+  // was a state/timing race (e.g. removeLiquidity on an already-drained pool) — reported
+  // as "state-race" rather than a deterministic contract failure. Never throws.
+  async _revertReason(hash, block) {
+    try {
+      let tx = null;
+      for (const p of this.providers.all) { try { tx = await p.getTransaction(hash); if (tx) break; } catch {} }
+      if (!tx) return null;
+      const req = { to: tx.to, from: tx.from, data: tx.data, value: tx.value, gasLimit: tx.gasLimit };
+      const at = typeof block === "number" && block > 0 ? block - 1 : "latest"; // state the tx executed against
+      for (const p of this.providers.all) {
+        try {
+          await p.call({ ...req, blockTag: at });
+          return "state-race"; // replayed clean → not a deterministic revert
+        } catch (e) {
+          const msg = e?.reason || e?.revert?.name || e?.shortMessage || e?.info?.error?.message || e?.code || "unknown";
+          return String(msg).replace(/\s+/g, " ").trim().slice(0, 140);
+        }
+      }
+    } catch {}
+    return null;
   }
   async _sweepLoop() {
     while (this.running) {
