@@ -22,20 +22,29 @@ type FormulaParams struct {
 	CapPerDay    math.Int       `json:"cap_per_day"`    // agmb — maximum daily reward (100 GMB)
 	BlocksPerDay uint64         `json:"blocks_per_day"` // ~28,800 at ~3s blocks (for per-block proration)
 	RewardDenom  string         `json:"reward_denom"`   // agmb
+	// MaxTotalPerDay is the AGGREGATE daily budget across ALL validators (agmb; 0 = no aggregate
+	// cap). The per-validator cap alone lets total drain scale with validator count (N×cap/day),
+	// so 150 validators at the 100 GMB cap would drain the 20M reserve in ~3.6y instead of the
+	// intended ~10y (SEC audit M4). This ceiling pins the runway: below the budget every validator
+	// gets its full formula reward (no change at small N); once the sum would exceed the budget all
+	// allocations scale down pro-rata so the aggregate never exceeds it. Default ≈ 2M GMB/year.
+	MaxTotalPerDay math.Int `json:"max_total_per_day"`
 }
 
 const oneGMB = 1_000_000_000_000_000_000
 
-// DefaultFormulaParams: 1%/day, floor 10 GMB, cap 100 GMB, 28,800 blocks/day (~3s blocks).
+// DefaultFormulaParams: 1%/day, floor 10 GMB, cap 100 GMB, 28,800 blocks/day (~3s blocks),
+// aggregate budget 5,479 GMB/day (≈ 2,000,000 GMB/year = the ~10-year runway on the 20M reserve).
 func DefaultFormulaParams() FormulaParams {
 	g := math.NewIntFromUint64(oneGMB)
 	return FormulaParams{
-		Enabled:      true,
-		RatePerDay:   math.LegacyNewDecWithPrec(1, 2), // 0.01
-		FloorPerDay:  math.NewInt(10).Mul(g),
-		CapPerDay:    math.NewInt(100).Mul(g),
-		BlocksPerDay: 28_800,
-		RewardDenom:  "agmb",
+		Enabled:        true,
+		RatePerDay:     math.LegacyNewDecWithPrec(1, 2), // 0.01
+		FloorPerDay:    math.NewInt(10).Mul(g),
+		CapPerDay:      math.NewInt(100).Mul(g),
+		BlocksPerDay:   28_800,
+		RewardDenom:    "agmb",
+		MaxTotalPerDay: math.NewInt(5_479).Mul(g), // ≈ 2M GMB/year
 	}
 }
 
@@ -64,6 +73,16 @@ func (p FormulaParams) PerBlockReward(stake math.Int) math.Int {
 	return p.DailyReward(stake).Quo(math.NewIntFromUint64(p.BlocksPerDay))
 }
 
+// MaxTotalPerBlock is the AGGREGATE per-block budget ceiling across all validators (agmb), i.e.
+// MaxTotalPerDay prorated across BlocksPerDay. Zero/nil MaxTotalPerDay → zero (interpreted as "no
+// aggregate cap" by the streamer). Deterministic floor division (SEC audit M4).
+func (p FormulaParams) MaxTotalPerBlock() math.Int {
+	if p.MaxTotalPerDay.IsNil() || !p.MaxTotalPerDay.IsPositive() || p.BlocksPerDay == 0 {
+		return math.ZeroInt()
+	}
+	return p.MaxTotalPerDay.Quo(math.NewIntFromUint64(p.BlocksPerDay))
+}
+
 // Validate checks the formula params are well-formed.
 func (p FormulaParams) Validate() error {
 	if err := sdk.ValidateDenom(p.RewardDenom); err != nil {
@@ -83,6 +102,9 @@ func (p FormulaParams) Validate() error {
 	}
 	if p.BlocksPerDay == 0 {
 		return fmt.Errorf("blocks_per_day must be positive")
+	}
+	if p.MaxTotalPerDay.IsNil() || p.MaxTotalPerDay.IsNegative() {
+		return fmt.Errorf("max_total_per_day must be non-negative (0 = no aggregate cap)")
 	}
 	return nil
 }

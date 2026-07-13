@@ -55,11 +55,17 @@ func (k Keeper) StreamFormulaRewards(ctx sdk.Context) (math.Int, error) {
 		return math.ZeroInt(), nil
 	}
 
-	// Reserve nearly empty: scale each allocation down pro-rata so we never overspend.
-	if total.GT(reserve) {
+	// Cap the round to whichever binds first: the remaining reserve (never overspend), or the
+	// aggregate per-block budget (SEC audit M4 — pins the ~10-year runway regardless of validator
+	// count; below the budget nothing changes, above it every allocation scales down pro-rata).
+	capLimit := reserve
+	if budget := fp.MaxTotalPerBlock(); budget.IsPositive() && budget.LT(capLimit) {
+		capLimit = budget
+	}
+	if total.GT(capLimit) {
 		scaled := math.ZeroInt()
 		for i := range allocs {
-			allocs[i].amt = allocs[i].amt.Mul(reserve).Quo(total)
+			allocs[i].amt = allocs[i].amt.Mul(capLimit).Quo(total)
 			scaled = scaled.Add(allocs[i].amt)
 		}
 		total = scaled

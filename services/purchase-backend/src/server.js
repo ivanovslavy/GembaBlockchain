@@ -105,6 +105,14 @@ app.post('/api/purchase/webhook', express.raw({ type: '*/*', limit: '64kb' }), a
     if (!o) { console.warn('[webhook] unknown order', orderId); return res.json({ ok: true, unknown: true }); }
     if (o.status === 'fulfilled' || inflight.has(orderId)) return res.json({ ok: true, already: true }); // idempotent
 
+    // Defense-in-depth (SEC audit H2): the HMAC authenticates the body, but also cross-check the
+    // paid amount + currency against the stored order so a `payment.completed` for a different or
+    // partial amount can't dispense the full GMB. Lenient: only enforce fields the webhook carries.
+    const paidCcy = String(p.currency || body.currency || '').toUpperCase();
+    const paidAmt = Number(p.amount ?? body.amount);
+    if (paidCcy && paidCcy !== 'EUR') { console.warn('[webhook] currency mismatch', paidCcy, orderId); return res.status(400).json({ ok: false, error: 'currency_mismatch' }); }
+    if (Number.isFinite(paidAmt) && Math.abs(paidAmt - o.eur) > 0.01) { console.warn('[webhook] amount mismatch', paidAmt, o.eur, orderId); return res.status(400).json({ ok: false, error: 'amount_mismatch' }); }
+
     inflight.add(orderId);
     try {
       const hash = await dispenseGmb(orderId, o.evmAddress, o.gmbAmount);
@@ -124,6 +132,18 @@ app.get('/api/purchase/status/:orderId', (req, res) => {
   if (!o) return res.status(404).json({ ok: false });
   res.json({ ok: true, status: o.status, gmb: o.gmbAmount, evmAddress: o.evmAddress, txHash: o.txHash || null });
 });
+
+// Fail CLOSED on missing security config (SEC audit H2). An empty GEMBAPAY_WEBHOOK_SECRET makes
+// the webhook HMAC keyed on "" — anyone could forge `payment.completed` and mint GMB via dispense.
+// Likewise a missing dispenser signer/address means we cannot safely operate. Refuse to start.
+if (!cfg.whsec) {
+  console.error('FATAL: GEMBAPAY_WEBHOOK_SECRET is empty — refusing to start (webhook auth would be forgeable → arbitrary GMB dispense).');
+  process.exit(1);
+}
+if (!signer || !cfg.dispenser) {
+  console.error('FATAL: GEMBA_DISPENSER_OWNER_PK / GEMBA_DISPENSER_ADDRESS missing — refusing to start.');
+  process.exit(1);
+}
 
 app.listen(cfg.port, '127.0.0.1', () => {
   console.log(`purchase-backend on 127.0.0.1:${cfg.port} | dispenser=${cfg.dispenser} | price=${cfg.pricePerGmbEur} EUR/GMB | signer=${signer ? 'set' : 'MISSING'}`);
