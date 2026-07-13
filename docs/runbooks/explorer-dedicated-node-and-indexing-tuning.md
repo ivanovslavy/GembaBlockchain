@@ -3,6 +3,11 @@
 Status: **partially done (tuning applied as a stopgap) — dedicated pruned node is an open TODO.**
 Origin: 2026-07-13, during the 5× endurance run (~46 tx/block, ~20 TPS).
 
+> **Direction superseded (2026-07-13) — see `target-architecture.md`.** The chosen fix is to move
+> the archive to a Hetzner cax31 (real NVMe), not to add a pruned node. The **tuning changes in
+> this doc are still applied** to the current `.137` archive + `213.136.85.32` explorer and stay
+> in effect until that migration.
+
 ## TL;DR
 
 Under heavy load the GembaScan/Blockscout explorer **freezes / falls behind** because its

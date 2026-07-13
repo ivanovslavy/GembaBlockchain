@@ -1,5 +1,9 @@
 # Runbook — dedicated PRUNED node for the explorer
 
+> **SUPERSEDED (2026-07-13) — see `target-architecture.md`.** The final decision is a plain
+> archive + Blockscout **co-located on a Hetzner cax31** (real NVMe), which removes the need for
+> a pruned node, RPC router, or tunnel entirely. Kept for reference / as a fallback pattern.
+
 Goal: give GembaScan/Blockscout its **own** RPC node so its read load stops fighting the
 validators / the `.137` archive. Origin: 2026-07-13 — under the 5× endurance run the single
 Contabo archive `.137` (HDD-speed disk) couldn't both sync fat blocks and serve the explorer,
