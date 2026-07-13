@@ -93,13 +93,20 @@ app.ModuleManager.SetOrderBeginBlockers(
     // ... upstream begin-blockers ...
     feesplittypes.ModuleName,
     rewardstreamertypes.ModuleName,
-    distrtypes.ModuleName,
+    tailrewardtypes.ModuleName, // SEC audit L1: MUST be here (after rewardstreamer, before
+    distrtypes.ModuleName,      // distribution) — omitting it mis-routes the tail-reward stream.
     // ... rest ...
 )
 ```
 
-Add both module names to `SetOrderInitGenesis(...)` and `SetOrderEndBlockers(...)`
-(end-block order is irrelevant; neither has an EndBlocker).
+> SEC audit L1: this order is a load-bearing supply/reward-routing invariant (feesplit skims 40%
+> of the WHOLE fee_collector, so it must run before rewardstreamer/tailreward add the validator
+> reward and before distribution drains it). It is enforced only by this hand-written list, so the
+> app constructor SHOULD also assert it at startup and panic on a wrong order — see the mainnet
+> genesis/launch checklist. Earlier revisions of this snippet omitted `tailreward`; do not.
+
+Add all three module names to `SetOrderInitGenesis(...)` and `SetOrderEndBlockers(...)`
+(end-block order is irrelevant; none has an EndBlocker).
 
 ## 6. Genesis
 
