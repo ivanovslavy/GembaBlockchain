@@ -67,10 +67,27 @@ contract TwoTierGovernanceTest is Test {
         assertEq(gov.criticalSupermajorityNumerator(), CRIT_S);
     }
 
-    function test_reserveProposal_isStandard() public {
+    // SEC audit M3: a reserve DRAIN (release) is now Critical by selector, regardless of whether
+    // the reserve target was flagged — closing the gap where treasury exits passed at Standard.
+    function test_reserveRelease_isCritical() public {
         uint256 id = _propose(address(reserve),
-            abi.encodeCall(BaseReserve.release, (payable(makeAddr("g")), 1 ether)), "release (standard)");
-        assertFalse(gov.isCritical(id), "a plain reserve release is Standard tier");
+            abi.encodeCall(BaseReserve.release, (payable(makeAddr("g")), 1 ether)), "release (critical)");
+        assertTrue(gov.isCritical(id), "a reserve release must be Critical (treasury exit)");
+    }
+
+    // SEC audit M3: a UUPS upgrade of a reserve (which can install a fund-draining implementation)
+    // is Critical by selector regardless of target.
+    function test_reserveUpgrade_isCritical() public {
+        uint256 id = _propose(address(reserve),
+            abi.encodeWithSignature("upgradeToAndCall(address,bytes)", makeAddr("impl"), ""), "upgrade (critical)");
+        assertTrue(gov.isCritical(id), "a reserve UUPS upgrade must be Critical");
+    }
+
+    // A non-treasury, non-upgrade call to an unflagged target stays Standard (tier still discriminates).
+    function test_plainCall_isStandard() public {
+        uint256 id = _propose(address(reserve),
+            abi.encodeWithSignature("setPauser(address)", makeAddr("p")), "setPauser (standard)");
+        assertFalse(gov.isCritical(id), "an ordinary unflagged call is Standard tier");
     }
 
     function test_governorTargeting_isCritical() public {

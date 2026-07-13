@@ -41,6 +41,17 @@ contract GembaGovernor is
     /// @notice tier captured at propose time: true = Critical.
     mapping(uint256 => bool) public isCritical;
 
+    // SEC audit M3: function selectors that are ALWAYS Critical regardless of target. Prior to this,
+    // criticalTarget[] was never populated at deploy, so a proposal to DRAIN a reserve
+    // (release(...)) or UPGRADE a reserve to a fund-stealing implementation (upgradeToAndCall/
+    // upgradeTo) targeted the reserve proxy — neither the Governor nor the Timelock nor flagged —
+    // and passed at the Standard bar (40%/51%) instead of the Critical bar (51%/66%) the model
+    // promises for treasury & upgrades (CLAUDE.md §7). Classifying by selector closes this even if
+    // an operator forgets to flag a newly deployed reserve.
+    bytes4 private constant SEL_UPGRADE_TO_AND_CALL = 0x4f1ef286; // upgradeToAndCall(address,bytes)
+    bytes4 private constant SEL_UPGRADE_TO = 0x3659cfe6; // upgradeTo(address)
+    bytes4 private constant SEL_RELEASE = 0x0357371d; // release(address,uint256)
+
     event CriticalTargetSet(address indexed target, bool critical);
     event ProposalTier(uint256 indexed proposalId, bool critical);
 
@@ -97,10 +108,24 @@ contract GembaGovernor is
                 critical = true;
                 break;
             }
+            // SEC audit M3: treasury exit / UUPS upgrade selectors are Critical regardless of target.
+            bytes4 s = _selector(calldatas[i]);
+            if (s == SEL_UPGRADE_TO_AND_CALL || s == SEL_UPGRADE_TO || s == SEL_RELEASE) {
+                critical = true;
+                break;
+            }
         }
         isCritical[proposalId] = critical;
         emit ProposalTier(proposalId, critical);
         return proposalId;
+    }
+
+    /// @dev First 4 bytes (function selector) of a calldata blob; 0x00000000 if shorter.
+    function _selector(bytes memory data) private pure returns (bytes4 s) {
+        if (data.length < 4) return bytes4(0);
+        assembly {
+            s := mload(add(data, 0x20))
+        }
     }
 
     /// @dev Tiered quorum: For+Abstain must reach the proposal's tier fraction of past total supply.
