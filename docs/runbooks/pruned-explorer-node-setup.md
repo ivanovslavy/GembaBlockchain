@@ -25,6 +25,30 @@ Why it's fine here anyway, on **testnet**:
 (Hetzner NVMe), or pruned-primary + archive-secondary. Do NOT ship mainnet on a lone pruned
 node without an archive somewhere.
 
+## What you actually keep vs lose with pruning (FAQ — read this before panicking)
+
+Common confusion: "pruned = I lose my history / old txs will error." **No.** The key is the
+distinction between **Blockscout's own stored data** and **the node's live state**:
+
+- When Blockscout **indexes** a block (as it arrives), it writes the transactions, receipts,
+  logs, created contracts, and internal-tx traces into its **own PostgreSQL DB**. From then on
+  that data is **permanent and independent of the node's pruning**.
+- Pruning on the node only drops **old world-state** (the account/storage tree at old heights).
+  It affects only queries that must **re-execute against ancient state**.
+
+| You look at… | Served from | Works on pruned? |
+|---|---|---|
+| An old tx — incl. a **contract deploy** (input bytecode, constructor args, created address, logs) | Blockscout Postgres | ✅ yes |
+| Who deployed a contract, when, its verified source, internal traces of that tx | Blockscout Postgres | ✅ yes |
+| "Read Contract" tab (current values) | `eth_call` at **current** block | ✅ yes |
+| "Balance/state of address **as of an old block**" | live re-exec vs old state | ⚠️ needs archive |
+| Full Blockscout **re-index from scratch** (DB wiped) → re-trace blocks older than keep-recent | node historical state | ⚠️ needs archive |
+
+Concrete: opening a 10-day-old deploy tx to see how a contract was deployed → **works fine**,
+it's a DB read, not a node-state query. You only feel the limit for the two ⚠️ rows above
+(rare), which is exactly what the `.137` archive fallback covers. This is why pruned-primary +
+archive-fallback is safe on testnet.
+
 ## Box
 
 Contabo **VPS 20 (6 vCPU / 12 GB RAM / SSD)** recommended. Why: pruned is disk-light, so RAM
