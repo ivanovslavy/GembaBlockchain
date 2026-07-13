@@ -28,10 +28,12 @@ Hetzner cax31 (ARM, NVMe, 8c/16GB/160GB, ~3.5x a Contabo 6-core, €21/mo)
 
 Contabo boxes (reinstalled clean OS, cheap roles):
   ├─ mainnet validator nodes, one per box (validators don't serve the explorer → Contabo is fine)
-  └─ 13.140.148.137 (the old archive box — big SSD) → mgnuniverse.com (moved off the Pi)
+  └─ 13.140.148.137 (old archive box — 6 vCPU / 12 GB / 150 GB SSD) → mgnuniverse.com (off the Pi)
      Nice reuse: .137's SSD was a liability for an ARCHIVE (random-I/O-bound) but is ideal for
      mgn's 4K video — media serving is space + sequential throughput, not the random I/O that
-     hurt the chain. Big + SSD = exactly right for Martin's clips.
+     hurt the chain. And 6c/12GB comfortably handles FFmpeg 4K transcode (one clip at a time,
+     background) + Next.js/api/worker + serving. Big SSD + those cores = exactly right for
+     Martin's clips, and a box we already own (no new VPS needed).
 
 Disk: cax31 holds two growing datasets (archive chain DB + Blockscout Postgres). 160GB is fine
 for testnet (re-genesis'd) and a good while on mainnet; **mount an extra volume when it fills**.
