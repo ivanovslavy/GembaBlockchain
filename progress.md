@@ -4,6 +4,21 @@
 > captures notable milestones and decisions. Private repo only (gitignored from any public
 > mirror). Docs in English (rule 1).
 
+## 2026-07-13
+- **72h endurance run PASSED** (1.037M tx, 99.996% mined, 0 failedSubmit; no day1→day3
+  drift). Added best-effort **revert-reason logging** to `endurance/lib/receiptCollector.js`
+  and a **5× load** variant `endurance/run-72h-5x.sh` (20 TPS, `FUND_PER_WALLET=100` per the
+  gas math). See `docs/endurance-test-2026-07-10-72h.md`. 5× 72h run launched (~ends 07-16).
+- **Explorer under load:** the single archive `.137` can't both sync fat 5× blocks and serve
+  Blockscout's read load (Contabo "NVMe" ≈ HDD ~250 MB/s; ~0.5 blk/s apply vs chain 0.43).
+  Applied stopgap tuning (archive `evm-timeout 5s→60s`; Blockscout fetcher throttles) so it
+  lags ~17 min gracefully instead of freezing; also fixed a 53 GB docker-log balloon on the
+  explorer box (log rotation). Full detail + **candidate mainnet settings**:
+  `docs/runbooks/explorer-dedicated-node-and-indexing-tuning.md`.
+- **TODO (testnet now + mainnet on launch):** stand up a **dedicated pruned node** on real
+  NVMe (Hetzner) as the explorer's RPC source instead of the archive. Contabo is 5-6× weaker
+  than Hetzner for disk I/O — mainnet needs Hetzner for the I/O-bound roles (archive/explorer).
+
 ## 2026-06-10
 - Ecosystem-wide infrastructure audit + documentation pass (see `~/Documents/Claude`):
   servers, apps, repos, email and the rule-7 source/public split are now documented.
