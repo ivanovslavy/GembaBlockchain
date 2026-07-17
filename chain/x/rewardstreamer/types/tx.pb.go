@@ -5,6 +5,7 @@ package types
 
 import (
 	context "context"
+	cosmossdk_io_math "cosmossdk.io/math"
 	fmt "fmt"
 	_ "github.com/cosmos/cosmos-proto"
 	_ "github.com/cosmos/cosmos-sdk/types/msgservice"
@@ -119,39 +120,172 @@ func (m *MsgUpdateParamsResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgUpdateParamsResponse proto.InternalMessageInfo
 
+// MsgUpdateFormulaParams sets the reward-FORMULA params (regenesis §4) at runtime.
+// Only the gov module account may execute it — this is the governance kill-switch /
+// retune lever for the reward stream (SEC audit M2): pass enabled=false to halt
+// formula payouts, or adjust rate/floor/cap/budget, all without a chain upgrade.
+// Field semantics mirror types.FormulaParams (stored JSON under its own key).
+type MsgUpdateFormulaParams struct {
+	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
+	Enabled   bool   `protobuf:"varint,2,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	// rate_per_day: fraction of stake earned per day (e.g. "0.01" = 1%).
+	RatePerDay cosmossdk_io_math.LegacyDec `protobuf:"bytes,3,opt,name=rate_per_day,json=ratePerDay,proto3,customtype=cosmossdk.io/math.LegacyDec" json:"rate_per_day"`
+	// floor_per_day / cap_per_day: per-validator daily reward bounds (agmb).
+	FloorPerDay  cosmossdk_io_math.Int `protobuf:"bytes,4,opt,name=floor_per_day,json=floorPerDay,proto3,customtype=cosmossdk.io/math.Int" json:"floor_per_day"`
+	CapPerDay    cosmossdk_io_math.Int `protobuf:"bytes,5,opt,name=cap_per_day,json=capPerDay,proto3,customtype=cosmossdk.io/math.Int" json:"cap_per_day"`
+	BlocksPerDay uint64                `protobuf:"varint,6,opt,name=blocks_per_day,json=blocksPerDay,proto3" json:"blocks_per_day,omitempty"`
+	RewardDenom  string                `protobuf:"bytes,7,opt,name=reward_denom,json=rewardDenom,proto3" json:"reward_denom,omitempty"`
+	// max_total_per_day: AGGREGATE daily budget across all validators (agmb; 0 = no cap) — M4.
+	MaxTotalPerDay cosmossdk_io_math.Int `protobuf:"bytes,8,opt,name=max_total_per_day,json=maxTotalPerDay,proto3,customtype=cosmossdk.io/math.Int" json:"max_total_per_day"`
+}
+
+func (m *MsgUpdateFormulaParams) Reset()         { *m = MsgUpdateFormulaParams{} }
+func (m *MsgUpdateFormulaParams) String() string { return proto.CompactTextString(m) }
+func (*MsgUpdateFormulaParams) ProtoMessage()    {}
+func (*MsgUpdateFormulaParams) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f776d6966a2c5138, []int{2}
+}
+func (m *MsgUpdateFormulaParams) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgUpdateFormulaParams) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgUpdateFormulaParams.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgUpdateFormulaParams) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgUpdateFormulaParams.Merge(m, src)
+}
+func (m *MsgUpdateFormulaParams) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgUpdateFormulaParams) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgUpdateFormulaParams.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgUpdateFormulaParams proto.InternalMessageInfo
+
+func (m *MsgUpdateFormulaParams) GetAuthority() string {
+	if m != nil {
+		return m.Authority
+	}
+	return ""
+}
+
+func (m *MsgUpdateFormulaParams) GetEnabled() bool {
+	if m != nil {
+		return m.Enabled
+	}
+	return false
+}
+
+func (m *MsgUpdateFormulaParams) GetBlocksPerDay() uint64 {
+	if m != nil {
+		return m.BlocksPerDay
+	}
+	return 0
+}
+
+func (m *MsgUpdateFormulaParams) GetRewardDenom() string {
+	if m != nil {
+		return m.RewardDenom
+	}
+	return ""
+}
+
+type MsgUpdateFormulaParamsResponse struct {
+}
+
+func (m *MsgUpdateFormulaParamsResponse) Reset()         { *m = MsgUpdateFormulaParamsResponse{} }
+func (m *MsgUpdateFormulaParamsResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgUpdateFormulaParamsResponse) ProtoMessage()    {}
+func (*MsgUpdateFormulaParamsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f776d6966a2c5138, []int{3}
+}
+func (m *MsgUpdateFormulaParamsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgUpdateFormulaParamsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgUpdateFormulaParamsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgUpdateFormulaParamsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgUpdateFormulaParamsResponse.Merge(m, src)
+}
+func (m *MsgUpdateFormulaParamsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgUpdateFormulaParamsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgUpdateFormulaParamsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgUpdateFormulaParamsResponse proto.InternalMessageInfo
+
 func init() {
 	proto.RegisterType((*MsgUpdateParams)(nil), "gemba.rewardstreamer.v1.MsgUpdateParams")
 	proto.RegisterType((*MsgUpdateParamsResponse)(nil), "gemba.rewardstreamer.v1.MsgUpdateParamsResponse")
+	proto.RegisterType((*MsgUpdateFormulaParams)(nil), "gemba.rewardstreamer.v1.MsgUpdateFormulaParams")
+	proto.RegisterType((*MsgUpdateFormulaParamsResponse)(nil), "gemba.rewardstreamer.v1.MsgUpdateFormulaParamsResponse")
 }
 
 func init() { proto.RegisterFile("gemba/rewardstreamer/v1/tx.proto", fileDescriptor_f776d6966a2c5138) }
 
 var fileDescriptor_f776d6966a2c5138 = []byte{
-	// 373 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x51, 0x3f, 0x4b, 0xfb, 0x40,
-	0x18, 0xce, 0xfd, 0x7e, 0x58, 0x68, 0x14, 0xc4, 0x50, 0x68, 0x9b, 0x21, 0x2d, 0x45, 0xa4, 0x14,
-	0xcc, 0xd9, 0x0a, 0x82, 0x6e, 0xc6, 0xc1, 0xa9, 0x20, 0x15, 0x17, 0x41, 0xe4, 0x9a, 0x1c, 0xd7,
-	0x68, 0x2f, 0x17, 0xee, 0xae, 0xb1, 0xdd, 0xc4, 0xd1, 0xc9, 0x8f, 0xe1, 0xd8, 0xc1, 0x0f, 0xd1,
-	0xb1, 0x38, 0x39, 0x89, 0xb4, 0x43, 0xbf, 0x86, 0x24, 0x17, 0x29, 0x8d, 0x14, 0x5c, 0x5e, 0x92,
-	0xf7, 0x79, 0xde, 0xe7, 0x0f, 0xa7, 0x57, 0x09, 0xa6, 0x5d, 0x04, 0x39, 0x7e, 0x40, 0xdc, 0x13,
-	0x92, 0x63, 0x44, 0x31, 0x87, 0x51, 0x13, 0xca, 0xa1, 0x1d, 0x72, 0x26, 0x99, 0x51, 0x4c, 0x18,
-	0xf6, 0x2a, 0xc3, 0x8e, 0x9a, 0x66, 0x81, 0x30, 0xc2, 0x12, 0x0e, 0x8c, 0xbf, 0x14, 0xdd, 0x2c,
-	0xba, 0x4c, 0x50, 0x26, 0x20, 0x15, 0x24, 0x96, 0xa1, 0x82, 0xa4, 0x40, 0x59, 0x01, 0xb7, 0xea,
-	0x42, 0xfd, 0xa4, 0xd0, 0x0e, 0xa2, 0x7e, 0xc0, 0x60, 0x32, 0xd3, 0xd5, 0xee, 0xba, 0x5c, 0x21,
-	0xe2, 0x88, 0xa6, 0x87, 0xb5, 0x09, 0xd0, 0xb7, 0xdb, 0x82, 0x5c, 0x85, 0x1e, 0x92, 0xf8, 0x22,
-	0x41, 0x8c, 0x23, 0x3d, 0x8f, 0x06, 0xb2, 0xc7, 0xb8, 0x2f, 0x47, 0x25, 0x50, 0x05, 0xf5, 0xbc,
-	0x53, 0x7a, 0x7f, 0xdb, 0x2f, 0xa4, 0x8e, 0xa7, 0x9e, 0xc7, 0xb1, 0x10, 0x97, 0x92, 0xfb, 0x01,
-	0xe9, 0x2c, 0xa9, 0x86, 0xa3, 0xe7, 0x94, 0x76, 0xe9, 0x5f, 0x15, 0xd4, 0x37, 0x5b, 0x15, 0x7b,
-	0x4d, 0x71, 0x5b, 0x19, 0x39, 0xf9, 0xc9, 0x67, 0x45, 0x7b, 0x5d, 0x8c, 0x1b, 0xa0, 0x93, 0x5e,
-	0x9e, 0x1c, 0x3f, 0x2d, 0xc6, 0x8d, 0xa5, 0xe6, 0xf3, 0x62, 0xdc, 0xd8, 0x53, 0x45, 0x86, 0xd9,
-	0x2a, 0x99, 0xd8, 0xb5, 0xb2, 0x5e, 0xcc, 0xac, 0x3a, 0x58, 0x84, 0x2c, 0x10, 0xb8, 0x35, 0xd4,
-	0xff, 0xb7, 0x05, 0x31, 0xee, 0xf4, 0xad, 0x95, 0xa2, 0xf5, 0xb5, 0x01, 0x33, 0x42, 0xe6, 0xc1,
-	0x5f, 0x99, 0x3f, 0x96, 0xe6, 0xc6, 0x63, 0xdc, 0xcb, 0xb9, 0x99, 0xcc, 0x2c, 0x30, 0x9d, 0x59,
-	0xe0, 0x6b, 0x66, 0x81, 0x97, 0xb9, 0xa5, 0x4d, 0xe7, 0x96, 0xf6, 0x31, 0xb7, 0xb4, 0xeb, 0x33,
-	0xe2, 0xcb, 0xde, 0xa0, 0x6b, 0xbb, 0x8c, 0x42, 0x3f, 0x42, 0x01, 0x8b, 0x44, 0x1f, 0x45, 0x23,
-	0x78, 0x1e, 0x1b, 0x39, 0x7d, 0xe6, 0xde, 0xbb, 0x3d, 0xe4, 0x07, 0x50, 0xcd, 0x5f, 0xed, 0xe5,
-	0x28, 0xc4, 0xa2, 0x9b, 0x4b, 0x5e, 0xf1, 0xf0, 0x3b, 0x00, 0x00, 0xff, 0xff, 0x24, 0x31, 0x89,
-	0xcd, 0x85, 0x02, 0x00, 0x00,
+	// 621 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x94, 0x4f, 0x6b, 0x13, 0x4f,
+	0x18, 0xc7, 0xb3, 0xbf, 0xfe, 0xcd, 0x24, 0xbf, 0x4a, 0xd7, 0x6a, 0xb7, 0x11, 0x36, 0x31, 0x14,
+	0x09, 0x81, 0xec, 0xb6, 0x15, 0x2a, 0xf6, 0xa4, 0x31, 0x28, 0x05, 0x0b, 0x61, 0xad, 0x20, 0x8a,
+	0x84, 0xc9, 0xee, 0xb8, 0x59, 0xbb, 0xb3, 0xb3, 0xcc, 0x4c, 0x62, 0xf6, 0xa4, 0x78, 0xf4, 0xe4,
+	0xcb, 0xf0, 0x98, 0x43, 0x5f, 0x44, 0x8e, 0xa5, 0x78, 0x10, 0x0f, 0x45, 0x92, 0x43, 0x5e, 0x83,
+	0x37, 0xd9, 0x9d, 0x4d, 0x6a, 0x92, 0x86, 0x6a, 0xbd, 0x0c, 0x3b, 0xcf, 0x9f, 0xcf, 0xf3, 0x3c,
+	0x33, 0xdf, 0x59, 0x90, 0xb3, 0x11, 0xae, 0x43, 0x9d, 0xa2, 0x77, 0x90, 0x5a, 0x8c, 0x53, 0x04,
+	0x31, 0xa2, 0x7a, 0x6b, 0x5b, 0xe7, 0x6d, 0xcd, 0xa7, 0x84, 0x13, 0x79, 0x3d, 0x8a, 0xd0, 0xc6,
+	0x23, 0xb4, 0xd6, 0x76, 0x66, 0xcd, 0x26, 0x36, 0x89, 0x62, 0xf4, 0xf0, 0x4b, 0x84, 0x67, 0xd6,
+	0x4d, 0xc2, 0x30, 0x61, 0x3a, 0x66, 0x76, 0x88, 0xc1, 0xcc, 0x8e, 0x1d, 0x1b, 0xc2, 0x51, 0x13,
+	0x19, 0x62, 0x13, 0xbb, 0x56, 0x21, 0x76, 0x3c, 0xa2, 0x47, 0x6b, 0x6c, 0xda, 0x9c, 0xd5, 0x97,
+	0x0f, 0x29, 0xc4, 0x71, 0x62, 0xbe, 0x2b, 0x81, 0x6b, 0x07, 0xcc, 0x7e, 0xee, 0x5b, 0x90, 0xa3,
+	0x6a, 0xe4, 0x91, 0x77, 0x41, 0x12, 0x36, 0x79, 0x83, 0x50, 0x87, 0x07, 0x8a, 0x94, 0x93, 0x0a,
+	0xc9, 0xb2, 0x72, 0x7a, 0x5c, 0x5a, 0x8b, 0x2b, 0x3e, 0xb4, 0x2c, 0x8a, 0x18, 0x7b, 0xc6, 0xa9,
+	0xe3, 0xd9, 0xc6, 0x79, 0xa8, 0x5c, 0x06, 0x8b, 0x82, 0xad, 0xfc, 0x97, 0x93, 0x0a, 0xa9, 0x9d,
+	0xac, 0x36, 0x63, 0x70, 0x4d, 0x14, 0x2a, 0x27, 0xbb, 0x67, 0xd9, 0xc4, 0x97, 0x41, 0xa7, 0x28,
+	0x19, 0x71, 0xe6, 0xde, 0xfd, 0x8f, 0x83, 0x4e, 0xf1, 0x9c, 0xf9, 0x69, 0xd0, 0x29, 0xde, 0x11,
+	0x83, 0xb4, 0x27, 0x47, 0x99, 0x68, 0x3b, 0xbf, 0x01, 0xd6, 0x27, 0x4c, 0x06, 0x62, 0x3e, 0xf1,
+	0x18, 0xca, 0x7f, 0x9d, 0x07, 0x37, 0x47, 0xbe, 0xc7, 0x84, 0xe2, 0xa6, 0x0b, 0xff, 0x71, 0x58,
+	0x05, 0x2c, 0x21, 0x0f, 0xd6, 0x5d, 0x64, 0x45, 0xd3, 0x2e, 0x1b, 0xc3, 0xad, 0xfc, 0x02, 0xa4,
+	0x29, 0xe4, 0xa8, 0xe6, 0x23, 0x5a, 0xb3, 0x60, 0xa0, 0xcc, 0x45, 0xd0, 0xdd, 0x70, 0xd6, 0xef,
+	0x67, 0xd9, 0x5b, 0x02, 0xcc, 0xac, 0x23, 0xcd, 0x21, 0x3a, 0x86, 0xbc, 0xa1, 0x3d, 0x45, 0x36,
+	0x34, 0x83, 0x0a, 0x32, 0x4f, 0x8f, 0x4b, 0x20, 0xae, 0x5b, 0x41, 0xa6, 0x38, 0x18, 0x10, 0xb2,
+	0xaa, 0x88, 0x56, 0x60, 0x20, 0x1f, 0x82, 0xff, 0xdf, 0xb8, 0x84, 0xd0, 0x11, 0x7a, 0x3e, 0x42,
+	0x6f, 0xc5, 0xe8, 0x1b, 0xd3, 0xe8, 0x7d, 0x8f, 0xff, 0x06, 0xdd, 0xf7, 0xb8, 0x80, 0xa6, 0x22,
+	0x4c, 0x4c, 0xad, 0x82, 0x94, 0x09, 0xfd, 0x11, 0x73, 0xe1, 0x8a, 0xcc, 0xa4, 0x09, 0xfd, 0x98,
+	0xb8, 0x09, 0x56, 0xea, 0x2e, 0x31, 0x8f, 0xd8, 0x08, 0xba, 0x98, 0x93, 0x0a, 0xf3, 0x46, 0x5a,
+	0x58, 0xe3, 0xa8, 0xdb, 0x20, 0x2d, 0x6e, 0xb4, 0x66, 0x21, 0x8f, 0x60, 0x65, 0x29, 0x2c, 0x6c,
+	0xa4, 0x84, 0xad, 0x12, 0x9a, 0xe4, 0x57, 0x60, 0x15, 0xc3, 0x76, 0x8d, 0x13, 0x0e, 0xdd, 0x11,
+	0x6b, 0xf9, 0x8a, 0x0d, 0xae, 0x60, 0xd8, 0x3e, 0x0c, 0x49, 0xa2, 0xfe, 0xde, 0x83, 0x69, 0xa9,
+	0x95, 0x2e, 0x93, 0xda, 0x98, 0x76, 0xf2, 0x39, 0xa0, 0x5e, 0xec, 0x19, 0x0a, 0x6f, 0xe7, 0xa7,
+	0x04, 0xe6, 0x0e, 0x98, 0x2d, 0xbf, 0x05, 0xe9, 0xb1, 0x27, 0x56, 0x98, 0xf9, 0x34, 0x26, 0x24,
+	0x9c, 0xd9, 0xfa, 0xd3, 0xc8, 0x61, 0x4d, 0xf9, 0x3d, 0xb8, 0x7e, 0x91, 0xd0, 0xf5, 0xcb, 0x41,
+	0x63, 0x09, 0x99, 0x7b, 0x7f, 0x99, 0x30, 0x6c, 0x20, 0xb3, 0xf0, 0x21, 0x3c, 0xef, 0xf2, 0xeb,
+	0x6e, 0x4f, 0x95, 0x4e, 0x7a, 0xaa, 0xf4, 0xa3, 0xa7, 0x4a, 0x9f, 0xfb, 0x6a, 0xe2, 0xa4, 0xaf,
+	0x26, 0xbe, 0xf5, 0xd5, 0xc4, 0xcb, 0x47, 0xb6, 0xc3, 0x1b, 0xcd, 0xba, 0x66, 0x12, 0xac, 0x3b,
+	0x2d, 0xe8, 0x91, 0x16, 0x73, 0x61, 0x2b, 0xd0, 0x9f, 0x84, 0xf5, 0xca, 0xa1, 0x46, 0xcc, 0x06,
+	0x74, 0x3c, 0x5d, 0xac, 0x53, 0xb7, 0xc1, 0x03, 0x1f, 0xb1, 0xfa, 0x62, 0xf4, 0x03, 0xbb, 0xfb,
+	0x2b, 0x00, 0x00, 0xff, 0xff, 0x3e, 0x3e, 0xf1, 0x36, 0x80, 0x05, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -167,6 +301,7 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
 	UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error)
+	UpdateFormulaParams(ctx context.Context, in *MsgUpdateFormulaParams, opts ...grpc.CallOption) (*MsgUpdateFormulaParamsResponse, error)
 }
 
 type msgClient struct {
@@ -186,9 +321,19 @@ func (c *msgClient) UpdateParams(ctx context.Context, in *MsgUpdateParams, opts 
 	return out, nil
 }
 
+func (c *msgClient) UpdateFormulaParams(ctx context.Context, in *MsgUpdateFormulaParams, opts ...grpc.CallOption) (*MsgUpdateFormulaParamsResponse, error) {
+	out := new(MsgUpdateFormulaParamsResponse)
+	err := c.cc.Invoke(ctx, "/gemba.rewardstreamer.v1.Msg/UpdateFormulaParams", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
 	UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error)
+	UpdateFormulaParams(context.Context, *MsgUpdateFormulaParams) (*MsgUpdateFormulaParamsResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
@@ -197,6 +342,9 @@ type UnimplementedMsgServer struct {
 
 func (*UnimplementedMsgServer) UpdateParams(ctx context.Context, req *MsgUpdateParams) (*MsgUpdateParamsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateParams not implemented")
+}
+func (*UnimplementedMsgServer) UpdateFormulaParams(ctx context.Context, req *MsgUpdateFormulaParams) (*MsgUpdateFormulaParamsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateFormulaParams not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
@@ -221,6 +369,24 @@ func _Msg_UpdateParams_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Msg_UpdateFormulaParams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgUpdateFormulaParams)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).UpdateFormulaParams(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/gemba.rewardstreamer.v1.Msg/UpdateFormulaParams",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).UpdateFormulaParams(ctx, req.(*MsgUpdateFormulaParams))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var Msg_serviceDesc = _Msg_serviceDesc
 var _Msg_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "gemba.rewardstreamer.v1.Msg",
@@ -229,6 +395,10 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateParams",
 			Handler:    _Msg_UpdateParams_Handler,
+		},
+		{
+			MethodName: "UpdateFormulaParams",
+			Handler:    _Msg_UpdateFormulaParams_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -298,6 +468,121 @@ func (m *MsgUpdateParamsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	return len(dAtA) - i, nil
 }
 
+func (m *MsgUpdateFormulaParams) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgUpdateFormulaParams) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgUpdateFormulaParams) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size := m.MaxTotalPerDay.Size()
+		i -= size
+		if _, err := m.MaxTotalPerDay.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		i = encodeVarintTx(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x42
+	if len(m.RewardDenom) > 0 {
+		i -= len(m.RewardDenom)
+		copy(dAtA[i:], m.RewardDenom)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.RewardDenom)))
+		i--
+		dAtA[i] = 0x3a
+	}
+	if m.BlocksPerDay != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.BlocksPerDay))
+		i--
+		dAtA[i] = 0x30
+	}
+	{
+		size := m.CapPerDay.Size()
+		i -= size
+		if _, err := m.CapPerDay.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		i = encodeVarintTx(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x2a
+	{
+		size := m.FloorPerDay.Size()
+		i -= size
+		if _, err := m.FloorPerDay.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		i = encodeVarintTx(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x22
+	{
+		size := m.RatePerDay.Size()
+		i -= size
+		if _, err := m.RatePerDay.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		i = encodeVarintTx(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x1a
+	if m.Enabled {
+		i--
+		if m.Enabled {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Authority) > 0 {
+		i -= len(m.Authority)
+		copy(dAtA[i:], m.Authority)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Authority)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgUpdateFormulaParamsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgUpdateFormulaParamsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgUpdateFormulaParamsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	offset -= sovTx(v)
 	base := offset
@@ -325,6 +610,46 @@ func (m *MsgUpdateParams) Size() (n int) {
 }
 
 func (m *MsgUpdateParamsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgUpdateFormulaParams) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Authority)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	if m.Enabled {
+		n += 2
+	}
+	l = m.RatePerDay.Size()
+	n += 1 + l + sovTx(uint64(l))
+	l = m.FloorPerDay.Size()
+	n += 1 + l + sovTx(uint64(l))
+	l = m.CapPerDay.Size()
+	n += 1 + l + sovTx(uint64(l))
+	if m.BlocksPerDay != 0 {
+		n += 1 + sovTx(uint64(m.BlocksPerDay))
+	}
+	l = len(m.RewardDenom)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = m.MaxTotalPerDay.Size()
+	n += 1 + l + sovTx(uint64(l))
+	return n
+}
+
+func (m *MsgUpdateFormulaParamsResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -481,6 +806,345 @@ func (m *MsgUpdateParamsResponse) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: MsgUpdateParamsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgUpdateFormulaParams) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgUpdateFormulaParams: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgUpdateFormulaParams: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Authority", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Authority = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Enabled", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Enabled = bool(v != 0)
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RatePerDay", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.RatePerDay.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FloorPerDay", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.FloorPerDay.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CapPerDay", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.CapPerDay.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlocksPerDay", wireType)
+			}
+			m.BlocksPerDay = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.BlocksPerDay |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RewardDenom", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RewardDenom = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MaxTotalPerDay", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.MaxTotalPerDay.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgUpdateFormulaParamsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgUpdateFormulaParamsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgUpdateFormulaParamsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:

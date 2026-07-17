@@ -29,3 +29,33 @@ func (m msgServer) UpdateParams(goCtx context.Context, msg *types.MsgUpdateParam
 	}
 	return &types.MsgUpdateParamsResponse{}, nil
 }
+
+// UpdateFormulaParams sets the reward-FORMULA params at runtime — the governance
+// kill-switch / retune lever for the reward stream (audit M2): enabled=false halts
+// formula payouts on the next block, no chain upgrade needed. Gov-only, like
+// UpdateParams; validation happens inside SetFormulaParams.
+func (m msgServer) UpdateFormulaParams(goCtx context.Context, msg *types.MsgUpdateFormulaParams) (*types.MsgUpdateFormulaParamsResponse, error) {
+	authority := authtypes.NewModuleAddress(govtypes.ModuleName).String()
+	if msg.Authority != authority {
+		return nil, fmt.Errorf("invalid authority: expected %s (gov), got %s", authority, msg.Authority)
+	}
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	p := types.FormulaParams{
+		Enabled:        msg.Enabled,
+		RatePerDay:     msg.RatePerDay,
+		FloorPerDay:    msg.FloorPerDay,
+		CapPerDay:      msg.CapPerDay,
+		BlocksPerDay:   msg.BlocksPerDay,
+		RewardDenom:    msg.RewardDenom,
+		MaxTotalPerDay: msg.MaxTotalPerDay,
+	}
+	if err := m.SetFormulaParams(ctx, p); err != nil {
+		return nil, err
+	}
+	ctx.EventManager().EmitEvent(sdk.NewEvent(
+		types.EventTypeUpdateFormulaParams,
+		sdk.NewAttribute(types.AttributeKeyAuthority, msg.Authority),
+		sdk.NewAttribute(types.AttributeKeyEnabled, fmt.Sprintf("%t", msg.Enabled)),
+	))
+	return &types.MsgUpdateFormulaParamsResponse{}, nil
+}

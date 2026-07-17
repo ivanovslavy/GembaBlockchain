@@ -8,9 +8,9 @@ import (
 )
 
 // RegisterInterfaces registers the module's Msg implementations so governance can
-// execute MsgUpdateParams (audit finding #5).
+// execute MsgUpdateParams (audit finding #5) and MsgUpdateFormulaParams (audit M2).
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
-	registry.RegisterImplementations((*sdk.Msg)(nil), &MsgUpdateParams{})
+	registry.RegisterImplementations((*sdk.Msg)(nil), &MsgUpdateParams{}, &MsgUpdateFormulaParams{})
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
 
