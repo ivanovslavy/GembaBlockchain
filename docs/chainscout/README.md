@@ -26,5 +26,6 @@ committed to their repo.
    directory. Requirement (met): the explorer runs a current Blockscout with a
    working `/assets/envs.js`.
 
-> Mainnet (chainId 821206) gets its own Chainscout entry once the mainnet explorer
-> is live (`isTestnet: false`).
+> Mainnet (chainId 821206): the entry is PREPARED at `gemba-821206.json` ("Gemba",
+> `isTestnet: false`, gembascan.io). Submit it only once the mainnet explorer is
+> LIVE (ceremony runbook Phase 6) — Chainscout CI checks the URLs.

@@ -34,7 +34,10 @@ export const cfg = {
   denom: process.env.DENOM || 'agmb',
 
   // ---- watched contract: the GembaPay GMB dispenser (its Dispensed event = "GMB sold") ----
-  dispenser: (process.env.GEMBA_DISPENSER_ADDRESS || '0x0EB298466F862E548d2416a75d3D108E503bD2Cf').toLowerCase(),
+  // The default is the TESTNET dispenser; the mainnet one is a NEW contract (new owner
+  // => new CREATE2 address), so mainnet REQUIRES an explicit address — no silent fallback.
+  dispenser: (process.env.GEMBA_DISPENSER_ADDRESS ||
+    (isMainnet ? missing('GEMBA_DISPENSER_ADDRESS') : '0x0EB298466F862E548d2416a75d3D108E503bD2Cf')).toLowerCase(),
 
   // non-voting reserves excluded from "circulating" for the bonded-ratio KPI (§3.4)
   reserves: (process.env.RESERVE_ADDRESSES ||

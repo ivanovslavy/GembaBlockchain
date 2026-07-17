@@ -17,8 +17,17 @@
 # =============================================================================
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Network file selection: the package ships ONE network env as network.env (testnet
+# today; the mainnet package ships network.mainnet.env as network.env at the cutover).
+# Override with NETWORK_ENV=network.mainnet.env ./install.sh
+NETWORK_ENV="${NETWORK_ENV:-network.env}"
 # shellcheck disable=SC1091
-source "$HERE/network.env"
+source "$HERE/$NETWORK_ENV"
+# Ceremony blanks guard (mainnet template ships GENESIS_SHA256/SEEDS empty until the
+# genesis ceremony publishes them — refuse to install a node with unverifiable genesis
+# or no peers rather than guess):
+[ -n "${GENESIS_SHA256:-}" ] || { echo "FATAL: GENESIS_SHA256 is empty in $NETWORK_ENV — the genesis ceremony has not published it yet" >&2; exit 1; }
+[ -n "${SEEDS:-}" ] || { echo "FATAL: SEEDS is empty in $NETWORK_ENV — the genesis ceremony has not published the validator node-ids yet" >&2; exit 1; }
 
 MONIKER="${MONIKER:-gemba-node-$(hostname -s 2>/dev/null || echo node)}"
 HOME_DIR="${HOME_DIR:-$HOME/.gembad}"

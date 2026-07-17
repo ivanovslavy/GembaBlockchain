@@ -115,6 +115,11 @@ archive.
 Mainnet (`gemba-1`, EVM chainId **821206**) is a **separate chain** → its own archive + explorer +
 public RPC set (can't share testnet's).
 
+> **MAINNET RPC DOMAINS (DECIDED 2026-07-17):** fresh subdomains **`gmb1.gembascan.io` → .82,
+> `gmb2` → .83, `gmb3` → .84** — deliberately different from the testnet's `rpc1/2/3` so a stale
+> wallet/integration config can never silently hit the other network; `rpc1/2/3` die with the
+> testnet. Display name in wallets/registries: **"Gemba"** (Cosmos chain-id stays `gemba-1`).
+
 **Operator decision:** mainnet uses the **same model as testnet — the validators serve the public RPC**,
 just on **more powerful servers**. We will **NOT** stand up separate dedicated RPC-only servers (cost;
 and the network is not under real load). The residual "RPC-on-a-validator" risk is **accepted**, mitigated

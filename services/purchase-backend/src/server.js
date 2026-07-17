@@ -11,21 +11,36 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { JsonRpcProvider, Wallet, Contract, isAddress, parseEther, id as keccakId } from 'ethers';
 
+// NETWORK switch (2026-07-18): testnet keeps the historical defaults so the live .162
+// deployment is unaffected; NETWORK=mainnet flips chain defaults to gemba-1 and REFUSES
+// to run with placeholder values — no testnet leakage into the value-bearing network.
+const NETWORK = (process.env.NETWORK || 'testnet').toLowerCase();
+const isMainnet = NETWORK === 'mainnet';
+function missing(name) {
+  throw new Error(`purchase-backend: ${name} is required when NETWORK=mainnet (no safe default)`);
+}
+
 const cfg = {
+  network: NETWORK,
   port: Number(process.env.PORT || 3116),
   gembapayApi: process.env.GEMBAPAY_API_BASE || 'https://api.gembapay.com',
   gembapayKey: process.env.GEMBAPAY_API_KEY || '',
   whsec: process.env.GEMBAPAY_WEBHOOK_SECRET || '',
   checkoutBase: process.env.GEMBAPAY_CHECKOUT_BASE || 'https://payment.gembapay.com',
-  pricePerGmbEur: Number(process.env.GMB_PRICE_EUR || 0.10),
+  // Mainnet sale price is FIXED 1 GMB = 1 EUR (CLAUDE.md §2/§13 Phase 6); the 0.10
+  // default was a testnet-era value and stays testnet-only.
+  pricePerGmbEur: Number(process.env.GMB_PRICE_EUR || (isMainnet ? 1.0 : 0.10)),
   minGmb: Number(process.env.MIN_GMB || 10),
   maxGmb: Number(process.env.MAX_GMB || 10000),
-  rpc: process.env.GEMBA_RPC_URL || 'https://rpc1.gembascan.io',
-  chainId: Number(process.env.GEMBA_CHAIN_ID || 821207),
-  dispenser: process.env.GEMBA_DISPENSER_ADDRESS || '',
-  ownerPk: process.env.GEMBA_DISPENSER_OWNER_PK || '',
+  rpc: process.env.GEMBA_RPC_URL || (isMainnet ? 'https://gmb1.gembascan.io' : 'https://rpc1.gembascan.io'),
+  chainId: Number(process.env.GEMBA_CHAIN_ID || (isMainnet ? 821206 : 821207)),
+  // The mainnet dispenser is a NEW contract (new owner => new CREATE2 address) — the
+  // testnet address must never be a silent fallback there.
+  dispenser: process.env.GEMBA_DISPENSER_ADDRESS || (isMainnet ? missing('GEMBA_DISPENSER_ADDRESS') : ''),
+  ownerPk: process.env.GEMBA_DISPENSER_OWNER_PK || (isMainnet ? missing('GEMBA_DISPENSER_OWNER_PK') : ''),
   store: process.env.STORE_FILE || path.join(process.cwd(), 'data', 'orders.json'),
 };
+if (isMainnet && !cfg.whsec) missing('GEMBAPAY_WEBHOOK_SECRET'); // H2: fail-closed needs a real secret
 
 // ---- tiny JSON order store: orderId -> {evmAddress, gmbAmount, eur, status, txHash, ts} ----
 function load() { try { return JSON.parse(fs.readFileSync(cfg.store, 'utf8')); } catch { return {}; } }

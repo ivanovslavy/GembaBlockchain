@@ -1,0 +1,19 @@
+{
+  "821206": {
+    "name": "Gemba",
+    "description": "GembaBlockchain mainnet — a decentralized, permissionless Cosmos EVM (CometBFT PoS) L1 whose native coin GMB is a utility coin serving the Gemba ecosystem.",
+    "logo": "https://gembascan.io/brand/gemba-bold-256.png",
+    "ecosystem": ["Cosmos", "EVM"],
+    "isTestnet": false,
+    "layer": 1,
+    "rollupType": null,
+    "native_currency": "GMB",
+    "website": "https://gembachain.io",
+    "explorers": [
+      {
+        "url": "https://gembascan.io/",
+        "hostedBy": "self"
+      }
+    ]
+  }
+}
