@@ -3,9 +3,11 @@ import { createConfig } from "wagmi";
 import { injected, walletConnect } from "wagmi/connectors";
 
 const TESTNET_RPCS = [
-  "https://testnet.gembascan.io/rpc",
+  // testnet.gembascan.io/rpc removed 2026-07-18 — it returns 410 Gone (retired with the
+  // explorer's /rpc proxy); viem's fallback skipped it anyway. rpc1/2/3 are the live set.
   "https://rpc1.gembascan.io",
   "https://rpc2.gembascan.io",
+  "https://rpc3.gembascan.io",
 ];
 
 export const gembaTestnet = defineChain({
