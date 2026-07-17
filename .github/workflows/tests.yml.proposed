@@ -1,0 +1,30 @@
+# Proposed CI (prepared 2026-07-17, INACTIVE until renamed to tests.yml — owner's call).
+# Runs the two full test suites on every push/PR so "all tests green" always has a
+# machine-checked, linkable record (the gap the mainnet-readiness audit flagged).
+name: tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: recursive }
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: forge test
+        working-directory: contracts
+        run: forge test -vv
+
+  chain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: chain/go.mod
+      - name: go test
+        working-directory: chain
+        run: go test -count=1 ./...
