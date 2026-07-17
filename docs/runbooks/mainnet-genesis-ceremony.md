@@ -24,8 +24,41 @@ Topology (P1, €0-reuse): 4 validators = Contabo **.82/.83/.84** + the 4th box;
   *published* advisory fix).
 - ✅ Full test evidence recorded: `forge test` (contracts), `go test ./...` (chain),
   security e2e re-run — see hardening §B/§C and `security/results/`.
-- ✋ Testnet farewell: announce the stop date; after stop, back up testnet state per
-  `backups.md`, then wipe the boxes per `SERVER-TOPOLOGY.md` "transition".
+- ✋ Testnet farewell: announce the stop date, then execute Phase 0.5 below.
+
+## Phase 0.5 — TESTNET DECOMMISSION + fresh boxes (THE NEXT STEP — owner plan 2026-07-18)
+
+**Phased shutdown — validators unbond ONE BY ONE, `.208` is last and is ONLY stopped:**
+
+1. Unbond `.82` (announce → `gembad tx staking unbond` full self-bond → confirm the chain
+   keeps producing on the remaining set). Back up its testnet state per `backups.md`.
+2. Unbond `.83` the same way.
+3. Unbond `.84` the same way — at this point **`.208` (A1/NAT, docker validator) is the
+   SOLE validator (100%)** and the testnet keeps producing on it alone.
+4. Stop the explorer box `213.136.85.32` (docker compose down; final DB backup if wanted).
+5. Stop the archive `.137` (final state backup — this is the full testnet history).
+6. Only when everything else is down: **stop `.208`** (`docker stop` — it is the ONLY box
+   that does NOT get reinstalled; the validator there is docker and is just stopped).
+   The testnet ends here.
+
+**Reinstall the 5 Contabo boxes with a CLEAN OS** (`.82`, `.83`, `.84`, explorer
+`213.136.85.32`, archive `.137`) **and prepare them from zero for mainnet:**
+
+- SSH: key-only auth (fresh authorized_keys), fail2ban/ufw baseline, updates.
+- Validators (`.82/.83/.84` + the 4th genesis validator box — assignment ✋ owner):
+  deps + Go + `gembad` built from source, systemd service (installer does all of it:
+  `GEMBA_NETWORK=mainnet` + `network.mainnet.env`), I4 pruning from block 0, firewall
+  (26656 open; RPC vhosts CF-only), Apache + Cloudflare Origin certs for
+  `gmb1/gmb2/gmb3.gembascan.io` (gmb1→.82, gmb2→.83, gmb3→.84).
+- Archive `.137`: gembad archive profile (`pruning="nothing"`, `evm-timeout 60s`),
+  systemd, NO public RPC (hard rule).
+- Explorer `213.136.85.32`: docker + `explorer/docker-compose.mainnet.yml` + fresh
+  `envs/backend.env` secrets, Apache/TLS for `gembascan.io`.
+- **autossh tunnel archive → explorer** (same pattern as testnet: the explorer reads the
+  archive's EVM RPC privately; only the explorer box can reach it).
+- Monitoring per box (prometheus/alertmanager + bonded-ratio exporter host),
+  auto-unjail/auto-compound units on the validators, backups per `backups.md`.
+- Then proceed to Phase 1 (DNS finalization) and the ceremony — **mainnet begins**.
 
 ## Phase 1 — DNS + boxes (days before genesis day)
 
