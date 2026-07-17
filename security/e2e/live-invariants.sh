@@ -4,7 +4,7 @@
 # LIVE chain + deployed contracts. Pure eth_call / curl reads — moves nothing, signs nothing.
 # Exit 0 = all PASS. Run: bash security/e2e/live-invariants.sh
 set -uo pipefail
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"; . "$HERE/config.sh"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"; . "${SEC_CONFIG:-$HERE/config.sh}"   # SEC_CONFIG=config.mainnet.sh for gemba-1
 RPC=$(sec_rpc)
 PASS=0; FAIL=0; FAILED=()
 ok(){ PASS=$((PASS+1)); printf '  \033[32mPASS\033[0m %s\n' "$1"; }

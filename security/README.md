@@ -88,3 +88,14 @@ bash security/track2-consensus/run.sh
 
 Remediation: P-1/P-2/P-3 fixed in code + funds rotated; operator steps in
 `docs/runbooks/pentest-2026-06-24-remediation.md`. **P-4 needs live-validator verification.**
+
+## Mainnet pre-launch battery (PREPARED 2026-07-18, not yet run — owner's order)
+
+Everything needed to re-validate the whole stack for `gemba-1` sits behind ONE
+orchestrator, `./run-full-prevalidation.sh` (default = `plan`, executes nothing):
+stages `static` (forge+go), `build` (clean gembad), `genesis` (throwaway ceremony
+dry-run that must BOOT and produce blocks), `fuzz` (RPC fuzz+exposure), and the
+post-launch-only `live` (e2e + live-invariants with `SEC_CONFIG=config.mainnet.sh`
+— the mainnet harness config with the gmb1/2/3 endpoints; contract addresses fill
+at the ceremony, `C_ONRAMP` intentionally absent). Run `static build genesis fuzz`
+before genesis day; run `live` as ceremony runbook Phase 7.

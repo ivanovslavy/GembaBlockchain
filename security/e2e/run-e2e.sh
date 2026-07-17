@@ -11,7 +11,7 @@
 #         t4=services/dApp | inv=live invariants | dapp=dApp liveness
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-SEC="$ROOT/security"; . "$SEC/config.sh"
+SEC="$ROOT/security"; . "${SEC_CONFIG:-$SEC/config.sh}"   # SEC_CONFIG=config.mainnet.sh for gemba-1
 TS=$(cat "$SEC/.run-ts" 2>/dev/null || echo run)   # caller may pin a timestamp; else 'run'
 OUT="$SEC/results/e2e-$TS.log"; mkdir -p "$SEC/results"
 WANT="${*:-t1 t2 t3 t4 inv dapp}"
