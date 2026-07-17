@@ -124,9 +124,12 @@ contract DeployGovernance is Script {
         // do NOT fund the EVM PublicReserve contract from an (empty) EOA here. The Cosmos↔EVM faucet
         // seam (module -> contract top-up via governance) is the documented follow-up. The
         // EVM PublicReserve contract is deployed (Timelock-owned) but seeded later via that seam.
-        _fund(founderPk, vm.envUint("FOUNDATION_PK"), foundation, 15_000_000 ether);
-        _fund(founderPk, vm.envUint("DAO_PK"), dao, 10_000_000 ether);
-        _fund(founderPk, vm.envUint("CONTINGENCY_PK"), contingency, 10_000_000 ether);
+        // §4.1 MAINNET amounts (decision 2026-06-29): Foundation 15M, DAO 10M, Contingency 20M
+        // (the former 10M circulation pool is folded into Contingency — the old 10M literal here
+        // was the pre-2026-06-29 testnet value). Env-overridable for staging reruns only.
+        _fund(founderPk, vm.envUint("FOUNDATION_PK"), foundation, vm.envOr("FOUNDATION_FUND", uint256(15_000_000 ether)));
+        _fund(founderPk, vm.envUint("DAO_PK"), dao, vm.envOr("DAO_FUND", uint256(10_000_000 ether)));
+        _fund(founderPk, vm.envUint("CONTINGENCY_PK"), contingency, vm.envOr("CONTINGENCY_FUND", uint256(20_000_000 ether)));
 
         console2.log("GembaTimelock", address(timelock));
         console2.log("GembaVotes", address(votes));
@@ -152,12 +155,19 @@ contract DeployGovernance is Script {
 
     /// @dev The 4 reserve contracts (finding #10) + any EXCLUDE_EXTRA addresses (mainnet: founder
     /// EOA + genesis seed accounts). In its own frame to keep run() off the stack-too-deep limit.
+    ///
+    /// STRICT parsing on purpose: `vm.envOr(..., new address[](0))` silently swallows a
+    /// malformed list and returns the DEFAULT — a typo'd EXCLUDE_EXTRA at the mainnet deploy
+    /// would exclude nobody extra and quietly break "only validators vote at launch". So when
+    /// the variable is present it goes through `vm.envAddress`, which REVERTS on any bad entry.
     function _excludedReserves(address a, address b, address c, address d)
         internal
         view
         returns (address[] memory list)
     {
-        address[] memory extra = vm.envOr("EXCLUDE_EXTRA", ",", new address[](0));
+        string memory raw = vm.envOr("EXCLUDE_EXTRA", string(""));
+        address[] memory extra =
+            bytes(raw).length == 0 ? new address[](0) : vm.envAddress("EXCLUDE_EXTRA", ",");
         list = new address[](4 + extra.length);
         list[0] = a;
         list[1] = b;
