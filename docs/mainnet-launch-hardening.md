@@ -35,21 +35,34 @@ correctly; it uses DEVNET-loose gov + a devnet-amplified reward rate. For mainne
 - **GembaVotes exclusion set** — POPULATE at genesis (every reserve/faucet/foundation/DAO/onramp/
   contingency address); verify `getVotes()==0` for each. ⏳ owner to populate (highest-severity item).
 
-- [ ] **valgate.params** — set `max_self_bond` (10,000 GMB) and `max_daily_bond_increase` (50 GMB)
-      explicitly (H1). Don't rely on the code default alone; a reviewer must see the numbers.
-- [ ] **feemarket.min_gas_price > 0** (L2) — a small non-zero floor (e.g. 1e9 agmb / 1 gwei) so the
-      post-year-10 security budget isn't zero. Testnet ships 0.
-- [ ] **rewardstreamer.formula_params** — set the intended `enabled`, `cap_per_day`, `rate_per_day`,
-      and `max_total_per_day` (M4 budget) so the reward economics are explicit in genesis, not
-      build-time defaults.
-- [ ] **gov params** — raise from testnet-loose: voting_period (days not 30s), quorum + threshold +
-      the two-tier supermajority high (Critical ≥ 66%), a real Timelock min delay (§7).
-- [ ] **staking.unbonding_time** 7–21 days (testnet 3d) — this is the slashing/security window.
+> **BUILDER DONE 2026-07-17:** `chain/gembad/init-gembad-mainnet.sh` (build → gentx ceremony →
+> collect → verify) implements every decided value below, handles NO private keys (addresses +
+> gentx files only), and embeds a 33-assertion verify battery (exact bigint supply check included).
+> Dry-run validated end-to-end the same day: throwaway 4-validator ceremony → `validate-genesis`
+> OK → 4-node network BOOTS AND PRODUCES BLOCKS from the produced genesis (height 22, no panics;
+> the L1 wiring assertion active). Items below marked [x] are implemented+dry-run-verified in the
+> builder — STILL re-run `init-gembad-mainnet.sh verify` on the REAL genesis at ceremony day.
+> Note: legacy `rewardstreamer.params.enabled=false` on purpose — the FORMULA is the reward model,
+> so a gov `MsgUpdateFormulaParams` kill-switch is a FULL payout stop (no silent legacy fallback).
+> Node start requires `--chain-id gemba-1 --evm.evm-chain-id 821206` (see the ceremony runbook).
+
+- [x] **valgate.params** — `max_self_bond` (10,000 GMB), `max_daily_bond_increase` (50 GMB) and
+      `min_self_bond` (1,000 GMB) set explicitly (H1); asserted by the verify battery.
+- [x] **feemarket.min_gas_price > 0** (L2) — 5 gwei floor set + asserted (decided value; the old
+      1-gwei example here was stale).
+- [x] **rewardstreamer.formula_params** — explicit in genesis: enabled, rate 1%/day, floor 10,
+      cap 100, blocks_per_day 36,000, max_total_per_day 5,479 (M4 budget); legacy stream disabled.
+- [x] **gov params** — voting 3d, expedited 1d, min_deposit 10,000 GMB (expedited 50,000 = SDK 5×
+      convention), quorum 0.334, threshold 0.5, expedited_threshold 0.667. The **Timelock min
+      delay 24–48h** is an EVM-contract deploy parameter (`MIN_DELAY`), not genesis — set it at
+      the governance deploy (ceremony runbook).
+- [x] **staking.unbonding_time** — 1,814,400s (21d) explicit + asserted.
 - [ ] **GembaVotes exclusion set POPULATED at genesis** — every reserve/faucet/foundation/DAO/
       contingency address excluded from voting (the single highest-severity launch item; testnet
       left it empty until a manual governance cycle). Verify `getVotes()==0` for each reserve.
-- [ ] **Supply reconciliation** — mint disabled, allocation sums to exactly 100,000,000 GMB, the
-      20M reward reserve is in the rewardstreamer module account (audit I1 confirmed this holds).
+- [x] **Supply reconciliation** — verify battery sums every bank balance with exact bigint math:
+      total == 100,000,000 GMB, 20M in the rewardstreamer module account, 30M in the Public
+      Reserve account; mint inflation asserted zero. NO onramp account (removed 2026-07-17).
 - [x] **Begin-blocker order assertion (L1) — DONE 2026-07-17.** `chain/x/wiring` validates the
       RESOLVED `OrderBeginBlockers` (feesplit → rewardstreamer → tailreward → distribution;
       presence, uniqueness, relative order) and the patched app constructor panics on any
