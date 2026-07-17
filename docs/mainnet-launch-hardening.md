@@ -13,6 +13,28 @@ and the code fixes already merged. There is **no mainnet genesis yet** — build
 - **M3** GembaGovernor: reserve `release` + UUPS `upgrade*` are Critical tier by selector.
 
 ## B. Mainnet GENESIS config — set explicitly, verify before launch (irreversible)
+
+### DECIDED VALUES (2026-07-17, owner) — feed these into the mainnet genesis builder
+The devnet builder (`init-gembad-multinode.sh`) already sets caps/supply/unbonding/feemarket
+correctly; it uses DEVNET-loose gov + a devnet-amplified reward rate. For mainnet set:
+- **feemarket.min_gas_price = `5000000000` agmb (5 gwei).** ✓ confirmed.
+- **staking.unbonding_time = `1814400s` (21 days).** ✓ already correct.
+- **rewardstreamer:** `annual_reward = 2,000,000 GMB`, `max_total_per_day = 5479 GMB` (the hard
+  emission backstop = 2M/365, so a mis-set block count can't over-emit). Block-time MEASURED on the
+  live testnet 2026-07-17 = **2.402s avg over 100k blocks** → set BOTH consistently:
+  `params.blocks_per_year = 13,140,000` and `formula_params.blocks_per_day = 36,000` (~2.4s). The
+  devnet's `blocks_per_year=2000` / `blocks_per_day=28800` are devnet-amplified — DO NOT ship them.
+  Re-measure real mainnet block-time weeks 1-4 and reconcile.
+- **gov:** `voting_period = 259200s` (3 days); `expedited_voting_period = 86400s` (1 day, < voting);
+  `min_deposit = 10,000 GMB` (`10000000000000000000000 agmb` — devnet was 1e7 agmb ≈ 0, spam risk);
+  `quorum = 0.334`, `threshold = 0.5`, `expedited_threshold = 0.667` (Critical ≥66% ✓); governance
+  **Timelock min delay 24–48h**.
+- **valgate:** `max_self_bond = 10,000 GMB`, `max_daily_bond_increase = 50 GMB`. ✓ already correct.
+- **Supply:** mint disabled (inflation 0), total = exactly 100,000,000 GMB, 20M reward reserve in the
+  rewardstreamer module account. ✓ already correct in the builder's "mainnet split".
+- **GembaVotes exclusion set** — POPULATE at genesis (every reserve/faucet/foundation/DAO/onramp/
+  contingency address); verify `getVotes()==0` for each. ⏳ owner to populate (highest-severity item).
+
 - [ ] **valgate.params** — set `max_self_bond` (10,000 GMB) and `max_daily_bond_increase` (50 GMB)
       explicitly (H1). Don't rely on the code default alone; a reviewer must see the numbers.
 - [ ] **feemarket.min_gas_price > 0** (L2) — a small non-zero floor (e.g. 1e9 agmb / 1 gwei) so the
