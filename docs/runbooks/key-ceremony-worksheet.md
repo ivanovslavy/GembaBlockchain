@@ -31,7 +31,7 @@
 | .82 (gmb1) | ______ | ______ | [ ] |
 | .83 (gmb2) | ______ | ______ | [ ] |
 | .84 (gmb3) | ______ | ______ | [ ] |
-| 4th box | ______ | ______ | [ ] |
+| .208 (A1/NAT, docker — no seed entry: NAT box, outbound peers only) | ______ | — | [ ] |
 
 ## C. Derived values (assemble after A + B)
 

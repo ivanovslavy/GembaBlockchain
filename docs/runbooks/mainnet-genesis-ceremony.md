@@ -45,11 +45,15 @@ Topology (P1, €0-reuse): 4 validators = Contabo **.82/.83/.84** + the 4th box;
 `213.136.85.32`, archive `.137`) **and prepare them from zero for mainnet:**
 
 - SSH: key-only auth (fresh authorized_keys), fail2ban/ufw baseline, updates.
-- Validators (`.82/.83/.84` + the 4th genesis validator box — assignment ✋ owner):
-  deps + Go + `gembad` built from source, systemd service (installer does all of it:
-  `GEMBA_NETWORK=mainnet` + `network.mainnet.env`), I4 pruning from block 0, firewall
-  (26656 open; RPC vhosts CF-only), Apache + Cloudflare Origin certs for
-  `gmb1/gmb2/gmb3.gembascan.io` (gmb1→.82, gmb2→.83, gmb3→.84).
+- Validators — the 4 genesis boxes are **`.82`, `.83`, `.84` + `.208`** (owner decision
+  2026-07-18). `.82/.83/.84`: deps + Go + `gembad` built from source, systemd service
+  (installer does all of it: `GEMBA_NETWORK=mainnet` + `network.mainnet.env`), I4
+  pruning from block 0, firewall (26656 open; RPC vhosts CF-only), Apache + Cloudflare
+  Origin certs for `gmb1/gmb2/gmb3.gembascan.io` (gmb1→.82, gmb2→.83, gmb3→.84).
+  **`.208` (A1/NAT, docker — no OS reinstall):** after its testnet container is stopped,
+  stand up a FRESH mainnet docker container (mainnet gembad build + the
+  `network.mainnet.env` params, new keys per the ceremony — nothing testnet is reused);
+  NAT box = outbound peers only, no public RPC there (same as testnet).
 - Archive `.137`: gembad archive profile (`pruning="nothing"`, `evm-timeout 60s`),
   systemd, NO public RPC (hard rule).
 - Explorer `213.136.85.32`: docker + `explorer/docker-compose.mainnet.yml` + fresh
