@@ -19,10 +19,13 @@ import {ContingencyReserve} from "../src/reserves/ContingencyReserve.sol";
 /// Timelock; then funds each reserve to its EXACT §4.1 amount by broadcasting from the
 /// matching genesis EOA. Deployer = founder. Run against the new chain after re-genesis.
 contract DeployGovernance is Script {
-    // governance settings. Testnet uses short delays + a 50% quorum; MAINNET hardens to a
-    // 24h timelock + 66% quorum (CLAUDE.md §7, R-5). Both are env-overridable at deploy:
-    //   MAINNET: MIN_DELAY=86400  QUORUM_PCT=66   (24h timelock, 66% quorum)
-    //   testnet: leave unset → the defaults below (5-min timelock, 50% quorum)
+    // governance settings — env-overridable at deploy.
+    //   MAINNET (ceremony runbook): MIN_DELAY=86400 (24h timelock);
+    //     leave QUORUM_PCT unset → 40 (the two-tier STANDARD quorum; Critical is the
+    //     fixed 51/66 below — the old "QUORUM_PCT=66" note predated the two-tier
+    //     system and would wrongly raise the standard tier to 66);
+    //     VOTING_PERIOD in BLOCKS: 108000 ≈ 3 days at the measured ~2.4s block time.
+    //   testnet: leave unset → the defaults below (5-min timelock, standard 40).
     uint48 constant VOTING_DELAY = 1;        // blocks
     uint256 constant PROPOSAL_THRESHOLD = 0; // any vGMB holder may propose
     // Regenesis 2-tier governance (§9): Standard (quorum 40% / supermajority 51%) for routine

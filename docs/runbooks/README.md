@@ -17,6 +17,7 @@ Operational runbooks for running and maintaining GembaBlockchain nodes. Pair wit
 | [`raise-block-gas-limit.md`](./raise-block-gas-limit.md) | **block gas limit** finding (`block.max_gas` was 10M — too low for EVM deploys/DeFi): fixed to 100M in the genesis generator; the `x/consensus` gov-proposal procedure to raise it on the running testnet. (ADR-012) |
 | [`testnet-re-genesis.md`](./testnet-re-genesis.md) | **corrected re-genesis** of gemba-testnet-1 to the exact §4.1 allocation (each reserve held by its contract at its %); the destructive reset + redeploy + fund + verify procedure. (path A) |
 | [`explorer-migration.md`](./explorer-migration.md) | **split Blockscout off the archive** (`.137`) onto a dedicated NVMe box: parallel run, secure archive RPC tunnel (only the new server reads), re-index, Cloudflare DNS cutover, instant rollback — frees the archive from CPU/RAM contention |
+| [`mainnet-genesis-ceremony.md`](./mainnet-genesis-ceremony.md) | **THE mainnet launch runbook** (2026-07-17): gates (ADR-006) → DNS/boxes (gmb1/2/3) → key ceremony (encrypted backups + tested restore) → genesis build/collect/verify (33-assert battery) → 4-validator start → contract deploys in order (exclusion verify = mandatory gate) → ALL critical infra (notifier, alarms, bonded-ratio, auto-unjail/compound, backups, faucet, GembaPay) → post-launch reconcile |
 
 These are **social/operational** procedures: there is no admin key that force-runs
 the chain (§6). Test every procedure on a devnet/testnet before mainnet (§0.9).
