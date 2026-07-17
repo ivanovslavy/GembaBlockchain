@@ -80,6 +80,17 @@ configure() {
   sed -i "s|^seeds = .*|seeds = \"$SEEDS\"|" "$C"
   sed -i "s|^minimum-gas-prices = .*|minimum-gas-prices = \"$MIN_GAS_PRICES\"|" "$A"
   sed -i "s|^pruning = .*|pruning = \"$PRUNING\"|" "$A"
+  # I4 disk-fill hardening (root cause of the 2026-07-15 .82/.83 crash): a pruned validator
+  # must BOUND what it retains, FROM FIRST START. keep-recent bounds STATE, min-retain-blocks
+  # bounds BLOCKS, tx_index=null drops the (unbounded) CometBFT tx index. Only for pruned
+  # profiles — the archive runs pruning="nothing" and keeps everything.
+  if [ "$PRUNING" = "custom" ]; then
+    sed -i "s|^pruning-keep-recent = .*|pruning-keep-recent = \"$PRUNING_KEEP_RECENT\"|" "$A"
+    sed -i "s|^pruning-interval = .*|pruning-interval = \"$PRUNING_INTERVAL\"|" "$A"
+    sed -i "s|^min-retain-blocks = .*|min-retain-blocks = $MIN_RETAIN_BLOCKS|" "$A"
+  fi
+  # CometBFT tx index off on validators/pruned nodes (archive + Blockscout Postgres own history)
+  [ "${TX_INDEX:-}" = "null" ] && sed -i "s|^indexer = .*|indexer = \"null\"|" "$C"
 }
 
 service() {

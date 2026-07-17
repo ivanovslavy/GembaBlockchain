@@ -34,32 +34,56 @@ and the code fixes already merged. There is **no mainnet genesis yet** — build
       only by a hand-written list). WIRING.md is now corrected to include tailreward.
 
 ## C. Phase 2 (devnet) — needs the full app build + a live test, do NOT rush in-tree
-- [ ] **M1 — §6 daily-bond cap bypass via the EVM staking precompile.** The cap is enforced only in
-      the ante, which never sees the precompile's `delegate`/`redelegate` (they call the staking
-      msg server directly during EVM execution, after the ante; valgate's delegation hooks are
-      no-ops). The correct fix is **out-of-tree wiring** and must be validated on a throwaway
-      devnet, so it is deliberately NOT done as a rushed in-tree change (a botched consensus change
-      is worse than a documented Medium rate-limit gap):
-      - **Design:** wrap the staking `MsgServer` used to build the staking precompile so
-        `Delegate`/`BeginRedelegate` call `ValgateKeeper.CheckAndRecordDailyBond(dstValoper, amount)`
-        BEFORE delegating (rejecting over-cap); keep the ante check as CheckTx-time defense-in-depth.
-        (A hook-based alternative needs a transient store key + a creation-vs-delegation flag set in
-        `AfterValidatorCreated` — also app-wiring, hence still Phase 2.)
-      - **Test:** drive a precompile `delegate` exceeding 50 GMB/day and assert it reverts, and that
-        an equivalent Cosmos `MsgDelegate` still reverts (parity).
+- [x] **M1 — §6 daily-bond cap bypass via the EVM staking precompile. DONE + DEVNET-VALIDATED
+      (commit 677e5e2, fix; re-validated end-to-end 2026-07-17).** The cap was enforced only in the
+      ante, which never saw the precompile's `delegate`/`redelegate` (they call the staking msg
+      server directly during EVM execution, after the ante). **Fix (in-tree, in the genesis binary):**
+      `chain/x/valgate/keeper/staking_msgserver.go` = `CapEnforcingStakingMsgServer`, a staking
+      `MsgServer` decorator that calls `CheckAndRecordDailyBond(dstValoper, amount)` before
+      `Delegate`/`BeginRedelegate` (all other methods pass through). `chain/gembad/gembad-wiring.patch`
+      builds the staking precompile from the cap-enforcing server and `EVMKeeper.RegisterStaticPrecompile`
+      overrides the default — so ONLY the precompile server is wrapped; the Cosmos path (ante) and the
+      precompile path (wrapper) each check the SAME valgate counter exactly once (no double-count).
+      **End-to-end validation 2026-07-17 (this box):**
+      - Unit: `chain/x/valgate/staking_msgserver_test.go` → `go test ./x/valgate/...` PASS (over-cap
+        precompile delegate/redelegate rejected before the inner server).
+      - Build: clean `build-gembad.sh` from scratch — patch applies cleanly to pinned cosmos/evm
+        v0.7.0, full binary built (version 677e5e2-dirty).
+      - Live devnet (`gemba-1` / EVM 821206, 4 nodes, `--json-rpc.enable`, genesis cap 50 GMB/day):
+        precompile `delegate` 40 GMB via EVM JSON-RPC → MINED status=1 (under cap); +20 GMB
+        (60 > 50) → **REVERTED** — the bypass is closed. Cosmos-path parity: a subsequent Cosmos
+        `MsgDelegate` +15 GMB was rejected with "already added 40000000000000000000 today" — proving
+        BOTH paths share ONE daily counter (precompile 40 + cosmos 15 = 55 > 50 → rejected).
+      Consensus code, already committed → ships in the mainnet genesis binary (built via
+      `build-gembad.sh`), NOT a later governance upgrade. No `genesis.json` change needed for M1.
 
 ## D. Infra / key & secret hygiene
-- [ ] **I2 — validator auto-ops daemons** (`auto-unjail`, `auto-compound`) currently sign with an
-      **unencrypted `test` keyring backend**. For mainnet: move to an encrypted keyring / HSM /
-      tmkms, and restrict the operator key's scope. (Auto-ops key import is an already-open checklist
-      item.)
-- [ ] **I3 — live SMTP credential in plaintext** in `services/blockchain-notifier/.env` (weak/
-      reused-style password). **Rotate the SMTP password now** and move it to a secret store /
-      env-injection; ensure the `.env` is gitignored (it is) and 0600. This is a live-service action,
-      not a code change — do it on the mail host.
-- [ ] Re-run the round-4 **GitHub PAT rotation** (still pending) and the `security/track3-rpc-infra/
-      secret-scan.sh` before launch.
+- [x] **I2 — auto-ops `test` keyring backend. RESOLVED / risk-accepted 2026-07-17 (owner).** The
+      validator hosts are reachable ONLY via SSH key auth — no outsider gets a shell, so no path to
+      read the keyring at rest. Left as-is by decision; no change.
+- [x] **I3 — SMTP credential in `services/blockchain-notifier/.env`. RESOLVED / risk-accepted
+      2026-07-17 (owner).** Mail host is SSH-key-only; the `.env` is gitignored and unreadable
+      without a shell. Left as-is by decision; no change.
+- [x] **Round-4 GitHub PAT / secret-scan. RESOLVED / risk-accepted 2026-07-17 (owner).** Infra is
+      SSH-key-only; owner accepts the current secret posture across all three key/password items
+      above. No rotation performed by decision.
 - [ ] Confirm production owners of `GembaOnRamp`/`GembaPayDispenser`/`GmbCollector`/`GembaFaucet`/
       `GembaSwapFactory.feeToSetter` are governance/Timelock (or documented operational EOAs with a
       rotation plan) — the audit refuted these as SPOFs only under the "documented operational key"
       reading; verify the deploy actually sets the intended owner.
+- [ ] **I4 — validator node storage config FROM GENESIS (root cause: testnet disk-fill 2026-07-15).**
+      On 2026-07-15 validator `.82` filled its 72G disk under load and crash-looped (jailed + rpc3
+      down); the culprit was chain DATA: `application.db` 36G (`pruning="default"` keeps 362,880
+      versions) + `tx_index.db` 13G, with journald uncapped. **Mainnet validators must launch as
+      lean pruned nodes, configured at provisioning (NOT retroactively — applying `keep-recent=100`
+      to an already-fat node grinds the 362k-version backlog and makes catch-up fall behind the
+      chain; the clean fix is state-sync bootstrap or correct-from-genesis config):**
+  - `app.toml`: `pruning="custom"`, `pruning-keep-recent="100"`, `pruning-interval="10"` from first
+    start (a node pruned from genesis never accumulates the backlog, so it stays small AND syncs fine).
+  - `config.toml`: `[tx_index] indexer="null"` on validators (EVM receipts use the app-side indexer;
+    CometBFT tx-search lives on the archive/explorer only).
+  - journald drop-in cap `SystemMaxUse=500M` (uncapped default = 10% of disk).
+  - Keep the dedicated **archive** node (`pruning="nothing"`) as the sole history/explorer source, so
+    pruned validators lose nothing globally.
+  - The offline `gembad prune` subcommand is BROKEN in the current `evmd` build (`leveldb: closed`,
+    reclaims nothing) — do not depend on it. Add a disk-usage watchdog/alert (auto-unjail already exists).
