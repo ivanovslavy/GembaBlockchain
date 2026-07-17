@@ -28,6 +28,34 @@ Topology (P1, €0-reuse): 4 validators = Contabo **.82/.83/.84** + the 4th box;
 
 ## Phase 0.5 — TESTNET DECOMMISSION + fresh boxes (THE NEXT STEP — owner plan 2026-07-18)
 
+**STEP 0 — RPC CONTINUITY FIRST (owner 2026-07-18): move `rpc1/2/3` onto `.208` BEFORE
+touching any validator.** Live dApps (educhain, escrow, win, gembaticket, gembapass) call
+these hostnames; today `rpc1`→.83, `rpc2`→.84, `rpc3`→.82 — i.e. all three die the moment
+the Contabo reinstalls start. `.208` is the box that stays up longest by design, so parking
+all three names there keeps the dApps alive through the whole decommission with **zero
+downtime and no dApp code changes** (the move is at DNS level).
+
+- **Mechanism — Cloudflare Tunnel, NOT a DNS repoint.** `.208` is A1/**NAT, dials out, "No
+  public RPC"** (`SERVER-TOPOLOGY.md:11`): it has no inbound reachability and A1 is likely
+  CGNAT, so port-forwarding is not an option. Install `cloudflared` on the jellyfin host,
+  create one tunnel, and route **all three hostnames** (`rpc1`, `rpc2`, `rpc3.gembascan.io`)
+  through it to the container's local JSON-RPC. Cloudflare already fronts `*.gembascan.io`,
+  so this is a DNS/tunnel change only.
+- **Keep the hardened posture** (the security e2e asserts it): expose **only**
+  `eth,net,web3` — never `debug`/`personal`/`admin`/`txpool` — plus the single-CORS +
+  rate-limit rules on the Cloudflare side. Enabling JSON-RPC on `.208` must not regress
+  pentest P-1/P-2/P-3. Verify `eth_chainId` answers on every hostname **before** step 1
+  (and mind gotcha 0b below: the v0.7.0 JSON-RPC startup race — restart until 8545 answers).
+- **Accepted for the wind-down:** all three names now resolve to ONE box (the fallback list
+  is cosmetic) and `.208` has a downtime/jail history + residential bandwidth. Testnet load
+  is ~0, so this is fine for a decommission window.
+- **Also dies with the explorer (step 4):** `https://testnet.gembascan.io/rpc` (the swap
+  frontend's FIRST entry, proxied by the explorer's Apache → rpc1). Either repoint that
+  proxy at the tunnel too, or accept that swap falls back to `rpc1` — decide before step 4.
+- **End of life:** when `.208` stops (step 6) the testnet RPC is gone for good and every
+  testnet dApp goes dark. ✋ Owner decision needed before that: migrate each dApp to mainnet
+  or let it retire with the testnet.
+
 **Phased shutdown — validators unbond ONE BY ONE, `.208` is last and is ONLY stopped:**
 
 1. Unbond `.82` (announce → `gembad tx staking unbond` full self-bond → confirm the chain
