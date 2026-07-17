@@ -4,20 +4,32 @@ import 'dotenv/config';
 const NETWORK = (process.env.NETWORK || 'testnet').toLowerCase();
 const isMainnet = NETWORK === 'mainnet';
 
+// fail LOUD at startup for values that have no safe mainnet default
+function missing(name) {
+  throw new Error(`blockchain-notifier: ${name} is required when NETWORK=mainnet (no safe default)`);
+}
+
 export const cfg = {
   NETWORK,
   LABEL: NETWORK.toUpperCase(), // TESTNET / MAINNET — shown in every email subject + body
 
   // ---- chain endpoints ----
-  chainId: Number(process.env.GEMBA_CHAIN_ID || (isMainnet ? 0 : 821207)),
+  // Mainnet EVM chainId is 821206 (was a 0 placeholder before 2026-07-17).
+  chainId: Number(process.env.GEMBA_CHAIN_ID || (isMainnet ? 821206 : 821207)),
   cosmosChainId: process.env.COSMOS_CHAIN_ID || (isMainnet ? 'gemba-1' : 'gemba-testnet-1'),
-  evmRpc: process.env.EVM_RPC || 'https://rpc1.gembascan.io',
-  // Cosmos REST for validator/slashing/pool — reachable only via the .162→archive(.137):1317
-  // whitelist (Option A). 1317 is firewalled to the public; open it to the notifier host only.
-  cosmosRest: process.env.COSMOS_REST || 'http://13.140.148.137:1317',
-  explorer: process.env.EXPLORER_URL || 'https://testnet.gembascan.io',
+  // Mainnet RPC lives on FRESH subdomains — gmb1/2/3.gembascan.io (owner decision
+  // 2026-07-17): rpc1/2/3.gembascan.io stay testnet-only until decommission, so a stale
+  // wallet/integration config can never silently hit the other network.
+  evmRpc: process.env.EVM_RPC || (isMainnet ? 'https://gmb1.gembascan.io' : 'https://rpc1.gembascan.io'),
+  // Cosmos REST for validator/slashing/pool — firewalled to the public; open it to the
+  // notifier host only. NO testnet default on mainnet: the old hardcoded testnet archive IP
+  // must not leak into a mainnet deployment, so mainnet REQUIRES an explicit COSMOS_REST.
+  cosmosRest: process.env.COSMOS_REST || (isMainnet ? missing('COSMOS_REST') : 'http://13.140.148.137:1317'),
+  explorer: process.env.EXPLORER_URL || (isMainnet ? 'https://gembascan.io' : 'https://testnet.gembascan.io'),
   uptimeUrls: (process.env.UPTIME_URLS ||
-    'https://rpc1.gembascan.io,https://rpc2.gembascan.io,https://rpc3.gembascan.io,https://testnet.gembascan.io')
+    (isMainnet
+      ? 'https://gmb1.gembascan.io,https://gmb2.gembascan.io,https://gmb3.gembascan.io,https://gembascan.io'
+      : 'https://rpc1.gembascan.io,https://rpc2.gembascan.io,https://rpc3.gembascan.io,https://testnet.gembascan.io'))
     .split(',').map((s) => s.trim()).filter(Boolean),
   denom: process.env.DENOM || 'agmb',
 
