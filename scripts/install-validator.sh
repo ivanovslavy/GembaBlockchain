@@ -24,11 +24,37 @@
 set -euo pipefail
 
 # ---------------------------------------------------------------------------
-# Network parameters — override any via env. Defaults target gemba-testnet-1.
+# Network selection — EXPLICIT, never implied (owner 2026-07-17): a node silently
+# joining the wrong network is worse than one extra word in the command.
+#   GEMBA_NETWORK=testnet ./install-validator.sh     (gemba-testnet-1 / 821207)
+#   GEMBA_NETWORK=mainnet ./install-validator.sh     (gemba-1 / 821206)
+# Every network default below keys off this; each is still env-overridable.
 # ---------------------------------------------------------------------------
-NETWORK="${NETWORK:-gemba-testnet-1}"
-CHAIN_ID="${CHAIN_ID:-gemba-testnet-1}"
-EVM_CHAIN_ID="${EVM_CHAIN_ID:-821207}"
+GEMBA_NETWORK="${GEMBA_NETWORK:-}"
+case "$GEMBA_NETWORK" in
+  testnet)
+    NETWORK_DEF="gemba-testnet-1"; CHAIN_ID_DEF="gemba-testnet-1"; EVM_CHAIN_ID_DEF="821207"
+    GENESIS_URL_DEF="https://testnet.gembascan.io/brand/genesis.json"
+    GENESIS_SHA256_DEF="2ee72507b420443b23e0667f976d2d86c6b8bf7c88a8112e1145c2c8bf3bf3c9"
+    SEEDS_DEF="44935754a7ea7e5ced5528eb39b5b4f6de73d3bb@13.140.139.82:26656,5473057935d09332c6051e7e83902ae226e060d2@13.140.139.83:26656,b7588b7dcd3e90bc0306dce68f7c95c5306d74a6@13.140.139.84:26656"
+    MIN_GAS_PRICES_DEF="1000000000agmb"
+    ;;
+  mainnet)
+    NETWORK_DEF="gemba-1"; CHAIN_ID_DEF="gemba-1"; EVM_CHAIN_ID_DEF="821206"
+    GENESIS_URL_DEF="https://gembascan.io/brand/genesis.json"
+    GENESIS_SHA256_DEF=""   # published at the genesis ceremony — REQUIRED until then
+    SEEDS_DEF=""            # published at the genesis ceremony — REQUIRED until then
+    MIN_GAS_PRICES_DEF="5000000000agmb"   # mainnet fee floor is 5 gwei (ADR-008a)
+    ;;
+  *)
+    echo "FATAL: set GEMBA_NETWORK=testnet or GEMBA_NETWORK=mainnet explicitly." >&2
+    echo "  e.g.  GEMBA_NETWORK=testnet MONIKER=my-node $0" >&2
+    exit 1
+    ;;
+esac
+NETWORK="${NETWORK:-$NETWORK_DEF}"
+CHAIN_ID="${CHAIN_ID:-$CHAIN_ID_DEF}"
+EVM_CHAIN_ID="${EVM_CHAIN_ID:-$EVM_CHAIN_ID_DEF}"
 MONIKER="${MONIKER:-gemba-node-$(hostname -s 2>/dev/null || echo node)}"
 
 # Source + build (build-from-source = glibc-portable, reproducible)
@@ -38,14 +64,20 @@ GITHUB_TOKEN="${GITHUB_TOKEN:-}"           # only needed while the repo is priva
 GO_VERSION="${GO_VERSION:-1.25.9}"         # must satisfy chain/go.mod
 
 # Official network artifacts (must be publicly hosted)
-GENESIS_URL="${GENESIS_URL:-https://testnet.gembascan.io/brand/genesis.json}"
-GENESIS_SHA256="${GENESIS_SHA256:-2ee72507b420443b23e0667f976d2d86c6b8bf7c88a8112e1145c2c8bf3bf3c9}"  # gemba-testnet-1 genesis
-SEEDS="${SEEDS:-44935754a7ea7e5ced5528eb39b5b4f6de73d3bb@13.140.139.82:26656,5473057935d09332c6051e7e83902ae226e060d2@13.140.139.83:26656,b7588b7dcd3e90bc0306dce68f7c95c5306d74a6@13.140.139.84:26656}"
+GENESIS_URL="${GENESIS_URL:-$GENESIS_URL_DEF}"
+GENESIS_SHA256="${GENESIS_SHA256:-$GENESIS_SHA256_DEF}"
+SEEDS="${SEEDS:-$SEEDS_DEF}"
 PERSISTENT_PEERS="${PERSISTENT_PEERS:-}"
+# Mainnet refuses to run on blanks — no genesis hash / seeds means the ceremony
+# artifacts aren't published yet; guessing would be dangerous.
+if [ "$GEMBA_NETWORK" = "mainnet" ]; then
+  [ -n "$GENESIS_SHA256" ] || { echo "FATAL: GENESIS_SHA256 is required for mainnet (published at the genesis ceremony — see gemba-validator/network.mainnet.env)" >&2; exit 1; }
+  [ -n "$SEEDS" ] || { echo "FATAL: SEEDS is required for mainnet (published at the genesis ceremony)" >&2; exit 1; }
+fi
 
 # Node config
 HOME_DIR="${HOME_DIR:-$HOME/.gembad}"
-MIN_GAS_PRICES="${MIN_GAS_PRICES:-1000000000agmb}"   # node mempool anti-spam floor
+MIN_GAS_PRICES="${MIN_GAS_PRICES:-$MIN_GAS_PRICES_DEF}"   # node mempool anti-spam floor
 PRUNING="${PRUNING:-custom}"                          # validators prune (node-setup.md)
 ENABLE_JSONRPC="${ENABLE_JSONRPC:-false}"             # true only for RPC providers/explorer
 SVC_USER="${SVC_USER:-$USER}"
@@ -191,8 +223,10 @@ step_status() {
         --pubkey "\$(gembad comet show-validator --home $HOME_DIR)" \\
         --moniker "$MONIKER" --commission-rate 0.10 \\
         --commission-max-rate 0.20 --commission-max-change-rate 0.01 \\
-        --min-self-delegation 1 --chain-id $CHAIN_ID \\
+        --min-self-delegation 1000000000000000000000 --chain-id $CHAIN_ID \\
         --from validator --gas auto --gas-adjustment 1.3 --gas-prices $MIN_GAS_PRICES
+   (min-self-delegation must be >= the x/valgate floor of 1000 GMB = 1000e18 agmb —
+    the chain REJECTS create-validator below it, §5.2)
    For key security (tmkms) + sentry setup see docs/runbooks/validator-keys.md
 ============================================================================
 EOF

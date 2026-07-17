@@ -7,15 +7,23 @@ pulls + verifies the official genesis, wires the seeds, and starts a systemd ser
 
 ## Install / update (one line)
 
+The network is an EXPLICIT choice (since 2026-07-17) — a node silently joining the
+wrong network is worse than one extra word in the command:
+
 ```bash
-curl -sSL https://raw.githubusercontent.com/ivanovslavy/GembaBlockchain/main/scripts/install-validator.sh | bash
+# testnet (gemba-testnet-1 / EVM 821207):
+GEMBA_NETWORK=testnet curl -sSL https://raw.githubusercontent.com/ivanovslavy/GembaBlockchain/main/scripts/install-validator.sh | bash
+
+# MAINNET (gemba-1 / EVM 821206) — after the genesis ceremony publishes the
+# genesis sha256 + seeds (gemba-validator/network.mainnet.env):
+GEMBA_NETWORK=mainnet curl -sSL https://raw.githubusercontent.com/ivanovslavy/GembaBlockchain/main/scripts/install-validator.sh | bash
 ```
 
 Customise via env, e.g.:
 
 ```bash
-MONIKER=my-validator curl -sSL .../scripts/install-validator.sh | bash
-# or clone + run:  MONIKER=my-validator ./scripts/install-validator.sh
+GEMBA_NETWORK=testnet MONIKER=my-validator curl -sSL .../scripts/install-validator.sh | bash
+# or clone + run:  GEMBA_NETWORK=testnet MONIKER=my-validator ./scripts/install-validator.sh
 ```
 
 Re-running the same command **updates** the node (git pull + rebuild + restart). It
