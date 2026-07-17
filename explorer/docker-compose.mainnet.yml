@@ -1,0 +1,98 @@
+# =============================================================================
+# GembaScan — MAINNET explorer (gemba-1 / EVM 821206) at https://gembascan.io.
+# Derived 2026-07-17 from the live public-testnet compose (same service set and
+# fix log; only network identity + hosts + RPC differ):
+#   NETWORK_ID 821207 -> 821206, hosts testnet.gembascan.io -> gembascan.io,
+#   UI RPC rpc1 -> gmb1.gembascan.io (mainnet RPC = gmb1/2/3, owner 2026-07-17).
+# Deploy on the explorer box at the testnet->mainnet cutover; Apache (host)
+# terminates TLS with a Cloudflare Origin cert and reverse-proxies /, /api,
+# /socket, /rpc. NOTE: envs/backend.env is per-network — build the mainnet copy
+# from envs/backend.env.example with CHAIN_ID=821206 + FRESH secrets.
+#
+# Backend reads ./envs/backend.env (gitignored — holds secrets). Backend points at
+# the host's archive node via host.docker.internal:8545 (CLAUDE.md §11).
+#
+# --- Fix log ---
+# search/address "HTTP 500": the frontend fetched a CSRF token on every page
+#   (/node-api/csrf -> backend /api/account/v2/get_csrf), which 404s because
+#   ACCOUNT_ENABLED=false, and the Next.js proxy turned that into a 500. In the
+#   built frontend, the reCaptcha-gated features (CSV export, public-tag
+#   submission, account) are what trigger the CSRF fetch — so the cure while
+#   account login is OFF is to NOT set NEXT_PUBLIC_RE_CAPTCHA_APP_SITE_KEY. It is
+#   re-added together with account when email-code login is enabled (see
+#   docs/runbooks/explorer-account-login.md). reCaptcha did nothing while account
+#   was off, so removing it loses no working feature.
+# =============================================================================
+services:
+  db:
+    image: postgres:16
+    command: ["postgres","-c","max_connections=300","-c","shared_buffers=256MB"]
+    environment: { POSTGRES_USER: blockscout, POSTGRES_PASSWORD: blockscout, POSTGRES_DB: blockscout }
+    volumes: [ blockscout-db-data:/var/lib/postgresql/data ]
+    healthcheck: { test: ["CMD-SHELL","pg_isready -U blockscout"], interval: 5s, timeout: 5s, retries: 10 }
+  redis:
+    image: redis:7-alpine
+  sc-verifier:
+    image: ghcr.io/blockscout/smart-contract-verifier:v1.9.0
+    restart: unless-stopped
+    environment:
+      SMART_CONTRACT_VERIFIER__SERVER__HTTP__ADDR: 0.0.0.0:8050
+      SMART_CONTRACT_VERIFIER__SOLIDITY__FETCHER__LIST__LIST_URL: https://binaries.soliditylang.org/linux-amd64/list.json
+      SMART_CONTRACT_VERIFIER__ZKSYNC_SOLIDITY__ENABLED: "false"
+  backend:
+    # Backend↔frontend versions MUST match the Blockscout compatibility matrix, else
+    # pages (Tokens, search, …) crash client-side with a "500" boundary while every
+    # API call still returns 200 (frontend expects fields the older backend omits).
+    # 2026-06-07: bumped 7.0.2 → 9.0.2 to pair with frontend v2.3.0 (matrix: v2.3.0 ↔
+    # v9.0.x). 9.x images are on ghcr (Docker Hub stopped at 7.0.2). Migrations 7→9 run
+    # automatically on start; back up the DB first (pg_dump). Bump BOTH together.
+    image: ghcr.io/blockscout/blockscout:9.0.2
+    restart: unless-stopped
+    depends_on: { db: { condition: service_healthy } }
+    extra_hosts: [ "host.docker.internal:host-gateway" ]
+    env_file: [ ./envs/backend.env ]
+    command: sh -c "bin/blockscout eval 'Elixir.Explorer.ReleaseTasks.create_and_migrate()' && bin/blockscout start"
+    ports: [ "127.0.0.1:4000:4000" ]
+  frontend:
+    # v2.3.0 pairs with backend v9.0.x (matrix). NB v2.3.1+ requires backend v9.1.x —
+    # do NOT bump to v2.3.1+ without also moving the backend to 9.1.x.
+    image: ghcr.io/blockscout/frontend:v2.3.0
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_NETWORK_NAME: Gemba
+      NEXT_PUBLIC_NETWORK_SHORT_NAME: gemba
+      NEXT_PUBLIC_NETWORK_ID: "821206"
+      NEXT_PUBLIC_NETWORK_CURRENCY_NAME: Gemba
+      NEXT_PUBLIC_NETWORK_CURRENCY_SYMBOL: GMB
+      NEXT_PUBLIC_NETWORK_CURRENCY_DECIMALS: "18"
+      NEXT_PUBLIC_NETWORK_LOGO: https://gembascan.io/brand/gemba-bold-256.png
+      NEXT_PUBLIC_NETWORK_ICON: https://gembascan.io/brand/gemba-bold-256.png
+      FAVICON_MASTER_URL: https://gembascan.io/brand/gemba-favicon.png
+      NEXT_PUBLIC_FOOTER_LINKS: https://gembascan.io/brand/footer-links.json
+      NEXT_PUBLIC_APP_HOST: gembascan.io
+      NEXT_PUBLIC_APP_PORT: "443"
+      NEXT_PUBLIC_APP_PROTOCOL: https
+      NEXT_PUBLIC_API_HOST: gembascan.io
+      NEXT_PUBLIC_API_PORT: "443"
+      NEXT_PUBLIC_API_PROTOCOL: https
+      NEXT_PUBLIC_API_WEBSOCKET_PROTOCOL: wss
+      # web3: the chain RPC the UI uses for network add/switch + client-side eth_call
+      # (Read/Write Contract while connected). Without it, web3 features are off.
+      NEXT_PUBLIC_NETWORK_RPC_URL: https://gmb1.gembascan.io
+      # "Blockchain interaction (writing to contract)" — i.e. Connect Wallet + Write
+      # Contract — is gated in the frontend on BOTH the RPC url above AND a
+      # WalletConnect/Reown project id (free: https://cloud.reown.com). This id is a
+      # NEXT_PUBLIC_ value (shipped to the browser) — public by design, not a secret;
+      # it is protected by the project's Allowed-Domains list in the Reown dashboard,
+      # where gembascan.io should be allowlisted.
+      NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID: a25f7bcc46433fecddee320e76fa307f
+      # Account login ENABLED 2026-06-06 (Auth0 + SendGrid for watchlist mail). The
+      # reCaptcha key is required by the account UI. Backend side: ACCOUNT_ENABLED=true
+      # + ACCOUNT_AUTH0_* + ACCOUNT_SENDGRID_* in envs/backend.env (gitignored).
+      NEXT_PUBLIC_IS_ACCOUNT_SUPPORTED: "true"
+      # MUST be a reCAPTCHA v2 *invisible* site key (Blockscout supports invisible
+      # only). A v2 Checkbox key throws "reCAPTCHA initialization error" on the
+      # watchlist-email widget. (public site key; backend has the matching secret.)
+      NEXT_PUBLIC_RE_CAPTCHA_APP_SITE_KEY: 6LdKpxAtAAAAAIxrVl3crE_BbfzMYGBvqVDJmpqT
+    ports: [ "127.0.0.1:3000:3000" ]
+volumes: { blockscout-db-data: {} }
