@@ -99,16 +99,28 @@
 
 ## ADR-006 — Cosmos EVM is pre-v1 (audit pending)
 
-- **Status:** Accepted — gated
+- **Status:** Accepted (owner decision 2026-07-18) — was "Accepted — gated".
 - **Context:** `github.com/cosmos/evm` is production-used but its v1 release
   follows an external audit. Building on pre-v1 code carries upstream-change and
   unaudited-code risk.
 - **Decision:** Pin a known-good version; read upstream release notes before any
   bump; **isolate our custom modules** (zero-inflation reward streamer, 60/40 fee
-  split) so upstream upgrades stay clean. **Do not launch to the public** before
-  the upstream audit lands and our own review is done.
-- **Consequences:** Public launch is blocked on the upstream audit + our review.
-  Devnet and testnet work proceed freely. Custom-module isolation costs some
+  split) so upstream upgrades stay clean.
+- **Acceptance (2026-07-18):** the gate is met and launch is NOT held for a
+  further "v1 audit". Rationale: (a) the cosmos/evm codebase **was audited by
+  Sherlock** — final report committed in-repo at
+  `docs/audits/sherlock_2025_07_28_final.pdf` (audited v0.3.0); (b) we pin
+  **v0.7.0**, the latest release, which contains **every published security
+  advisory fix** including the actively-exploited ICS20 precompile issue
+  (ASA-2026-002, patched v0.6.0); (c) our own **multi-phase security audit**
+  (`docs/audit-findings-2026-07-13.md`, `audit-phase2-results-2026-07-13.md`,
+  `mainnet-launch-hardening.md`) reviewed the integration + custom modules. If a
+  **v0.7.1** tag appears before genesis day (two security-adjacent backports were
+  pending on `release/v0.7.x` on 2026-07-17), bump to it first; otherwise launch
+  on v0.7.0. The formal upstream "v1 + audit" milestone has no published ETA and
+  is no longer a launch blocker.
+- **Consequences:** Public launch proceeds on the pinned, published-fix-complete
+  v0.7.0. Custom-module isolation costs some
   boilerplate but protects the upgrade path.
 
 ---
@@ -413,6 +425,6 @@
 
 | ADR | Blocker | Clears when |
 |---|---|---|
-| ADR-006 | Cosmos EVM pre-v1 / unaudited | Upstream audit lands **and** our own review is done |
+| ADR-006 | Cosmos EVM pre-v1 / unaudited | **CLEARED (owner 2026-07-18)** — Sherlock-audited codebase (`docs/audits/sherlock_2025_07_28_final.pdf`) + v0.7.0 pins all published advisory fixes + our own multi-phase audit. Bump to v0.7.1 if tagged before genesis. See ADR-006. |
 | ADR-009 | MiCA / public-sale gate | **Withdrawn** — no liquidity, no exchange, no public sale by design (ADR-003); not a launch blocker |
 | ADR-008 | Long-term security budget | Tail-reward (recirculation) mechanism implemented + tested; bonded-ratio monitoring in place |

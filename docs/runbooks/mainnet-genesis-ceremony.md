@@ -16,12 +16,13 @@ Topology (P1, €0-reuse): 4 validators = Contabo **.82/.83/.84** + the 4th box;
 
 ## Phase 0 — Gates (before anything irreversible)
 
-- ✋ **ADR-006 decision recorded.** Check github.com/cosmos/evm for a `v0.7.1` tag (two
-  security-adjacent backports were pending on `release/v0.7.x` as of 2026-07-17: statedb
-  locked-balance #1187, mempool base-fee #1223). If tagged — bump `EVM_VERSION` in
-  `build-gembad.sh` and rebuild/retest; either way record the accept/wait decision in
-  `docs/risks.md` (the upstream audit has NO published ETA; v0.7.0 contains every
-  *published* advisory fix).
+- ✅ **ADR-006 — CLEARED (owner 2026-07-18, `docs/risks.md`).** The upstream-audit gate
+  is accepted (Sherlock-audited codebase + v0.7.0 pins every published advisory fix +
+  our own multi-phase audit); NOT waiting for a formal v1 audit. **One residual action
+  at genesis day:** check github.com/cosmos/evm for a `v0.7.1` tag (two security-adjacent
+  backports were pending on `release/v0.7.x` on 2026-07-17: statedb locked-balance #1187,
+  mempool base-fee #1223) — if tagged, bump `EVM_VERSION` in `build-gembad.sh` +
+  rebuild/retest; otherwise launch on v0.7.0.
 - ✅ Full test evidence recorded: `forge test` (contracts), `go test ./...` (chain),
   security e2e re-run — see hardening §B/§C and `security/results/`.
 - ✋ Testnet farewell: announce the stop date, then execute Phase 0.5 below.

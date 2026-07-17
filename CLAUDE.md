@@ -759,7 +759,11 @@ contradictions.
    008/009). Full ADR: `/docs/risks.md` (ADR-011).
 
 > **Hard launch blockers (do not ship a public launch until all clear):**
-> **Upstream audit** — Cosmos EVM pre-v1 (risk 6, ADR-006).
+> **Upstream audit** — Cosmos EVM pre-v1 (risk 6, ADR-006). **CLEARED 2026-07-18:**
+> owner-accepted — Sherlock-audited codebase + v0.7.0 pins every published advisory
+> fix + our own multi-phase audit; bump to v0.7.1 if it tags before genesis (see
+> `docs/risks.md` ADR-006).
 > **Security-budget tail** — recirculation tail-reward implemented + tested and
-> bonded-ratio monitoring live (risk 8, ADR-008). Devnet/testnet and closed
+> bonded-ratio monitoring live (risk 8, ADR-008 — the last remaining gate: closed
+> when the bonded-ratio exporter goes live at launch). Devnet/testnet and closed
 > formula-based institutional grants are **not** blocked by these gates.
