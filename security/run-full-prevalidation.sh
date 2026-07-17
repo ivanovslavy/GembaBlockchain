@@ -80,9 +80,14 @@ stage_genesis() {
     done
     OUT="$W/genesis-out" GEMBAD="$GEMBAD_BIN" GENTX_DIR="$W/gentxs" \
       "$ROOT/chain/gembad/init-gembad-mainnet.sh" collect
-    # boot the 4 nodes on port-shifted configs and demand real blocks
+    # boot the 4 nodes on port-shifted configs and demand real blocks.
+    # NB: copy the FINAL (post-collect) genesis into every node home — the homes
+    # still hold the PRE-gentx copy, which has an empty validator set.
     declare -a IDS
-    for i in 0 1 2 3; do IDS[$i]="$("$GEMBAD_BIN" comet show-node-id --home "v$i")"; done
+    for i in 0 1 2 3; do
+      cp genesis-out/config/genesis.json "v$i/config/genesis.json"
+      IDS[$i]="$("$GEMBAD_BIN" comet show-node-id --home "v$i")"
+    done
     for i in 0 1 2 3; do
       C="v$i/config/config.toml"; APP="v$i/config/app.toml"
       P2P=$((26656+i*100)); RPC=$((26657+i*100)); PROX=$((26658+i*100)); GRPC=$((9090+i*10))
@@ -90,7 +95,8 @@ stage_genesis() {
       PEERS=""; for j in 0 1 2 3; do [ "$j" -eq "$i" ] && continue; PEERS="$PEERS,${IDS[$j]}@127.0.0.1:$((26656+j*100))"; done
       sed -i "s|^persistent_peers = .*|persistent_peers = \"${PEERS#,}\"|" "$C"
       sed -i "s|^minimum-gas-prices = .*|minimum-gas-prices = \"5000000000agmb\"|; s|^evm-chain-id = .*|evm-chain-id = 821206|; s|tcp://localhost:9090|tcp://localhost:$GRPC|" "$APP"
-      "$GEMBAD_BIN" start --home "v$i" --chain-id gemba-1 --evm.evm-chain-id 821206 >"$W/v$i.log" 2>&1 &
+      # ABSOLUTE --home so the cleanup pkill pattern below can match the command line
+      "$GEMBAD_BIN" start --home "$W/v$i" --chain-id gemba-1 --evm.evm-chain-id 821206 >"$W/v$i.log" 2>&1 &
     done
     sleep 30
     H="$(curl -s localhost:26657/status | jq -r '.result.sync_info.latest_block_height' 2>/dev/null || echo 0)"

@@ -94,6 +94,29 @@ condition: "всички ключове ги имаме и е сигурно, ч
 
 From the owner machine, against `https://gmb1.gembascan.io`:
 
+> **⚠️ TWO GOTCHAS CAUGHT BY THE 2026-07-18 STAGING REHEARSAL (do these first):**
+>
+> **(0a) The canonical CREATE2 factory does NOT exist on a fresh chain** — every deploy
+> script fails with "missing CREATE2 deployer 0x4e59b44847…". Deploy it FIRST
+> (Arachnid deterministic-deployment-proxy, same address on every chain):
+> ```
+> # temporarily start the serving node with --json-rpc.allow-unprotected-txs=true
+> # (the presigned tx is legacy/non-EIP155); remove the flag afterwards
+> cast send 0x3fab184622dc19b6109349b94811493bf2a45362 --value 100000000000000000 \
+>   --private-key $FOUNDER_PK --rpc-url $RPC          # fund the one-time deployer
+> cast publish 0xf8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222 \
+>   --rpc-url $RPC
+> cast code 0x4e59b44847b379578588920cA78FbF26c0B4956C --rpc-url $RPC   # must be non-empty
+> ```
+>
+> **(0b) cosmos/evm v0.7.0 JSON-RPC startup race** — if the HTTP JSON-RPC server starts
+> before the first applied block, it dies permanently (ctx-cancel in server/json_rpc.go;
+> WS may stay up but hangs). On live chains a restart usually wins the race; at GENESIS
+> day it is a coin flip. After starting any RPC-serving node ALWAYS verify
+> `eth_chainId` answers on 8545; if dead, restart the node until it does. Enabling
+> JSON-RPC on several nodes gives several lottery tickets. (Watch upstream for a fix
+> in v0.7.1+.)
+
 1. **DeployGovernance** — env: `FOUNDER_PK`, `FOUNDATION_PK`, `DAO_PK`, `CONTINGENCY_PK`,
    `GUARDIAN1..3`, `MIN_DELAY=86400` (24h), `VOTING_PERIOD=108000` (blocks ≈ 3d @2.4s),
    QUORUM_PCT **unset** (= standard 40; Critical is fixed 51/66),

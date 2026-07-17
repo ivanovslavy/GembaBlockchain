@@ -59,3 +59,26 @@ ok  github.com/ivanovslavy/GembaBlockchain/chain/x/wiring                 0.028s
 A ready-to-enable GitHub Actions workflow is prepared at
 `.github/workflows/tests.yml.proposed` (forge + go suites on every push). Rename to
 `tests.yml` to activate — owner's call (kept inactive on request, 2026-07-17).
+
+## 2026-07-18 — full battery + LIVE e2e + staging deploy rehearsal (all green)
+
+Run on the owner's order after the change set was complete:
+
+1. **`security/run-full-prevalidation.sh run` — ALL 4 LOCAL STAGES PASS** (logs:
+   `security/results/prevalidation-20260717/`): static (forge 170/0/3-skip + go all
+   green), build (clean gembad), genesis (throwaway ceremony dry-run booted, height 23),
+   fuzz (RPC fuzz + exposure). One orchestrator bug found+fixed on the way (the boot
+   step lacked the final-genesis copy into the node homes).
+2. **Live-testnet e2e harness — ALL 6 TRACKS PASS** (`security/results/e2e-20260717-1156.log`):
+   t1 contracts, t2 chain, t3 RPC/infra, t4 services, inv 40/0 live invariants
+   (exercising the new conditional-OnRamp path against the legacy config), dapp 5 sites
+   + 3 RPCs. Read-only against the live network.
+3. **Staging deploy rehearsal** (LOCAL 4-node mainnet-genesis chain, new binary, real
+   deploy scripts — the gap the owner flagged: the new deploy path had never met a live
+   chain): CREATE2 factory installed (gotcha 0a above) → **DeployGovernance with the
+   real mainnet env** (MIN_DELAY 86400, VOTING_PERIOD 108000, 9-address EXCLUDE_EXTRA)
+   → **verify-exclusions.sh: 13/13 excluded, getVotes==0, negative control open** →
+   reserve funding EXACT (Foundation 15M / DAO 10M / **Contingency 20M** — the corrected
+   amount, on chain) → DeployDispenser + DeployApps clean. Chain torn down after;
+   nothing touched any real network. Gotcha 0b (JSON-RPC startup race) documented in
+   the ceremony runbook.
