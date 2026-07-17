@@ -22,7 +22,7 @@ paid only once (no double payment).** Native only — rejects direct GMB, ERC-20
 networks: {
   // … existing networks …
   gembaTestnet: { url: "https://rpc1.gembascan.io", chainId: 821207, accounts: [process.env.DEPLOYER_PK] },
-  gembaMainnet: { url: "https://rpc.gembachain.io", chainId: 821206, accounts: [process.env.DEPLOYER_PK] }, // RPC TBD at mainnet launch
+  gembaMainnet: { url: "https://gmb1.gembascan.io", chainId: 821206, accounts: [process.env.DEPLOYER_PK] }, // mainnet RPC = gmb1/2/3.gembascan.io (2026-07-17)
 },
 etherscan: {                       // Blockscout verification for GembaScan
   apiKey: { gembaTestnet: "blockscout", gembaMainnet: "blockscout" },

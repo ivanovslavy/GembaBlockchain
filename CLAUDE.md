@@ -503,6 +503,11 @@ the box.
 > swap, gembapay, addresses, …) and runs **no chain node**. The archive node (`.148.137`) is **archive-only**; **GembaScan/Blockscout was MOVED to its own box `213.136.85.32`** (Contabo VPS 20 NVMe) on 2026-06-29, reaching the archive over a private autossh tunnel — see `docs/public-rpc-topology.md` / `docs/SERVER-TOPOLOGY.md`. The RPC domain is **`*.gembascan.io`**
 > — **`rpc.gembachain.io` is not a valid host; do not use it.** Mainnet follows the same model
 > (RPC on beefier validators, never on the archive/explorer host). See `docs/public-rpc-topology.md`.
+>
+> **MAINNET RPC (decided 2026-07-17):** fresh subdomains **`gmb1`/`gmb2`/`gmb3.gembascan.io`**
+> (`gmb1`→**.82**, `gmb2`→**.83**, `gmb3`→**.84**) — deliberately DIFFERENT from the testnet's
+> `rpc1/2/3` so a stale wallet/integration config can never silently hit the other network;
+> `rpc1/2/3` stay testnet-only until the testnet is decommissioned.
 
 ---
 

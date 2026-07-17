@@ -1,8 +1,12 @@
 {
-  "name": "GembaBlockchain",
+  "name": "Gemba",
   "chain": "GMB",
   "icon": "gemba",
-  "rpc": ["https://rpc.gembascan.io"],
+  "rpc": [
+    "https://gmb1.gembascan.io",
+    "https://gmb2.gembascan.io",
+    "https://gmb3.gembascan.io"
+  ],
   "faucets": [],
   "nativeCurrency": {
     "name": "Gemba",

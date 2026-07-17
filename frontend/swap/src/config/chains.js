@@ -18,11 +18,19 @@ export const gembaTestnet = defineChain({
 });
 
 // Mainnet (gemba-1, chainId 821206) — not live yet; DEX addresses fill in at launch.
+// Mainnet RPC = FRESH gmb1/2/3.gembascan.io subdomains (owner 2026-07-17; gmb1→.82,
+// gmb2→.83, gmb3→.84) — rpc1/2/3 stay testnet-only, and *.gembachain.io is NOT an RPC
+// host (CLAUDE.md §11).
+export const MAINNET_RPCS = [
+  "https://gmb1.gembascan.io",
+  "https://gmb2.gembascan.io",
+  "https://gmb3.gembascan.io",
+];
 export const gembaMainnet = defineChain({
   id: 821206,
-  name: "GembaBlockchain",
+  name: "Gemba",
   nativeCurrency: { name: "Gemba", symbol: "GMB", decimals: 18 },
-  rpcUrls: { default: { http: ["https://rpc.gembachain.io"] } },
+  rpcUrls: { default: { http: MAINNET_RPCS } },
   blockExplorers: { default: { name: "GembaScan", url: "https://gembascan.io" } },
 });
 

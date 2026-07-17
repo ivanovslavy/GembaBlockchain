@@ -43,9 +43,10 @@ This folder holds the ready-to-submit payloads:
 ## Mainnet (821206)
 
 `eip155-821206.json` is a template. **Do not submit it until the mainnet RPC
-(`rpc.gembascan.io` or final URL) is live and returns chainId 821206** — ethereum-lists
-CI rejects chains whose RPC doesn't answer. Mainnet launch is a hard-gated event
-(`CLAUDE.md` §16), so this waits.
+(`gmb1/gmb2/gmb3.gembascan.io` — owner decision 2026-07-17: fresh subdomains so the
+testnet's rpc1/2/3 can never be confused with mainnet; gmb1→.82, gmb2→.83, gmb3→.84)
+is live and returns chainId 821206** — ethereum-lists CI rejects chains whose RPC
+doesn't answer. Mainnet launch is a hard-gated event (`CLAUDE.md` §16), so this waits.
 
 ## ERC-20 token icons (later)
 
