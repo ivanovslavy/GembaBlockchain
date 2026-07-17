@@ -50,10 +50,11 @@ correctly; it uses DEVNET-loose gov + a devnet-amplified reward rate. For mainne
       left it empty until a manual governance cycle). Verify `getVotes()==0` for each reserve.
 - [ ] **Supply reconciliation** — mint disabled, allocation sums to exactly 100,000,000 GMB, the
       20M reward reserve is in the rewardstreamer module account (audit I1 confirmed this holds).
-- [ ] **Begin-blocker order assertion (L1)** — add a startup assertion in the app constructor that
-      the resolved `SetOrderBeginBlockers` places feesplit → rewardstreamer → tailreward →
-      distribution, panicking otherwise (the order is a supply/reward-routing invariant enforced
-      only by a hand-written list). WIRING.md is now corrected to include tailreward.
+- [x] **Begin-blocker order assertion (L1) — DONE 2026-07-17.** `chain/x/wiring` validates the
+      RESOLVED `OrderBeginBlockers` (feesplit → rewardstreamer → tailreward → distribution;
+      presence, uniqueness, relative order) and the patched app constructor panics on any
+      violation (`gembad-wiring.patch`). Unit-tested (good order + 4 violation classes);
+      full `build-gembad.sh` green; runtime smoke: node constructs the app cleanly.
 
 ## C. Phase 2 (devnet) — needs the full app build + a live test, do NOT rush in-tree
 - [x] **M1 — §6 daily-bond cap bypass via the EVM staking precompile. DONE + DEVNET-VALIDATED

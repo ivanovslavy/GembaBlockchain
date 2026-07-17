@@ -30,6 +30,7 @@ index 204345c..9321c96 100644
 +	valgatekeeper "github.com/ivanovslavy/GembaBlockchain/chain/x/valgate/keeper"
 +	valgatetypes "github.com/ivanovslavy/GembaBlockchain/chain/x/valgate/types"
 +	slashfunds "github.com/ivanovslavy/GembaBlockchain/chain/x/slashfunds"
++	gembawiring "github.com/ivanovslavy/GembaBlockchain/chain/x/wiring"
 +
  	ibccallbackskeeper "github.com/cosmos/evm/x/ibc/callbacks/keeper"
  	"github.com/cosmos/evm/x/vm"
@@ -158,6 +159,24 @@ index 204345c..9321c96 100644
  		// TODO: remove no-ops? check if all are no-ops before removing
  		distrtypes.ModuleName, slashingtypes.ModuleName,
  		evidencetypes.ModuleName, stakingtypes.ModuleName,
+ 		authtypes.ModuleName, banktypes.ModuleName, govtypes.ModuleName, genutiltypes.ModuleName,
+ 		authz.ModuleName, feegrant.ModuleName,
+ 		consensusparamtypes.ModuleName,
+ 		vestingtypes.ModuleName,
+ 	)
+
++	// GembaBlockchain (audit L1): the money-routing BeginBlock order (feesplit →
++	// rewardstreamer → tailreward → distribution) is a supply/reward invariant
++	// enforced only by the hand-written list above. Validate the RESOLVED order and
++	// refuse to boot on a violation, so a silent reorder in a future upstream merge
++	// or manual edit becomes a loud startup panic instead of a mis-routed economy.
++	if err := gembawiring.ValidateBeginBlockOrder(app.ModuleManager.OrderBeginBlockers); err != nil {
++		panic(err)
++	}
++
+ 	// NOTE: the feemarket module should go last in order of end blockers that are actually doing something,
+ 	// to get the full block gas used.
+ 	app.ModuleManager.SetOrderEndBlockers(
 @@ -673,6 +752,9 @@ func NewExampleApp(
  		ibctransfertypes.ModuleName,
  		genutiltypes.ModuleName, evidencetypes.ModuleName, authz.ModuleName,
