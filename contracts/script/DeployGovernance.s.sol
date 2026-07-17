@@ -91,13 +91,16 @@ contract DeployGovernance is Script {
             )
         );
 
-        // Votes: exclude the four reserve contracts from voting at genesis (finding #10).
-        address[] memory excludedReserves = new address[](4);
-        excludedReserves[0] = faucet;
-        excludedReserves[1] = foundation;
-        excludedReserves[2] = dao;
-        excludedReserves[3] = contingency;
-        GembaVotes votes = new GembaVotes{salt: keccak256(bytes("gemba.votes.v1"))}(address(timelock), excludedReserves);
+        // Votes: exclude the four reserve contracts (finding #10) + any EXCLUDE_EXTRA addresses.
+        // For MAINNET pass every pre-seeded holder via EXCLUDE_EXTRA — the founder EOA + each genesis
+        // reserve/seed account — so no treasury/pre-seed balance can be wrapped into vGMB votes
+        // ("only validators vote at launch", owner 2026-07-17:
+        // vGMB is a wrapper, supply starts at 0, so excluding every genesis-seeded address leaves
+        // cosmos stake = validators as the only voice until GMB legitimately circulates). Testnet
+        // leaves EXCLUDE_EXTRA unset. Governance (Timelock) can add/remove later via setExcluded.
+        GembaVotes votes = new GembaVotes{salt: keccak256(bytes("gemba.votes.v1"))}(
+            address(timelock), _excludedReserves(faucet, foundation, dao, contingency)
+        );
 
         GembaGovernor governor = new GembaGovernor{salt: keccak256(bytes("gemba.governor.v1"))}(
             IVotes(address(votes)), timelock, VOTING_DELAY, uint32(vm.envOr("VOTING_PERIOD", uint256(86400))),
@@ -145,5 +148,21 @@ contract DeployGovernance is Script {
         (bool ok, ) = reserve.call{value: amount}("");
         require(ok, "fund failed");
         vm.stopBroadcast();
+    }
+
+    /// @dev The 4 reserve contracts (finding #10) + any EXCLUDE_EXTRA addresses (mainnet: founder
+    /// EOA + genesis seed accounts). In its own frame to keep run() off the stack-too-deep limit.
+    function _excludedReserves(address a, address b, address c, address d)
+        internal
+        view
+        returns (address[] memory list)
+    {
+        address[] memory extra = vm.envOr("EXCLUDE_EXTRA", ",", new address[](0));
+        list = new address[](4 + extra.length);
+        list[0] = a;
+        list[1] = b;
+        list[2] = c;
+        list[3] = d;
+        for (uint256 i = 0; i < extra.length; i++) list[4 + i] = extra[i];
     }
 }
