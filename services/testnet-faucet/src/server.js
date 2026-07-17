@@ -115,6 +115,28 @@ export function createApp({ faucet: _faucet = faucet, byAddress: _byAddress = by
   return app;
 }
 
+// MAINNET guard (owner decision 2026-07-17): the small 0.1 GMB/day public faucet DOES run
+// on mainnet, but ONLY in contract mode (FAUCET_CONTRACT -> on-chain GembaDripFaucet with
+// its on-chain cooldown). The testnet raw-send mode holds a hot key that drips unlimited
+// amounts on operator error — refuse to start it against the mainnet chain.
+const MAINNET_EVM_CHAIN_ID = 821206n;
+export async function assertNotRawModeOnMainnet({ rpcUrl = RPC_URL, faucetContract = process.env.FAUCET_CONTRACT } = {}) {
+  if (faucetContract) return; // contract mode — allowed everywhere
+  const { ethers } = await import('ethers');
+  const { chainId } = await new ethers.JsonRpcProvider(rpcUrl).getNetwork();
+  if (chainId === MAINNET_EVM_CHAIN_ID) {
+    throw new Error(
+      `refusing to start: raw-send faucet mode on MAINNET (chainId ${chainId}). ` +
+        'Set FAUCET_CONTRACT to the GembaDripFaucet address (contract mode is the only mainnet mode).'
+    );
+  }
+}
+
 if (process.env.NODE_ENV !== 'test') {
-  createApp().listen(PORT, () => console.log(`testnet faucet on :${PORT} (drip ${DRIP_GMB} GMB)`));
+  assertNotRawModeOnMainnet()
+    .then(() => createApp().listen(PORT, () => console.log(`testnet faucet on :${PORT} (drip ${DRIP_GMB} GMB)`)))
+    .catch((e) => {
+      console.error(String(e?.message || e));
+      process.exit(1);
+    });
 }
