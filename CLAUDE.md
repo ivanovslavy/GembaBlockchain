@@ -395,6 +395,16 @@ push anything harmful unseen; hard rules baked into genesis; and faucet grants b
 **formula** (automatic), so no authority is needed for funds to reach institutions.
 The voting base grows as GMB distributes.
 
+> **"Only validators vote at launch" (decided 2026-07-17, owner).** vGMB (`GembaVotes`)
+> is a 1:1 wrapper over native GMB whose supply starts at **0** — treasury voting power
+> exists only for addresses that wrap. At the mainnet governance deploy, **every
+> genesis-seeded holder** (founder + reserve/seed EOAs + the 4 validator EOAs + the
+> operational GMB-holding contracts) is excluded via `EXCLUDE_EXTRA`, on top of the 4
+> auto-excluded reserve contracts — so until GMB legitimately circulates (faucet,
+> dispenser sales, grants), the only working voice on the network is chain-level `gov`
+> = the bonded validators. Canonical list + mandatory post-deploy check:
+> `docs/mainnet-exclusion-list.md` + `contracts/script/verify-exclusions.sh`.
+
 ---
 
 ## 8. Contingency reserve (10%) — *резерв за непредвидени нужди*

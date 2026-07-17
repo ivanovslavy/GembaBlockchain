@@ -4,18 +4,29 @@
 # NO API key needed. Reads the forge broadcast files (DeployGovernance + DeployDex)
 # and runs `forge verify-contract` against the self-hosted Blockscout verifier.
 #
-# Usage:  ./script/verify-all.sh
-#   VERIFIER_URL  (default https://testnet.gembascan.io/api/)
-#   RPC_URL       (default https://rpc1.gembascan.io)
-#   CHAIN_ID      (default 821207)
+# Usage:  GEMBA_NETWORK=testnet|mainnet ./script/verify-all.sh
+# The network is an EXPLICIT choice (owner 2026-07-17) — no silent testnet default.
+#   testnet: 821207, testnet.gembascan.io verifier, rpc1.gembascan.io
+#   mainnet: 821206, gembascan.io verifier, gmb1.gembascan.io
+# Each is still overridable via VERIFIER_URL / RPC_URL / CHAIN_ID.
 # Run AFTER the re-genesis deploys (#5 + DeployDex). The deploy scripts can also
 # pass `--verify --verifier blockscout --verifier-url $VERIFIER_URL` to verify inline.
 # =============================================================================
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"; cd "$HERE"
-VERIFIER_URL="${VERIFIER_URL:-https://testnet.gembascan.io/api/}"
-RPC_URL="${RPC_URL:-https://rpc1.gembascan.io}"
-CHAIN_ID="${CHAIN_ID:-821207}"
+case "${GEMBA_NETWORK:-}" in
+  testnet)
+    VERIFIER_URL="${VERIFIER_URL:-https://testnet.gembascan.io/api/}"
+    RPC_URL="${RPC_URL:-https://rpc1.gembascan.io}"
+    CHAIN_ID="${CHAIN_ID:-821207}"
+    ;;
+  mainnet)
+    VERIFIER_URL="${VERIFIER_URL:-https://gembascan.io/api/}"
+    RPC_URL="${RPC_URL:-https://gmb1.gembascan.io}"
+    CHAIN_ID="${CHAIN_ID:-821206}"
+    ;;
+  *) echo "FATAL: set GEMBA_NETWORK=testnet or GEMBA_NETWORK=mainnet explicitly." >&2; exit 1 ;;
+esac
 
 # contractName -> fully-qualified source path (for the verifier)
 declare -A PATHS=(

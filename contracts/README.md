@@ -69,7 +69,7 @@ base fee at the 1 gwei floor when idle, scaling up under load, decaying after.
 ```bash
 cd contracts
 ./setup-libs.sh                 # fetch pinned OpenZeppelin v5 + forge-std into lib/
-forge test                      # 41 tests incl. invariant/fuzz + meta-tx suites
+forge test                      # 173 tests incl. invariant/fuzz + meta-tx + adversarial suites (3 skipped = live-fork)
 slither . --filter-paths "lib/|test/|script/" --exclude-dependencies   # triaged in SECURITY.md
 ```
 
