@@ -91,14 +91,20 @@ findings from the pass).
 
 ## Phase 6 (GembaPay on-ramp)
 
-- **`GembaOnRamp.buy` / `withdrawGmb`** — "sends ETH to arbitrary destination" /
-  "low-level call": **intentional and access-/guard-protected**. `buy` sends GMB to
-  the **paying buyer** (`msg.sender`) who just transferred stablecoin in; CEI (pull
-  payment, then deliver) + `nonReentrant` (tested in `OnRamp.t.sol`
-  `test_BuyReentrancyBlocked`). `withdrawGmb` is `onlyOwner` + `nonReentrant`.
-  Native GMB transfers must use `call{value:}` with a checked success — done.
-- The **MiCA gate** (`publicSaleEnabled`, default `false`) is enforced and tested
-  (`test_PublicSaleDisabledByDefault`); enabling is `onlyOwner`.
+> **`GembaOnRamp` REMOVED from the codebase 2026-07-17 (owner decision):** no on-chain
+> public-sale contract exists; GMB sales run only via the `GembaPayDispenser`
+> (owner-only, see its triage below / `docs/gembapay-gmb-dispenser.md`). The triage
+> notes below are kept for the historical record of the testnet deploy (which still
+> hosts a disabled instance).
+
+- **`GembaOnRamp.buy` / `withdrawGmb`** *(historical)* — "sends ETH to arbitrary
+  destination" / "low-level call": **intentional and access-/guard-protected**. `buy`
+  sent GMB to the **paying buyer** (`msg.sender`) who just transferred stablecoin in;
+  CEI (pull payment, then deliver) + `nonReentrant`. `withdrawGmb` was `onlyOwner` +
+  `nonReentrant`. Native GMB transfers used `call{value:}` with a checked success.
+- The **MiCA gate** (`publicSaleEnabled`, default `false`) was enforced and tested;
+  enabling was `onlyOwner`. The gate concept (ADR-009) survives the contract's removal:
+  any future fiat-adjacent sale stays behind a written MiCA sign-off.
 
 ## Phase 8 (Ticketing + perks)
 
@@ -171,7 +177,7 @@ contracts.** Triage:
 | assembly-usage | V2 ERC20 chainid, Factory CREATE2 | Required by V2 — benign |
 | reentrancy (WGMB.withdraw) | `WGMB` | Standard WETH9 (balance decremented before call, CEI) — benign |
 | reentrancy (SeamProbe) | `SeamProbe` | Devnet probe, never on mainnet |
-| sends-eth-to-arbitrary | `GembaOnRamp.buy`, `BaseReserve._release`, `GembaPerks.*`, `GembaTicketing.withdrawProceeds` | All access-controlled (`onlyOwner`/`onlyRole`/granter) or `to == msg.sender`; CEI + `nonReentrant` — by design |
+| sends-eth-to-arbitrary | `BaseReserve._release`, `GembaPerks.*`, `GembaTicketing.withdrawProceeds` (was also `GembaOnRamp.buy` — contract removed 2026-07-17) | All access-controlled (`onlyOwner`/`onlyRole`/granter) or `to == msg.sender`; CEI + `nonReentrant` — by design |
 | strict-equality / block-timestamp / missing-zero-addr / costly-loop / naming / too-many-digits | NativePool, LiquidityLocker, Faucet epoch, EmergencyPause ctor, V2 fork | Correct guards / by design / style — benign |
 
 No suppression filter is configured **on purpose** — findings stay visible; this table is the triage.
@@ -228,6 +234,6 @@ Reproduce: `git clone --depth 1 https://github.com/Uniswap/v2-core && diff -w <(
 
 `myth analyze` on the flattened fund-handling / DEX contracts (local solc 0.8.30,
 per-contract execution timeout). **All clean:**
-- `GembaOnRamp` → "No issues were detected."
+- `GembaOnRamp` → "No issues were detected." *(contract removed from the codebase 2026-07-17)*
 - `GembaNativePool` → "No issues were detected."
 - `GembaTicketing` → "No issues were detected."

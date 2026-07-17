@@ -74,14 +74,16 @@ Cosmos module — see the fix section below).
 | 3 | Foundation | 15,000,000 | `FoundationTreasury` contract | Governor + Timelock | No (excluded) |
 | 4 | DAO reserve | 10,000,000 | `DAOReserve` contract — **also a source for early-participant grants** | Governor + Timelock | No (excluded) |
 | 5 | Contingency | 20,000,000 | `ContingencyReserve` contract — **absorbs the former 10M circulation pool (2026-06-29)** | Governor + Timelock | No (excluded) |
-| 6 | Founder — ops & sale | 5,000,000 | founder EOA. From day 1 the founder seeds the OPEN channels from its **own** 5M (the 30M Public Reserve untouched): **100k → public faucet (GembaFaucet), 160k → GembaOnRamp sale, ~40k → the 4 validators**; keeps ~4.7M | founder | No (excluded) |
+| 6 | Founder — ops & sale | 5,000,000 | founder EOA. From day 1 the founder seeds the OPEN channels from its **own** 5M (the 30M Public Reserve untouched): **100k → public faucet (GembaFaucet), ~40k → the 4 validators**; keeps ~4.86M (funds the GembaPayDispenser operationally as sales demand) | founder | No (excluded) |
 
 **No standing circulation pool** (decision 2026-06-29). GMB reaches anyone via OPEN channels seeded
 by the founder's own 5M on day 1 — a **public faucet** (100k, `GembaFaucet`, anyone claims a little),
-a **public on-ramp sale** (160k, `GembaOnRamp`, GMB for USE: Gemba dApps @20% off + validator entry,
-non-commercial/for-society), the **4 validators** (~40k, permissionless), plus formula grants from the
-Public Reserve and ecosystem grants from the DAO reserve. The `GembaFaucet`/`GembaOnRamp` contracts are
-tested and funded day 1; nothing is hoarded.
+the **Buy-GMB sale via GembaPay** (`GembaPayDispenser`, fixed 1 GMB = 1 EUR, GMB for USE: Gemba dApps
+@20% off + validator entry, non-commercial/for-society; funded operationally from the founder EOA),
+the **4 validators** (~40k, permissionless), plus formula grants from the Public Reserve and ecosystem
+grants from the DAO reserve. The `GembaFaucet` contract is tested and funded day 1; nothing is hoarded.
+*(The on-chain `GembaOnRamp` public-sale contract was REMOVED — owner decision 2026-07-17; the
+dispenser is the only sale channel.)*
 
 **Genesis mechanics (the fixes vs the testnet):**
 1. **Predeploy the 4 reserve contracts in genesis** (bytecode + CREATE2) and **allocate GMB

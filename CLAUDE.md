@@ -105,13 +105,15 @@ power.
 
 **Not built for speculation or trading — by design.** GembaBlockchain **provides no
 liquidity for GMB**, operates **no exchange/DEX**, and does not redeem GMB for fiat.
-GMB exists to be *used*, not speculated on. There IS a **public on-ramp** (`GembaOnRamp`,
-§6) where anyone can buy GMB **via GembaPay at a fixed 1 GMB = 1 EUR** (the only way to buy GMB) **to USE** — Gemba dApp services at a 20%
+GMB exists to be *used*, not speculated on. There IS a **public Buy-GMB channel**
+(`GembaPayDispenser`, §6) where anyone can buy GMB **via GembaPay at a fixed 1 GMB = 1 EUR** (the only way to buy GMB) **to USE** — Gemba dApp services at a 20%
 discount (GembaPay, GembaEscrow, GembaWin, GembaTools, GembaKitchen, GembaSniperBot) or to
 become a validator earning daily GMB rewards (themselves spendable on those services). This
 sale is **non-commercial, made solely for the benefit of society** — a fixed-rate utility
-on-ramp, **NOT** a market, liquidity, or speculative offering. (We cannot stop a third party
-creating a market — but we seed none ourselves; §8 & §16.1.)
+channel, **NOT** a market, liquidity, or speculative offering. Mechanically it is the
+gembachain.io "Buy GMB" UI → GembaPay backend → owner-only dispenser contract; **the on-chain
+`GembaOnRamp` public-sale contract was REMOVED entirely (owner decision 2026-07-17)**. (We
+cannot stop a third party creating a market — but we seed none ourselves; §8 & §16.1.)
 
 - **Permissionless.** Anyone with enough GMB can validate. Anyone can hold and
   transfer GMB. No operator approves participants.
@@ -119,7 +121,7 @@ creating a market — but we seed none ourselves; §8 & §16.1.)
   non-voting operations/sales treasury — like a central bank with no vote. This is
   what makes "decentralized / given to society" credible.
 - **Honest about what GMB is.** GMB is a *freely transferable utility coin on a
-  public chain*, **not** a closed-loop voucher. We run a fixed-rate public on-ramp for
+  public chain*, **not** a closed-loop voucher. We run a fixed-rate Buy-GMB sale (via GembaPay) for
   *use* (§6), but operate **no DEX**, **seed no liquidity by design**, and do not redeem
   GMB for fiat; on a permissionless chain we **cannot** prevent a third party from
   creating a market, so a market price may emerge that we do not control. A conscious
@@ -172,7 +174,7 @@ from the testnet *drip* faucet; the former liquidity reserve is the **Contingenc
 | Foundation (development, audits) | 15% | 15,000,000 | No | dev funding via governance |
 | DAO reserve (contingency) | 10% | 10,000,000 | No | unforeseen needs; released by governance; **a source for grants to early participants** (2026-06-29) |
 | **Contingency reserve** *(непредвиден)* | 20% | 20,000,000 | No | unforeseen/strategic needs; released via governance + timelock. **Absorbs the former 10% client/circulation pool** (decision 2026-06-29); no liquidity is seeded (§8) |
-| Founder / operations + sale | 5% | 5,000,000 | No (excluded) | from day 1 the founder seeds the OPEN channels from its **own** 5M (the 30M Public Reserve untouched): **100k → public faucet, 160k → GembaOnRamp sale, ~40k → the 4 validators**; keeps ~4.7M working capital (sold for stablecoin → discounted access) |
+| Founder / operations + sale | 5% | 5,000,000 | No (excluded) | from day 1 the founder seeds the OPEN channels from its **own** 5M (the 30M Public Reserve untouched): **100k → public faucet, ~40k → the 4 validators**; keeps ~4.86M working capital (sold via the GembaPay dispenser → discounted access; the dispenser is funded operationally from this stock) |
 
 > **🔻 ALLOCATION + OPEN-DISTRIBUTION UPDATE (decided 2026-06-29).** The former **10% client/
 > circulation pool is folded into the Contingency reserve (now 20%)**. New split: **30 Public
@@ -181,8 +183,10 @@ from the testnet *drip* faucet; the former liquidity reserve is the **Contingenc
 > non-voting, and held in readiness to be distributed, not hoarded*, and GMB reaches anyone via
 > **OPEN channels seeded by the founder's OWN 5% on day 1 (the 30M Public Reserve is untouched):**
 > - **Public faucet (100k)** — the tested `GembaFaucet`; **0.1 GMB/day per account**, permissionless — if it runs low the founder tops it up (or it is refilled from the Public Reserve).
-> - **Public on-ramp sale (160k)** — `GembaOnRamp`; anyone buys GMB to USE Gemba dApps at a 20%
->   discount or to become a validator (non-commercial, for society — §6/§16.1).
+> - **Public Buy-GMB sale** — via GembaPay + `GembaPayDispenser` (fixed 1 GMB = 1 EUR, funded
+>   operationally from the founder stock); anyone buys GMB to USE Gemba dApps at a 20%
+>   discount or to become a validator (non-commercial, for society — §6/§16.1). *(The on-chain
+>   `GembaOnRamp` contract + its 160k genesis seed were removed 2026-07-17.)*
 > - **Validators (~40k)** — the 4 genesis validators' self-bond; entry is permissionless for all.
 > - Plus formula grants to institutions (Public Reserve) and ecosystem/early grants (DAO).
 > Anyone with a clear purpose can get starter GMB from block 0; the rest stays in public reserves
@@ -196,11 +200,12 @@ contingency, keeping 5%); the 2026-06-29 update folds the 10% circulation into c
 non-voting contracts/accounts.
 
 > **Founder holding (5%) — funds the open channels, then is trading stock.** On day 1 the founder
-> seeds the public faucet (100k), the GembaOnRamp public sale (160k) and the 4 validators (~40k)
-> **from its own 5M** — the 30M Public Reserve is never touched. The remaining ~4.7M is the
-> **trading stock** (sold for stablecoin via the on-ramp to give clients discounted access;
-> recirculates; **non-voting**). There is **no separate circulation pool** — GMB enters circulation
-> via the faucet, the on-ramp, validator rewards and DAO/Public-Reserve grants, not a standing bucket.
+> seeds the public faucet (100k) and the 4 validators (~40k) **from its own 5M** — the 30M Public
+> Reserve is never touched. The remaining ~4.86M is the **trading stock** (sold via the GembaPay
+> dispenser to give clients discounted access; recirculates; **non-voting**); the dispenser is
+> funded from it operationally, as sales demand. There is **no separate circulation pool** — GMB
+> enters circulation via the faucet, the Buy-GMB dispenser, validator rewards and
+> DAO/Public-Reserve grants, not a standing bucket.
 
 ### 4.2 Zero inflation, no burn
 
@@ -422,7 +427,7 @@ treasuries and app logic live in **Solidity**.
 | `Governor` + `Timelock` | treasury/contract governance; 1-GMB-1-vote excluding reserve contracts; quorum, supermajority, delay |
 | `PublicReserve` — the **Public Reserve** contract (`src/reserves/PublicReserve.sol`) | the 30% public/municipal reserve; intake of 40% of fees; formula + vesting grants; per-grant + rolling-window cap; owner = Timelock, pause-only EmergencyPause |
 | `GembaFaucet` | the small **public faucet** — anyone claims a little GMB, permissionlessly; seeded 100k from the founder on day 1 (the tested testnet contract) |
-| `GembaOnRamp` | the **public on-ramp sale** — fixed-rate stablecoin→GMB for USE (Gemba dApps @20% off + validator entry); seeded 160k from the founder; `publicSaleEnabled=true` on mainnet; non-commercial, for society (§6) |
+| `GembaPayDispenser` (+ `GmbCollector`) | the **Buy-GMB sale channel** — gembachain.io "Buy GMB" UI → GembaPay backend → owner-only dispenser at a fixed 1 GMB = 1 EUR, for USE (Gemba dApps @20% off + validator entry); funded operationally from the founder stock; non-commercial, for society (§6). *The on-chain `GembaOnRamp` public-sale contract was REMOVED 2026-07-17.* |
 | `FoundationTreasury` | dev funding, released by governance |
 | `DAOReserve` | contingency funds, released by governance |
 | `ContingencyReserve` *(renamed from `LiquidityReserve.sol`)* | holds the **20%** contingency GMB (incl. the folded circulation, 2026-06-29) for unforeseen/strategic needs; released only by governance + timelock. **No liquidity is seeded (§8).** |
@@ -559,16 +564,18 @@ the box.
   off-chain backend in `services/access-control` — PostgreSQL schema with `FORCE`
   RLS isolating each institution's identity rows, Express API, GDPR erasure
   (on-chain revoke + off-chain delete), 8 unit tests + an RLS integration test.*
-- **Phase 6 — On-ramp.** GembaPay stablecoin → GMB purchase flow (no fiat redemption;
-  no DEX operated by us). *Done: `GembaOnRamp` (`contracts/src/onramp`) — fixed-rate
-  stablecoin→GMB sale, `nonReentrant` + SafeERC20, 8 Foundry tests; built/tested on
-  devnet (demo swaps 50 stablecoin → 500 GMB).* **Mainnet (decision 2026-06-29):
-  `publicSaleEnabled` is set TRUE — a PUBLIC on-ramp sale, seeded with 160k GMB from the
-  founder's 5% on day 1.** It sells GMB **via GembaPay at a fixed 1 GMB = 1 EUR** to anyone **to USE**: Gemba dApp
+- **Phase 6 — Buy-GMB (GembaPay).** GembaPay → GMB purchase flow (no fiat redemption;
+  no DEX operated by us). *Done: `GembaPayDispenser` + `GmbCollector`
+  (`contracts/src/onramp`) — the gembachain.io "Buy GMB" UI → GembaPay backend →
+  owner-only dispenser at a fixed 1 GMB = 1 EUR; Ownable2Step + Pausable +
+  `nonReentrant`; 19+12 Foundry tests; live on the testnet
+  (`docs/gembapay-gmb-dispenser.md`).* It sells GMB to anyone **to USE**: Gemba dApp
   services at a 20% discount (GembaPay, GembaEscrow, GembaWin, GembaTools, GembaKitchen,
   GembaSniperBot) or to become a validator earning daily GMB rewards. **Non-commercial,
   made solely for the benefit of society** — not a market/liquidity/speculative offering
   (§2, §16.1). Institutions also receive GMB via closed formula grants (Public Reserve, Phase 3).
+  **The original on-chain `GembaOnRamp` public-sale contract (+ its 160k genesis seed) was
+  REMOVED entirely — owner decision 2026-07-17;** the dispenser is the only sale channel.
 - **Phase 7 — Explorer.** Blockscout / GembaScan + API keys; optional Cosmos explorer.
   *Done: `explorer/` — pinned Blockscout docker-compose + `envs/backend.env`
   (Etherscan-compatible API, self-issued API keys, contract verification via
@@ -621,7 +628,7 @@ GembaBlockchain/
   .gitignore           # ignores .env, keys, mnemonics, node data
   /chain/              # Cosmos EVM app (Go): app wiring, custom modules, genesis, config; node keys NOT committed
   /contracts/          # Foundry/Hardhat Solidity (governor, treasuries, NFTs, paymaster)
-  /services/           # Node.js/Express backends (on-ramp, access-control API, indexers)
+  /services/           # Node.js/Express backends (purchase-backend, access-control API, indexers)
   /frontend/           # React
   /explorer/           # Blockscout docker setup
   /docs/               # detailed specs & runbooks (halt recovery, upgrades, risks)
@@ -664,12 +671,12 @@ contradictions.
    ourselves by design**, and do not redeem to fiat, but a third party *can* create a
    liquidity pool. A market price may emerge.
    Accepted. GembaBlockchain seeds no liquidity and runs no exchange. It DOES run a
-   **fixed-rate public on-ramp** (`GembaOnRamp`, §6) and a small **public faucet** so
-   anyone can obtain GMB **to use** — this is **non-commercial, made for the benefit of
-   society** (Gemba dApp services at a 20% discount + validator entry with daily GMB
-   rewards), NOT a market, liquidity, or speculative offering. Institutions also receive
-   GMB via closed formula grants. Built for *use*, not trading. (A third party could
-   still create a market; that is outside our control.)
+   **fixed-rate Buy-GMB sale** (via GembaPay + `GembaPayDispenser`, §6) and a small
+   **public faucet** so anyone can obtain GMB **to use** — this is **non-commercial, made
+   for the benefit of society** (Gemba dApp services at a 20% discount + validator entry
+   with daily GMB rewards), NOT a market, liquidity, or speculative offering. Institutions
+   also receive GMB via closed formula grants. Built for *use*, not trading. (A third
+   party could still create a market; that is outside our control.)
 2. **Small early voting base.** ~90% of GMB sits in non-voting reserves at launch.
    Mitigated by high quorum + supermajority + long timelock + formula-based (not
    discretionary) grants, and by the base growing as GMB distributes. No human steward.
@@ -711,14 +718,14 @@ contradictions.
    (§5.7). Full ADRs in `/docs/risks.md` (ADR-008, 008a, 008b).
 9. **Decentralized by rule + openly distributable from day 1.** The network is
    permissionless from block 0 and GMB is publicly obtainable from day 1 (a small
-   **public faucet** + a **public on-ramp**, §4.1) — so it is **not** a closed or
-   centralized launch. Stated plainly: at genesis the 4 validators run on the
+   **public faucet** + the **public Buy-GMB sale via GembaPay**, §4.1) — so it is **not**
+   a closed or centralized launch. Stated plainly: at genesis the 4 validators run on the
    founder's servers and ~95% of GMB sits in **public, non-voting reserves held in
    readiness to be distributed — not hoarded**; the founder is excluded from voting.
    Decentralization is bound to *mechanisms, not promises*: permissionless validator
-   entry from block 0, a day-1 public faucet + on-ramp anyone can use, no protocol
+   entry from block 0, a day-1 public faucet + Buy-GMB sale anyone can use, no protocol
    lever to re-close entry (the rejected allowlist/KYC/privileged-validator levers
-   stay rejected), reserves distributed via OPEN channels (faucet, on-ramp, validator
+   stay rejected), reserves distributed via OPEN channels (faucet, the dispenser, validator
    rewards, formula/DAO grants) that widen both electorates, and **published
    decentralization KPIs** (independent operators, Nakamoto coefficient, top-operator
    stake share, bonded ratio, founder share of circulating GMB). Full ADR:

@@ -35,8 +35,13 @@ for n in FAUCET:$C_FAUCET FOUNDATION:$C_FOUNDATION DAO:$C_DAO CONTINGENCY:$C_CON
 done
 
 echo "── no public GMB sale by design (§2/§16.1) ──"
-ps=$(call "$C_ONRAMP" 'publicSaleEnabled()(bool)')
-[ "$ps" = "false" ] && ok "OnRamp.publicSaleEnabled == false" || no "OnRamp.publicSaleEnabled=$ps (must be false)" "onramp"
+if [ -n "${C_ONRAMP:-}" ]; then
+  # legacy testnet deploy still has the (disabled) OnRamp; the contract was removed 2026-07-17
+  ps=$(call "$C_ONRAMP" 'publicSaleEnabled()(bool)')
+  [ "$ps" = "false" ] && ok "OnRamp.publicSaleEnabled == false" || no "OnRamp.publicSaleEnabled=$ps (must be false)" "onramp"
+else
+  ok "no OnRamp deployed (contract removed 2026-07-17) — no public sale by construction"
+fi
 
 echo "── 2-tier governance correctly configured (§9 regenesis) ──"
 q=$(call "$C_GOVERNOR" 'quorumNumerator()(uint256)'); q=${q%% *}
@@ -58,7 +63,8 @@ done
 [ "$drain" = "0" ] && ok "EmergencyPause exposes no fund-moving function" || no "EmergencyPause MAY move funds!" "pause:drain"
 
 echo "── all protocol + dApp contracts verified on gembascan ──"
-declare -A V=( [Timelock]=$C_TIMELOCK [Votes]=$C_VOTES [Governor]=$C_GOVERNOR [EmergencyPause]=$C_EMERGENCYPAUSE [Faucet]=$C_FAUCET [Foundation]=$C_FOUNDATION [DAO]=$C_DAO [Contingency]=$C_CONTINGENCY [DripFaucet]=$C_DRIPFAUCET [OnRamp]=$C_ONRAMP [Ticketing]=$C_TICKETING [Perks]=$C_PERKS [Forwarder]=$C_FORWARDER [CheckIn]=$C_CHECKIN [AccessNFT]=$C_ACCESSNFT [GembaWinFactory]=$D_GEMBAWIN_FACTORY [GembaTicketRegistry]=$D_GEMBATICKET_REGISTRY [EduChainGameToken]=$D_EDUCHAIN_GAMETOKEN [EscrowFactory]=$D_ESCROW_FACTORY [GembaPass]=$D_GEMBAPASS )
+declare -A V=( [Timelock]=$C_TIMELOCK [Votes]=$C_VOTES [Governor]=$C_GOVERNOR [EmergencyPause]=$C_EMERGENCYPAUSE [Faucet]=$C_FAUCET [Foundation]=$C_FOUNDATION [DAO]=$C_DAO [Contingency]=$C_CONTINGENCY [DripFaucet]=$C_DRIPFAUCET [Ticketing]=$C_TICKETING [Perks]=$C_PERKS [Forwarder]=$C_FORWARDER [CheckIn]=$C_CHECKIN [AccessNFT]=$C_ACCESSNFT [GembaWinFactory]=$D_GEMBAWIN_FACTORY [GembaTicketRegistry]=$D_GEMBATICKET_REGISTRY [EduChainGameToken]=$D_EDUCHAIN_GAMETOKEN [EscrowFactory]=$D_ESCROW_FACTORY [GembaPass]=$D_GEMBAPASS )
+[ -n "${C_ONRAMP:-}" ] && V[OnRamp]=$C_ONRAMP  # legacy testnet only (contract removed 2026-07-17)
 for name in "${!V[@]}"; do
   cn=$(curl -s --max-time 8 "$SEC_EXPLORER/api?module=contract&action=getsourcecode&address=${V[$name]}" 2>/dev/null | grep -oE '"ContractName":"[^"]+"' | head -1 | cut -d'"' -f4)
   [ -n "$cn" ] && ok "$name verified ($cn)" || no "$name NOT verified" "verify:$name"

@@ -82,16 +82,17 @@ slither . --filter-paths "lib/|test/|script/" --exclude-dependencies   # triaged
 Pairs with the off-chain backend `services/access-control` (PostgreSQL RLS + GDPR
 split). 7 Foundry tests; Slither clean.
 
-## Phase 6 — DONE (GembaPay on-ramp)
+## Phase 6 — DONE (GembaPay Buy-GMB)
 
 | Contract | File | Notes |
 |---|---|---|
-| `GembaOnRamp` | `src/onramp/GembaOnRamp.sol` | fixed-rate stablecoin→GMB sale (no DEX, no fiat redemption); SafeERC20 + `nonReentrant` |
+| `GembaPayDispenser` | `src/onramp/GembaPayDispenser.sol` | owner-only GMB dispenser behind the GembaPay backend (fixed 1 GMB = 1 EUR); Ownable2Step + Pausable + `nonReentrant`; 19 tests |
+| `GmbCollector` | `src/onramp/GmbCollector.sol` | GMB intake for dApp payments via GembaPay; 12 tests |
 
-**MiCA gate (ADR-009):** `publicSaleEnabled` is **false by default**; enabling public
-sale on a public/main network is **blocked until written MiCA sign-off** from a
-Bulgarian fintech lawyer (see the contract header + `docs/risks.md` ADR-009). Built
-and tested on devnet only. 8 Foundry tests; live demo `script/OnRampDemo.s.sol`.
+GMB is sold ONLY via the gembachain.io "Buy GMB" UI → GembaPay backend → dispenser
+(`docs/gembapay-gmb-dispenser.md`). **The on-chain `GembaOnRamp` public-sale contract
+was REMOVED entirely — owner decision 2026-07-17** (no public-sale contract exists;
+the MiCA gate ADR-009 concept still applies to any future fiat-adjacent sale).
 
 ## Phase 8 — DONE (tickets & perks)
 

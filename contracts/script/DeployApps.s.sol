@@ -13,7 +13,8 @@ import {AccessControlNFT} from "../src/access/AccessControlNFT.sol";
 /// genesis (R-3): Ticketing, Perks, Paymaster (Forwarder + CheckIn), AccessNFT.
 ///
 /// GMB is sold ONLY via the gembachain.io "Buy GMB" UI → GembaPay backend → GembaPayDispenser
-/// (0x0EB2…); the on-chain GembaOnRamp (USDC→GMB) is NOT deployed (owner decision 2026-07-17).
+/// (0x0EB2…); the on-chain GembaOnRamp (USDC→GMB) was REMOVED from the codebase entirely
+/// (owner decision 2026-07-17) — no public-sale contract exists to deploy.
 /// The app contracts (Ticketing/Perks/AccessNFT) are issuer-operated references; admin = deployer.
 ///
 ///   FOUNDER_PK=<key> forge script script/DeployApps.s.sol --rpc-url <rpc> --broadcast

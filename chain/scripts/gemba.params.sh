@@ -81,8 +81,9 @@ ALLOC_FOUNDER="5000000"          #  5% founder/operations EOA (non-voting, §3.5
 # The FOUNDER's 5M seeds the OPEN distribution channels from day 1 — the founder reduces its OWN
 # balance; the 30M Public Reserve is NEVER touched for this (decision 2026-06-29):
 PUBLIC_FAUCET_SEED="100000"      #   100k -> small PUBLIC faucet (GembaFaucet, the tested testnet contract) — anyone claims a little, day 1
-ONRAMP_SALE_SEED="160000"        #   160k -> GembaOnRamp public sale (GMB for USE: Gemba dApps @20% off + validator entry; non-commercial, for society)
-# Validators: 4 x SELF_BOND_GMB (~40k) also from the founder. Founder EOA keeps ~5M - 100k - 160k - 40k = ~4,700,000.
+# GembaOnRamp REMOVED (owner decision 2026-07-17): no on-chain public-sale contract. GMB sales run
+# via the GembaPayDispenser (GembaPay backend, fixed 1 GMB = 1 EUR), funded operationally from the founder EOA.
+# Validators: 4 x SELF_BOND_GMB (~40k) also from the founder. Founder EOA keeps ~5M - 100k - 40k = ~4,860,000.
 # Sum: 30 + 20 + 15 + 10 + 20 + 5 = 100,000,000 GMB. (No ALLOC_CIRCULATION as of 2026-06-29.)
 # Devnet-only alias: the LOCAL devnet scripts (init-single-node/init-multinode, init-gembad) keep a
 # 10M test-circulation pool for dev/test accounts, so their contingency bucket stays 10M (sum=100M).

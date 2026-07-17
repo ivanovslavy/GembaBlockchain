@@ -75,8 +75,9 @@ untouched. (Plain `new C()` = CREATE = nonce-dependent → addresses would shift
 
 **Salt scheme** (fixed, versioned): `keccak256("gemba.<contract>.v1")` — e.g. `gemba.governor.v1`,
 `gemba.timelock.v1`, `gemba.votes.v1`, `gemba.faucet.v1`, `gemba.foundation.v1`, `gemba.dao.v1`,
-`gemba.contingency.v1`, `gemba.emergencypause.v1`, `gemba.dripfaucet.v1`, `gemba.onramp.v1`,
+`gemba.contingency.v1`, `gemba.emergencypause.v1`, `gemba.dripfaucet.v1`,
 `gemba.ticketing.v1`, `gemba.perks.v1`, `gemba.forwarder.v1`, `gemba.checkin.v1`, `gemba.accessnft.v1`,
+*(`gemba.onramp.v1` retired — GembaOnRamp removed 2026-07-17, no public-sale contract)*,
 plus the DEX (factory/router/WGMB/pairs).
 
 **Conversion (mechanical, follow the pattern):** in each deploy script change `new C(args)` →

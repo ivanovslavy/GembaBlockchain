@@ -89,10 +89,11 @@ correctly; it uses DEVNET-loose gov + a devnet-amplified reward rate. For mainne
 - [x] **Round-4 GitHub PAT / secret-scan. RESOLVED / risk-accepted 2026-07-17 (owner).** Infra is
       SSH-key-only; owner accepts the current secret posture across all three key/password items
       above. No rotation performed by decision.
-- [ ] Confirm production owners of `GembaOnRamp`/`GembaPayDispenser`/`GmbCollector`/`GembaFaucet`/
+- [ ] Confirm production owners of `GembaPayDispenser`/`GmbCollector`/`GembaFaucet`/
       `GembaSwapFactory.feeToSetter` are governance/Timelock (or documented operational EOAs with a
       rotation plan) — the audit refuted these as SPOFs only under the "documented operational key"
-      reading; verify the deploy actually sets the intended owner.
+      reading; verify the deploy actually sets the intended owner. (`GembaOnRamp` dropped from this
+      list — contract removed from the codebase 2026-07-17, nothing to own.)
 - [ ] **I4 — validator node storage config FROM GENESIS (root cause: testnet disk-fill 2026-07-15).**
       On 2026-07-15 validator `.82` filled its 72G disk under load and crash-looped (jailed + rpc3
       down); the culprit was chain DATA: `application.db` 36G (`pruning="default"` keeps 362,880
