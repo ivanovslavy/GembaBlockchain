@@ -1,0 +1,9 @@
+[Unit]
+Description=GembaBlockchain disk-usage alarm guard (emails before a full disk crash-loops the node)
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/gemba/disk-guard.env
+ExecStart=/usr/local/bin/gemba-disk-guard.sh
+Nice=10

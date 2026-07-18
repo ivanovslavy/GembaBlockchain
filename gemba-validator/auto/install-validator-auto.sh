@@ -17,23 +17,28 @@ command -v jq >/dev/null || { echo "ERROR: jq not installed"; exit 1; }
 command -v bc >/dev/null || { echo "ERROR: bc not installed"; exit 1; }
 
 echo "==> scripts -> /usr/local/bin"
-install -m 0755 "$DIR/auto-unjail.sh"    /usr/local/bin/gemba-auto-unjail.sh
-install -m 0755 "$DIR/auto-compound.sh"  /usr/local/bin/gemba-auto-compound.sh
+install -m 0755 "$DIR/auto-unjail.sh"      /usr/local/bin/gemba-auto-unjail.sh
+install -m 0755 "$DIR/auto-compound.sh"    /usr/local/bin/gemba-auto-compound.sh
+install -m 0755 "$DIR/disk-guard.sh"       /usr/local/bin/gemba-disk-guard.sh
+install -m 0755 "$DIR/gemba-alert-email.sh" /usr/local/bin/gemba-alert-email.sh
 
-echo "==> config -> /etc/gemba/validator-auto.env"
-mkdir -p /etc/gemba
-if [ -f /etc/gemba/validator-auto.env ]; then
-  echo "    keeping existing /etc/gemba/validator-auto.env"
-else
-  install -m 0644 "$DIR/validator-auto.env" /etc/gemba/validator-auto.env
-  echo "    installed default — EDIT IT if your CHAIN_ID/home/key differ"
-fi
+echo "==> config -> /etc/gemba/*.env (existing files kept)"
+mkdir -p /etc/gemba /var/lib/gemba
+for e in validator-auto disk-guard notify; do
+  if [ -f /etc/gemba/$e.env ]; then echo "    keeping existing /etc/gemba/$e.env"
+  else install -m 0644 "$DIR/$e.env" /etc/gemba/$e.env; echo "    installed /etc/gemba/$e.env — EDIT IT (RESTART_CMD, SMTP host, etc.)"; fi
+done
+echo "    NOTE: email is inert until you provision the SMTP secret:"
+echo "          printf %s '<smtp-password>' > /etc/gemba/smtp_password && chmod 600 /etc/gemba/smtp_password"
+echo "          and set SMTP_HOST in /etc/gemba/notify.env."
 
 echo "==> systemd units"
-install -m 0644 "$DIR"/systemd/gemba-auto-*.service /etc/systemd/system/
-install -m 0644 "$DIR"/systemd/gemba-auto-*.timer   /etc/systemd/system/
+install -m 0644 "$DIR"/systemd/gemba-auto-*.service     /etc/systemd/system/
+install -m 0644 "$DIR"/systemd/gemba-auto-*.timer       /etc/systemd/system/
+install -m 0644 "$DIR"/systemd/gemba-disk-guard.service /etc/systemd/system/
+install -m 0644 "$DIR"/systemd/gemba-disk-guard.timer   /etc/systemd/system/
 systemctl daemon-reload
-systemctl enable --now gemba-auto-unjail.timer gemba-auto-compound.timer
+systemctl enable --now gemba-auto-unjail.timer gemba-auto-compound.timer gemba-disk-guard.timer
 
 echo "==> done. Timers:"
 systemctl list-timers 'gemba-auto-*' --no-pager || true

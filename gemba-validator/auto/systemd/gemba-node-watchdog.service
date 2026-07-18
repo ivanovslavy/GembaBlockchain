@@ -1,0 +1,9 @@
+[Unit]
+Description=GembaBlockchain node watchdog: detect-stuck -> restart (no unjail; archive/RPC nodes)
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/gemba/node-watchdog.env
+ExecStart=/usr/local/bin/gemba-node-watchdog.sh
+Nice=10

@@ -1,5 +1,5 @@
 [Unit]
-Description=GembaBlockchain validator auto-unjail (one-shot, driven by the timer)
+Description=GembaBlockchain validator watchdog: detect-stuck -> restart -> sync -> unjail (one-shot, timer-driven)
 After=network-online.target
 
 [Service]

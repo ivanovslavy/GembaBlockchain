@@ -123,4 +123,11 @@ correctly; it uses DEVNET-loose gov + a devnet-amplified reward rate. For mainne
   - Keep the dedicated **archive** node (`pruning="nothing"`) as the sole history/explorer source, so
     pruned validators lose nothing globally.
   - The offline `gembad prune` subcommand is BROKEN in the current `evmd` build (`leveldb: closed`,
-    reclaims nothing) — do not depend on it. Add a disk-usage watchdog/alert (auto-unjail already exists).
+    reclaims nothing) — do not depend on it. Add a disk-usage watchdog/alert. NB: the validator
+    watchdog (`gemba-validator/auto/auto-unjail.sh`, rewritten 2026-07-18) auto-restarts a
+    frozen/de-peered node and re-unjails after sync, but it will NOT paper over a full disk — after
+    `MAX_CONSECUTIVE_RESTARTS` with no recovery it stops and alerts (a restart can't reclaim disk).
+    The `%used` alert is now shipped: **gemba-disk-guard** (`gemba-validator/auto/disk-guard.sh`,
+    a timer on EVERY box from genesis) emails WARN@85% / CRIT@95% via **gemba-alert-email** before the
+    disk fills — closing the "silent write-crash-loop" gap. Disk sizing remains the primary defence;
+    see `runbooks/validator-auto-ops-deploy.md`.
