@@ -1,0 +1,14 @@
+# Logrotate for the gemba box-ops daemons (installed to /etc/logrotate.d/gemba by
+# install-validator-auto.sh / install-node-ops.sh). The daemons append per run and
+# hold no open fd, so copytruncate is safe. Healthy boxes log little; restart churn
+# during an incident is exactly when these logs grow — and disk-guard filling the
+# disk it guards would be an own goal.
+/var/log/gemba-validator-auto.log /var/log/gemba-node-watchdog.log /var/log/gemba-disk-guard.log {
+    weekly
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+}

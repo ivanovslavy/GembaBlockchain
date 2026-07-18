@@ -18,6 +18,10 @@
 # Idempotent: safe to re-run to update (git pull + rebuild + restart). It will NOT
 # overwrite an existing genesis or your keys.
 #
+# SIBLING: gemba-validator/install.sh is the OFFLINE/packaged variant of this flow
+# (builds from the bundled src/chain snapshot instead of a fresh clone). If you
+# change deps/build/init/service logic here, mirror it there.
+#
 # Requirements: Linux (Ubuntu/Debian apt, or RHEL/Fedora dnf), sudo, ~4 GB RAM and
 # a few minutes for the first build, ports 26656 (P2P, inbound) open.
 # =============================================================================
@@ -167,7 +171,9 @@ step_config() {
   sed -i "s|^minimum-gas-prices = .*|minimum-gas-prices = \"$MIN_GAS_PRICES\"|" "$A"
   sed -i "s|^pruning = .*|pruning = \"$PRUNING\"|" "$A"
   if [ "$ENABLE_JSONRPC" = "true" ]; then
-    sed -i "s|^enable = .*|enable = true|" "$A" 2>/dev/null || true   # [json-rpc] enable
+    # Scope the substitution to the [json-rpc] section — a bare `^enable =` matches
+    # EVERY `enable =` key in app.toml (api, grpc, ...), silently enabling them all.
+    sed -i '/^\[json-rpc\]/,/^\[/ s|^enable = .*|enable = true|' "$A" 2>/dev/null || true
   fi
 }
 

@@ -75,3 +75,6 @@ monitoring/*.secret
 
 # Local-only operational docs (auth/access maps) — never committed
 *.local.md
+
+# A locally-filled real notify.env next to the example must never be committed
+gemba-validator/auto/notify.env

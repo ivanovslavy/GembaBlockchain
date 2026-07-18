@@ -9,8 +9,15 @@
 #
 # Anti-spam: emails on first crossing of WARN/CRIT and then at most once per DISK_ALERT_REPEAT_SEC
 # while still over threshold; clears (and emails an all-clear) when usage drops back below WARN.
+# Deliberately no `set -e`: a probe failure on one mount must not abort the checks
+# for the remaining mounts.
 set -uo pipefail
 [ -f /etc/gemba/disk-guard.env ] && . /etc/gemba/disk-guard.env || true
+
+# Single-instance lock (a manual run racing the timer); second instance exits quietly.
+exec 9>/run/lock/gemba-disk-guard.lock 2>/dev/null || exec 9>/tmp/gemba-disk-guard.lock
+flock -n 9 || exit 0
+
 MOUNTS=${DISK_MOUNTS:-/}
 WARN_PCT=${DISK_WARN_PCT:-85}
 CRIT_PCT=${DISK_CRIT_PCT:-95}
@@ -24,6 +31,10 @@ mkdir -p "$STATE_DIR" 2>/dev/null || true
 log(){ echo "[$(date -Is)] disk-guard: $*" >>"$LOG"; }
 email(){ [ -n "$NOTIFY_CMD" ] && [ -x "${NOTIFY_CMD%% *}" ] && $NOTIFY_CMD "$1" >/dev/null 2>&1 || true; }
 alert(){ logger -t gemba-disk-guard -p daemon.warning "$1" 2>/dev/null || true; email "$1"; }
+# Atomic per-mount state write (temp+mv — a mid-write kill must never leave a truncated
+# file that the next run sources). $SF is set per mount in the loop.
+wstate(){ local t; t=$(mktemp "$SF.XXXXXX" 2>/dev/null) || return 0
+  printf 'PREV_LEVEL=%s\nPREV_TS=%s\n' "$1" "$2" >"$t" && mv -f "$t" "$SF"; }
 
 for m in $MOUNTS; do
   pct=$(df --output=pcent "$m" 2>/dev/null | tail -1 | tr -dc '0-9')
@@ -43,7 +54,7 @@ for m in $MOUNTS; do
     if [ "$PREV_LEVEL" != "ok" ]; then
       log "RECOVERED $m back to ${pct}% (avail $avail)"; alert "RECOVERED: $(hostname) $m back to ${pct}% used ($avail free)"
     fi
-    printf 'PREV_LEVEL=ok\nPREV_TS=%s\n' "$now" >"$SF"; continue
+    wstate ok "$now"; continue
   fi
 
   # over threshold — decide whether to (re)notify
@@ -56,13 +67,13 @@ for m in $MOUNTS; do
     if [ "$VACUUM" = "true" ]; then journalctl --vacuum-size="$JCAP" >/dev/null 2>&1 && log "first-aid: vacuumed journald to $JCAP"; fi
     if [ "$escalated" = "1" ] || [ "$due" = "1" ]; then
       alert "CRITICAL: $(hostname) disk $m ${pct}% full (only $avail free) — node write-crash-loop risk, act NOW"
-      printf 'PREV_LEVEL=crit\nPREV_TS=%s\n' "$now" >"$SF"
-    else printf 'PREV_LEVEL=crit\nPREV_TS=%s\n' "$PREV_TS" >"$SF"; fi
+      wstate crit "$now"
+    else wstate crit "$PREV_TS"; fi
   else # warn
     log "WARN $m at ${pct}% (avail $avail)"
     if [ "$escalated" = "1" ] || [ "$due" = "1" ]; then
       alert "WARNING: $(hostname) disk $m ${pct}% full ($avail free) — review pruning/capacity"
-      printf 'PREV_LEVEL=warn\nPREV_TS=%s\n' "$now" >"$SF"
-    else printf 'PREV_LEVEL=warn\nPREV_TS=%s\n' "$PREV_TS" >"$SF"; fi
+      wstate warn "$now"
+    else wstate warn "$PREV_TS"; fi
   fi
 done

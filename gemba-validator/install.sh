@@ -9,6 +9,10 @@
 # It installs dependencies + the pinned Go, BUILDS `gembad` from source (so the
 # binary matches THIS machine's glibc — no portability traps), installs the
 # bundled + sha256-verified genesis, wires the public seeds, installs a systemd
+# SIBLING: scripts/install-validator.sh in the main repo is the ONLINE variant of
+# this flow (fresh clone instead of the bundled src/chain snapshot). If you change
+# deps/build/init/service logic here, mirror it there.
+#
 # service and starts it. Re-run to update (git pull + rebuild + restart). It never
 # overwrites your keys or an existing genesis.
 #

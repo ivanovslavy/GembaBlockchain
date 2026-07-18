@@ -20,14 +20,21 @@ command -v jq >/dev/null || { echo "ERROR: jq not installed"; exit 1; }
 echo "==> scripts"
 install -m 0755 "$DIR/gemba-alert-email.sh" /usr/local/bin/gemba-alert-email.sh
 install -m 0755 "$DIR/disk-guard.sh"        /usr/local/bin/gemba-disk-guard.sh
-[ "$WITH_WD" = 1 ] && install -m 0755 "$DIR/node-watchdog.sh" /usr/local/bin/gemba-node-watchdog.sh
+if [ "$WITH_WD" = 1 ]; then
+  install -m 0755 "$DIR/node-watchdog.sh" /usr/local/bin/gemba-node-watchdog.sh
+  install -D -m 0644 "$DIR/watchdog-lib.sh" /usr/local/lib/gemba/watchdog-lib.sh
+fi
+
+echo "==> logrotate -> /etc/logrotate.d/gemba"
+install -m 0644 "$DIR/logrotate-gemba" /etc/logrotate.d/gemba
 
 echo "==> config -> /etc/gemba (existing kept)"
 mkdir -p /etc/gemba /var/lib/gemba
 envs="notify disk-guard"; [ "$WITH_WD" = 1 ] && envs="$envs node-watchdog"
 for e in $envs; do
+  src="$DIR/$e.env"; [ -f "$src" ] || src="$DIR/$e.env.example"   # notify ships as .example (no real address in the public repo)
   if [ -f /etc/gemba/$e.env ]; then echo "    keeping /etc/gemba/$e.env"
-  else install -m 0644 "$DIR/$e.env" /etc/gemba/$e.env; echo "    installed /etc/gemba/$e.env — EDIT (RESTART_CMD + real RPC port, disk MOUNTS, SMTP host)"; fi
+  else install -m 0644 "$src" /etc/gemba/$e.env; echo "    installed /etc/gemba/$e.env — EDIT (RESTART_CMD + real RPC port, disk MOUNTS, SMTP host, ALERT_TO)"; fi
 done
 
 echo "==> systemd units + timers"

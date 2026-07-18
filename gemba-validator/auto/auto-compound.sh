@@ -14,6 +14,10 @@
 # Governor excludes the founder/reserves), so it does not re-centralise governance.
 set -euo pipefail
 
+# Single-instance lock (a manual run racing the timer); second instance exits quietly.
+exec 9>/run/lock/gemba-auto-compound.lock 2>/dev/null || exec 9>/tmp/gemba-auto-compound.lock
+flock -n 9 || exit 0
+
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Load config: the installed location (systemd EnvironmentFile) first, then a repo-local copy.
 for _f in /etc/gemba/validator-auto.env "$DIR/validator-auto.env"; do [ -f "$_f" ] && . "$_f" && break; done
