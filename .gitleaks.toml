@@ -40,4 +40,5 @@ regexes = [
   '''0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9''', # public Uniswap PERMIT_TYPEHASH
   '''<.*mnemonic.*>''',                                           # angle-bracket placeholders
   '''anvil|hardhat|0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80''', # well-known anvil key
+  '''KEYALGO="eth_secp256k1"''',                                  # key ALGORITHM name in gemba.params.sh (also bundled under gemba-validator/src/) — not a secret
 ]
