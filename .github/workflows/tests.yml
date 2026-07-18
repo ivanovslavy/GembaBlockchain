@@ -1,4 +1,4 @@
-# Proposed CI (prepared 2026-07-17, INACTIVE until renamed to tests.yml — owner's call).
+# CI tests (proposed 2026-07-17, ACTIVATED 2026-07-18 as part of mainnet prep).
 # Runs the two full test suites on every push/PR so "all tests green" always has a
 # machine-checked, linkable record (the gap the mainnet-readiness audit flagged).
 name: tests
@@ -7,13 +7,24 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   contracts:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: { submodules: recursive }
       - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.7.1 # match the local toolchain
+      - name: install pinned deps (contracts/lib is gitignored; pins match the local clones)
+        working-directory: contracts
+        run: |
+          forge install --no-git \
+            foundry-rs/forge-std@v1.9.4 \
+            OpenZeppelin/openzeppelin-contracts@v5.1.0 \
+            OpenZeppelin/openzeppelin-contracts-upgradeable@v5.1.0
       - name: forge test
         working-directory: contracts
         run: forge test -vv
