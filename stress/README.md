@@ -108,3 +108,13 @@ true consensus ceiling needs **dedicated (non-validator) generator boxes** — o
 ## Safety / disk (75GB budget)
 - `DISK_MIN_FREE_GB` guard + `MAX_NFT_SUPPLY` cap; soak mix avoids state-heavy ops; logs gzip-rotate.
 - Funder seeded from faucet/founder; all artifacts namespaced; `Ctrl-C` drains gracefully.
+
+## Shared engine files (CI-guarded copies)
+
+`lib/provider.js`, `lib/nonceManager.js`, `lib/rateLimiter.js`, `lib/metrics.js`,
+`lib/txLogger.js`, `lib/nodeProbe.js` are byte-identical twins of the same files in
+`endurance/lib/` — DELIBERATE copies, because each harness must stay self-contained
+(this dir is tarred to the load boxes without the parent repo). If you change one
+side, mirror the other; CI (`tests.yml` `consistency` job) fails on divergence.
+The 3 files that legitimately differ per harness: `tx.js`, `wallets.js`,
+`receiptCollector.js`.

@@ -28,8 +28,21 @@ jobs:
       - name: forge test
         working-directory: contracts
         run: forge test -vv
+
+  # Deliberate-copy guards: these files exist in two places ON PURPOSE (the gembapay
+  # drop-in kit ships standalone; each load harness is tarred to boxes self-contained,
+  # so they cannot share a lib dir). The copies must never silently diverge.
+  consistency:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - name: gembapay drop-in must stay byte-identical to the canonical source
         run: cmp contracts/src/payments/GmbCollector.sol contracts/integrations/gembapay-hardhat/GmbCollector.sol
+      - name: shared load-test libs must stay byte-identical between stress/ and endurance/
+        run: |
+          for f in provider nonceManager rateLimiter metrics txLogger nodeProbe; do
+            cmp "stress/lib/$f.js" "endurance/lib/$f.js" || { echo "DIVERGED: $f.js"; exit 1; }
+          done
 
   chain:
     runs-on: ubuntu-latest
