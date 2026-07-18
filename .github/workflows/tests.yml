@@ -28,6 +28,8 @@ jobs:
       - name: forge test
         working-directory: contracts
         run: forge test -vv
+      - name: gembapay drop-in must stay byte-identical to the canonical source
+        run: cmp contracts/src/payments/GmbCollector.sol contracts/integrations/gembapay-hardhat/GmbCollector.sol
 
   chain:
     runs-on: ubuntu-latest

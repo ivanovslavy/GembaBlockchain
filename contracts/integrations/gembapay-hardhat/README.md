@@ -10,6 +10,9 @@ paid only once (no double payment).** Native only — rejects direct GMB, ERC-20
 > GembaBlockchain Foundry toolchain (same bytecode, verified). These files let you add the contract
 > to your GembaPay hardhat project and (re)deploy — e.g. for mainnet — **without touching existing
 > contracts or scripts** (drop `GmbCollector.sol` in `contracts/`, the script in `scripts/`).
+>
+> **Canonical source: `contracts/src/payments/GmbCollector.sol`** — edit THAT file, then copy it
+> here. CI (`tests.yml`) fails if this drop-in copy ever diverges from the canonical source.
 
 ## Live testnet deployment (already done + verified)
 - **GmbCollector:** `0x72F771d2CaC82Dd807435b03D3a216006413614c`  (✅ verified on testnet.gembascan.io)
