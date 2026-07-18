@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
+// TESTNET-ONLY. Live on gemba-testnet-1 at 0x0147581e2351dD182edD651DFEfD955CB353f8aA
+// (contracts/REGENESIS-ADDRESSES-2026-06-27.md) — combo faucet: 0.1 GMB + test stablecoins.
+// Deliberately NOT in any mainnet deploy script: mainnet uses GembaDripFaucet (native drip,
+// no mintable stables). Pragma/license kept exactly as deployed for verification match.
 
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";

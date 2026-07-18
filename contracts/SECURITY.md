@@ -129,8 +129,11 @@ findings from the pass).
 - **`SeamProbe.sol`** — a **devnet-only** probe used to prove the Cosmos↔EVM seam
   (`docs/phase3-treasury-principles.md`). It is never deployed to production; its
   Slither findings (arbitrary send, low-level call, event-after-call) are
-  irrelevant to the treasury system.
-- **`HelloGemba.sol`** — a Phase 1 deploy smoke-test, not part of Phase 3.
+  irrelevant to the treasury system. *(Source removed from `src/` in the 2026-07-19
+  mainnet cleanup — superseded by `PublicReserve`; this section is the historical record.)*
+- **`HelloGemba.sol`** — a Phase 1 deploy smoke-test, not part of Phase 3. *(Source
+  removed from `src/` in the 2026-07-19 mainnet cleanup; the devnet verification
+  example survives in `explorer/verify/HelloGemba.standard.json`.)*
 
 ## Design properties enforced by tests
 

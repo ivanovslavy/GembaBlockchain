@@ -87,7 +87,10 @@ zkSync chain), so the verifier starts cleanly instead of crash-looping.
 ## Contract verification
 
 Verify a deployed contract (e.g. `HelloGemba`) with the Foundry standard-JSON-input
-in [`verify/HelloGemba.standard.json`](./verify/HelloGemba.standard.json):
+in [`verify/HelloGemba.standard.json`](./verify/HelloGemba.standard.json)
+(`HelloGemba.sol` itself was removed from `contracts/src/` in the 2026-07-19 mainnet
+cleanup — the standard-JSON here is self-contained, so the worked example still holds;
+substitute any current contract in the commands below):
 
 - **UI:** contract page → Verify & Publish → "Standard JSON Input" → upload the
   file; compiler `v0.8.24`, optimizer on / 200 runs; constructor args (ABI-encoded)
