@@ -28,7 +28,7 @@ persistent_peers = "<peer_id>@peer1:26656,<peer_id2>@peer2:26656"
   public network. The validator's address is not gossiped (DDoS protection):
   `pex = false` on the validator, sentries set `private_peer_ids` to the validator.
 - Localhost multi-node dev: set `addr_book_strict = false` and
-  `allow_duplicate_ip = true` (see `chain/scripts/init-multinode.sh`).
+  `allow_duplicate_ip = true` (see `chain/gembad/init-gembad-multinode.sh`).
 
 ## Pruning (CLAUDE.md §11)
 
