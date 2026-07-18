@@ -72,3 +72,6 @@ coverage/
 # alertmanager SMTP secret (never commit — repo is public)
 smtp_password
 monitoring/*.secret
+
+# Local-only operational docs (auth/access maps) — never committed
+*.local.md
