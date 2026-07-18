@@ -11,7 +11,7 @@
 | Network | `gemba-testnet-1` (EVM chainId 821207) |
 | Owner / GembaPay signer | `0xAB9503dBC3FE22C16Ff94B9C76D7f57A6020E96a` (Ownable2Step) |
 | GMB held | **100,000 GMB** (funded from the founder via the owner wallet) |
-| Source | `contracts/src/onramp/GembaPayDispenser.sol` · tests `contracts/test/onramp/GembaPayDispenser.t.sol` |
+| Source | `contracts/src/payments/GembaPayDispenser.sol` · tests `contracts/test/payments/GembaPayDispenser.t.sol` |
 | Owner private key | **NOT in git** (repo is public, CLAUDE.md §0.3). Stored in `wallet-backup/gembapay-dispenser-owner.md` (gitignored) and in the GembaPay backend `.env` on .162 (`/gembapay.com/backend/.env`, gitignored). |
 
 > Superseded: an earlier deploy at `0x8FF0207e5652C2399C8271526AaDa88F3fB2505C` (solc 0.8.27)
@@ -55,4 +55,4 @@ pause, Ownable2Step, and a fuzz invariant (a dispense never exceeds the reserve)
 **Live E2E verified** on `gemba-testnet-1`: dispense pays the buyer, direct sends revert, the
 reserve is conserved.
 
-Re-run tests: `cd contracts && forge test --match-path 'test/onramp/GembaPayDispenser.t.sol' -vv`
+Re-run tests: `cd contracts && forge test --match-path 'test/payments/GembaPayDispenser.t.sol' -vv`

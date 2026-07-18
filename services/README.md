@@ -12,7 +12,7 @@ access logs never go on-chain.**
   the private data stays deletable (GDPR right to erasure). 8 unit tests + an RLS
   integration test.
 - **Buy-GMB / GembaPay (Phase 6) — [`purchase-backend/`](./purchase-backend) +
-  `contracts/src/onramp/GembaPayDispenser.sol`.** GMB is sold ONLY via the
+  `contracts/src/payments/GembaPayDispenser.sol`.** GMB is sold ONLY via the
   gembachain.io "Buy GMB" UI → GembaPay backend → owner-only dispenser (fixed
   1 GMB = 1 EUR). **No fiat redemption, no DEX operated by us.** The on-chain
   `GembaOnRamp` public-sale contract was **REMOVED entirely (owner decision

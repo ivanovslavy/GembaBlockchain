@@ -2,8 +2,8 @@
 pragma solidity ^0.8.24;
 
 import {Script, console2} from "forge-std/Script.sol";
-import {GembaPayDispenser} from "../src/onramp/GembaPayDispenser.sol";
-import {GmbCollector} from "../src/onramp/GmbCollector.sol";
+import {GembaPayDispenser} from "../src/payments/GembaPayDispenser.sol";
+import {GmbCollector} from "../src/payments/GmbCollector.sol";
 
 /// @notice Reproducible deploy of the Buy-GMB sale channel (owner decision 2026-07-17:
 /// GembaOnRamp is REMOVED — the dispenser is the ONLY way GMB is sold):

@@ -59,7 +59,7 @@ use a price oracle (1 GMB = €1 by design), charge a fee, or accept anonymous d
 ## 5. Testing
 
 - **Slither** — clean (only an informational OZ pragma-range note).
-- **Foundry adversarial suite** (`test/onramp/GmbCollector.t.sol`) — **12/12 pass**: double-pay revert, reentrancy-can't-double (malicious recipient), reject direct/NFTs, access control, pause, Ownable2Step, fuzz.
+- **Foundry adversarial suite** (`test/payments/GmbCollector.t.sol`) — **12/12 pass**: double-pay revert, reentrancy-can't-double (malicious recipient), reject direct/NFTs, access control, pause, Ownable2Step, fuzz.
 - **Mythril** (bytecode mode — the sandbox blocks solc download) — only standard 0.8.x bytecode false positives (SWC-101 checked-arithmetic "underflow"; SWC-110 our intended `revert()`s read as assertions). No real issue.
 - **Live brutal attack harness** (`security/collector-attack.mjs`) vs the deployed contract — **7/7 DEFENDED**: sequential **and concurrent-race** double-pay, direct send, non-owner `setRecipient` hijack, malformed inputs, and a custody-integrity check (contract holds 0).
 

@@ -581,7 +581,7 @@ the box.
   (on-chain revoke + off-chain delete), 8 unit tests + an RLS integration test.*
 - **Phase 6 — Buy-GMB (GembaPay).** GembaPay → GMB purchase flow (no fiat redemption;
   no DEX operated by us). *Done: `GembaPayDispenser` + `GmbCollector`
-  (`contracts/src/onramp`) — the gembachain.io "Buy GMB" UI → GembaPay backend →
+  (`contracts/src/payments`) — the gembachain.io "Buy GMB" UI → GembaPay backend →
   owner-only dispenser at a fixed 1 GMB = 1 EUR; Ownable2Step + Pausable +
   `nonReentrant`; 19+12 Foundry tests; live on the testnet
   (`docs/gembapay-gmb-dispenser.md`).* It sells GMB to anyone **to USE**: Gemba dApp

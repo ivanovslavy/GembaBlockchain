@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {GembaPayDispenser} from "../../src/onramp/GembaPayDispenser.sol";
+import {GembaPayDispenser} from "../../src/payments/GembaPayDispenser.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 

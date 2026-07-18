@@ -86,8 +86,8 @@ split). 7 Foundry tests; Slither clean.
 
 | Contract | File | Notes |
 |---|---|---|
-| `GembaPayDispenser` | `src/onramp/GembaPayDispenser.sol` | owner-only GMB dispenser behind the GembaPay backend (fixed 1 GMB = 1 EUR); Ownable2Step + Pausable + `nonReentrant`; 19 tests |
-| `GmbCollector` | `src/onramp/GmbCollector.sol` | GMB intake for dApp payments via GembaPay; 12 tests |
+| `GembaPayDispenser` | `src/payments/GembaPayDispenser.sol` | owner-only GMB dispenser behind the GembaPay backend (fixed 1 GMB = 1 EUR); Ownable2Step + Pausable + `nonReentrant`; 19 tests |
+| `GmbCollector` | `src/payments/GmbCollector.sol` | GMB intake for dApp payments via GembaPay; 12 tests |
 
 GMB is sold ONLY via the gembachain.io "Buy GMB" UI → GembaPay backend → dispenser
 (`docs/gembapay-gmb-dispenser.md`). **The on-chain `GembaOnRamp` public-sale contract
