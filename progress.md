@@ -25,9 +25,17 @@ Read-only review (3 passes: contracts, chain/infra, hygiene) then a same-day fix
 - **Docs de-drifted:** README (build status was ~7 phases behind; launch gates all resolved:
   ADR-009 withdrawn, ADR-006 cleared, ADR-008 done), .env.example reconciled with the real
   key set, this file's stale "private repo" claim fixed (repo is public by design).
-- **Guards added:** CI cmp-check keeps the gembapay hardhat drop-in byte-identical to
-  src/payments/GmbCollector.sol; gitleaks allowlist got the KEYALGO false-positive pinned
-  by exact string (not path).
+- **Ops fixes:** bonded-ratio exporter now fails loud on mainnet without the genesis-seeded
+  reserve addresses (was silently under-reporting THE security KPI); watchdog layer-1 engine
+  deduplicated into gemba-validator/auto/watchdog-lib.sh (sandbox-tested: detect/restart/
+  cooldown/give-up); flock locks + atomic state writes on all timer daemons; logrotate
+  provisioned; notify.env -> .example (no personal address in the public repo); JSON-RPC
+  enable sed scoped to [json-rpc]; SERVER-TOPOLOGY auth map moved to a gitignored .local.md.
+- **Guards added:** CI `consistency` job cmp-checks the deliberate copies (gembapay hardhat
+  drop-in vs src/payments/GmbCollector.sol; the 6 shared stress/endurance lib modules —
+  extraction was REJECTED on purpose: harnesses are tarred to boxes standalone). gitleaks
+  allowlist reworked to actually match (regexes hit the SECRET, not the line) and tightened;
+  full-history scan verified CLEAN with gitleaks 8.24.3.
 
 ## 2026-07-17/18 — mainnet prep milestones (recorded from git)
 - **Genesis + product decisions locked** (owner): GMB pure utility coin — no liquidity, Buy-GMB
