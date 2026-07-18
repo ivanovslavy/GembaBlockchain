@@ -30,8 +30,9 @@ contract DeployGovernance is Script {
     uint256 constant PROPOSAL_THRESHOLD = 0; // any vGMB holder may propose
     // Regenesis 2-tier governance (§9): Standard (quorum 40% / supermajority 51%) for routine
     // proposals; Critical (51% / 66%) for anything touching the Governor/Timelock/staking/treasury
-    // (auto-classified on-chain). Voting period defaults to ~3 days at ~3s blocks (env-overridable
-    // for staging). Standard quorum is QUORUM_PCT (default 40); critical is CRITICAL_QUORUM (51).
+    // (auto-classified on-chain). VOTING_PERIOD default is 86400 blocks ≈ 2.4 days at the
+    // measured ~2.4s block time (mainnet sets 108000 ≈ 3 days — see the ceremony note above).
+    // Standard quorum is QUORUM_PCT (default 40); critical is CRITICAL_QUORUM (51).
     uint256 constant SUPERMAJORITY = 51;          // standard-tier "For" threshold
     uint256 constant CRITICAL_QUORUM = 51;        // critical-tier quorum
     uint256 constant CRITICAL_SUPERMAJORITY = 66; // critical-tier "For" threshold
@@ -42,9 +43,13 @@ contract DeployGovernance is Script {
     function run() external {
         uint256 founderPk = vm.envUint("FOUNDER_PK");
         address deployer = vm.addr(founderPk);
-        // mainnet hardening (R-5): set MIN_DELAY=86400 (24h) + QUORUM_PCT=66 in the env for
-        // mainnet; testnet leaves them unset → the 300s / 50% defaults below (read inline to
-        // keep run()'s stack shallow).
+        // mainnet hardening (R-5, updated for two-tier governance): set MIN_DELAY=86400 (24h)
+        // + VOTING_PERIOD=108000 (~3 days at ~2.4s blocks) in the env for mainnet. Do NOT set
+        // QUORUM_PCT — leave it unset → 40 (the STANDARD tier; Critical stays fixed 51/66).
+        // The pre-two-tier "QUORUM_PCT=66" instruction is DEAD: setting 66 would trip the
+        // constructor check criticalQuorum < standardQuorum and REVERT the deploy.
+        // Testnet leaves everything unset → the 300s / 40% / 86400-block defaults below
+        // (env reads are inline to keep run()'s stack shallow).
 
         // --- deploy governance + reserves (founder) ---
         vm.startBroadcast(founderPk);
