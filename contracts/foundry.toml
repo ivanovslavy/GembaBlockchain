@@ -1,4 +1,5 @@
 [profile.default]
+auto_detect_remappings = false # pin the remapping set — auto-inference varies with lib/ layout and CHANGES BYTECODE via metadata (breaks the gembaswap pair init-code hash + CREATE2 address determinism)
 src = "src"
 out = "out"
 libs = ["lib"]
