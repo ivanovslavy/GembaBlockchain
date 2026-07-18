@@ -1,20 +1,15 @@
-# chain/scripts — GembaBlockchain local devnet (Phase 1)
+# chain/scripts — shared genesis anchors + devnet runners
 
-Brings up a local devnet from the **pinned upstream `cosmos/evm` `evmd` binary**
-(v0.7.0), with GembaBlockchain's genesis economics baked in. No Go code is
-forked yet — Phase 1 configures genesis + node; the custom Go modules come in
-Phase 2 (CLAUDE.md §13).
+**Current role (gembad era):** this dir holds the **shared genesis economics**
+(`gemba.params.sh` + `lib.sh`) that every init path sources — the `chain/gembad/*`
+devnet/mainnet builders and `chain/testnet/*` — plus the generic multi-node
+start/stop runners that `chain/gembad` reuses (`EVMD=/tmp/gembad BASE=… ./start-multinode.sh`).
 
-## Prerequisites
-
-1. Build the pinned binary once:
-   ```bash
-   git clone --branch v0.7.0 https://github.com/cosmos/evm
-   cd evm && make install          # installs evmd to $(go env GOPATH)/bin
-   export PATH="$PATH:$(go env GOPATH)/bin"
-   ```
-   (Needs Go ≥ the version in cosmos/evm `go.mod`, a C compiler for CGO, and `jq`.)
-2. For the transfer / deploy demos: [Foundry](https://book.getfoundry.sh) (`cast`, `forge`).
+The Phase-1 **vanilla-`evmd` init scripts** (`init-single-node.sh`,
+`init-multinode.sh`, `start-single-node.sh`) were removed in the 2026-07-19
+mainnet cleanup — superseded by `chain/gembad/init-gembad*.sh`, which build the
+wired `gembad` binary (custom modules included) instead of upstream `evmd`.
+They live in git history if ever needed.
 
 ## Files
 
@@ -22,19 +17,15 @@ Phase 2 (CLAUDE.md §13).
 |---|---|
 | `gemba.params.sh` | **The genesis economic anchors** — every value cites the CLAUDE.md §/ADR it enforces |
 | `lib.sh` | shared helpers: `patch_economics` bakes the anchors into `genesis.json`; `tune_cometbft` |
-| `init-single-node.sh` | initialize a 1-node devnet (`$HOME/.gemba-devnet`) |
-| `start-single-node.sh` | start it (EVM JSON-RPC on 8545) |
-| `init-multinode.sh` | initialize 4 validators (`$HOME/.gemba-multinode/node{0..3}`) — BFT (§5.3) |
-| `start-multinode.sh` / `stop-multinode.sh` | start / stop all 4 (node0 exposes JSON-RPC 8545) |
+| `start-multinode.sh` / `stop-multinode.sh` | start / stop the 4-node devnet (node0 exposes JSON-RPC 8545); binary/base dir overridable via `EVMD`/`BASE` — this is how the gembad devnet runs |
 
-## Quick start
+## Quick start (gembad devnet)
 
 ```bash
-# single node
-./init-single-node.sh && ./start-single-node.sh
-
-# 4-validator BFT devnet (tolerates 1 down)
-./init-multinode.sh && ./start-multinode.sh
+cd ../gembad
+./build-gembad.sh                # fetches pinned cosmos/evm + applies the Gemba wiring patch
+./init-gembad-multinode.sh       # 4-validator BFT devnet (tolerates 1 down)
+EVMD=/tmp/gembad BASE=~/.gembad-multinode ../scripts/start-multinode.sh
 ```
 
 ## Where each genesis anchor lives (CLAUDE.md / docs/risks.md)
@@ -52,18 +43,13 @@ Phase 2 (CLAUDE.md §13).
 | Fixed supply 100M GMB, §4.1 buckets | §4.1 | `gemba.params.sh` ALLOC_* + genesis accounts |
 | Reserves non-voting | §3.4, §7 | reserves funded but never staked; only circulation self-bonds |
 
-**Not yet implemented (by design):** the post-year-10 **tail reward**
-(ADR-008 mechanism (b), recirculation-funded, never minted) and the **60/40 fee
-split** are Phase 2 custom Go modules. Scope is reserved; do not fake them with
-minting. See `chain/README.md`.
-
 ## DEVNET-ONLY test keys (conscious, bounded exception to CLAUDE.md §3)
 
-The scripts use the **public, well-known cosmos/evm test mnemonics** (the same
-ones committed in upstream `local_node.sh`) with the `test` keyring, purely so
-the devnet and the MetaMask/Foundry demos are reproducible. These are published
-test vectors with **zero value — not secrets**. CLAUDE.md §3's prohibition on
-committing keys/mnemonics targets **real** secrets and remains fully in force:
-no real keys, no `.env`, and node keyrings/`.gembad`-style data live outside the
-repo (in `$HOME/.gemba-*`) and are git-ignored. **Never** use these keys or the
-`test` keyring on a public network.
+The devnet init paths use the **public, well-known cosmos/evm test mnemonics**
+(the same ones committed in upstream `local_node.sh`) with the `test` keyring,
+purely so the devnet and the MetaMask/Foundry demos are reproducible. These are
+published test vectors with **zero value — not secrets**. CLAUDE.md §3's
+prohibition on committing keys/mnemonics targets **real** secrets and remains
+fully in force: no real keys, no `.env`, and node keyrings/`.gembad`-style data
+live outside the repo (in `$HOME/.gemba-*`) and are git-ignored. **Never** use
+these keys or the `test` keyring on a public network.
