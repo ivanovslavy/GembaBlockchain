@@ -51,6 +51,24 @@ app.RewardStreamerKeeper = rewardstreamerkeeper.NewKeeper(keys[rewardstreamertyp
 app.FeeSplitKeeper       = feesplitkeeper.NewKeeper(keys[feesplittypes.StoreKey], app.BankKeeper)
 ```
 
+### `x/slashfunds` — not a module, a bank-keeper decorator (ADR-013)
+
+`x/slashfunds` has no store, genesis, or BeginBlocker. It is a thin wrapper around
+the bank keeper handed to **`x/staking`** so that slashing **redirects the slashed
+stake to the faucet instead of burning it** (fixed supply, §3.1/§5.6). Default
+Cosmos `Slash` calls `BankKeeper.BurnCoins` on the bonded/not-bonded pools; the
+decorator intercepts exactly those and `SendCoinsFromModuleToModule`s to the
+faucet, passing every other call through. Wire it by wrapping **only the staking
+keeper's** bank-keeper argument (never the global `app.BankKeeper`):
+
+```go
+app.StakingKeeper = stakingkeeper.NewKeeper(
+    appCodec, runtime.NewKVStoreService(keys[stakingtypes.StoreKey]),
+    app.AccountKeeper,
+    slashfunds.NewBankKeeper(app.BankKeeper, feesplittypes.DefaultFaucetAccount), // ADR-013
+    authAddr, /* … */)
+```
+
 ## 5. Module manager + BEGIN-BLOCKER ORDER (critical)
 
 Register the modules, then set the begin-blocker order so the split happens before
@@ -75,13 +93,22 @@ app.ModuleManager.SetOrderBeginBlockers(
     // ... upstream begin-blockers ...
     feesplittypes.ModuleName,
     rewardstreamertypes.ModuleName,
-    distrtypes.ModuleName,
+    tailrewardtypes.ModuleName, // SEC audit L1: MUST be here (after rewardstreamer, before
+    distrtypes.ModuleName,      // distribution) — omitting it mis-routes the tail-reward stream.
     // ... rest ...
 )
 ```
 
-Add both module names to `SetOrderInitGenesis(...)` and `SetOrderEndBlockers(...)`
-(end-block order is irrelevant; neither has an EndBlocker).
+> SEC audit L1: this order is a load-bearing supply/reward-routing invariant (feesplit skims 40%
+> of the WHOLE fee_collector, so it must run before rewardstreamer/tailreward add the validator
+> reward and before distribution drains it). **ENFORCED at startup since 2026-07-17:** the app
+> constructor calls `x/wiring.ValidateBeginBlockOrder` on the RESOLVED order and panics on any
+> violation (missing module, duplicate, wrong relative order) — see `chain/x/wiring/order.go` +
+> the assertion block in `gembad-wiring.patch`. Earlier revisions of this snippet omitted
+> `tailreward`; do not.
+
+Add all three module names to `SetOrderInitGenesis(...)` and `SetOrderEndBlockers(...)`
+(end-block order is irrelevant; none has an EndBlocker).
 
 ## 6. Genesis
 

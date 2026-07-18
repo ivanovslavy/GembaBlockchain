@@ -9,6 +9,7 @@ import (
 	sdktestutil "github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	"github.com/stretchr/testify/require"
 
@@ -27,6 +28,26 @@ func setup(t *testing.T) (sdk.Context, keeper.Keeper, *gtu.BankFake) {
 	bank := gtu.NewBankFake()
 	k := keeper.NewKeeper(key, bank)
 	return ctx, k, bank
+}
+
+// TestUpdateParamsGovOnly verifies the new on-chain MsgUpdateParams (audit finding #5):
+// only the gov module account may change params, and the change takes effect with no restart.
+func TestUpdateParamsGovOnly(t *testing.T) {
+	ctx, k, _ := setup(t)
+	require.NoError(t, k.SetParams(ctx, types.DefaultParams())) // 0.40
+	srv := keeper.NewMsgServerImpl(k)
+	gov := authtypes.NewModuleAddress(govtypes.ModuleName).String()
+	newP := types.Params{Enabled: true, FaucetFeeRatio: math.LegacyNewDecWithPrec(50, 2), FaucetAccount: types.DefaultFaucetAccount}
+
+	// a non-gov authority is rejected; params unchanged
+	_, err := srv.UpdateParams(ctx, &types.MsgUpdateParams{Authority: "gemba1notgov", Params: newP})
+	require.Error(t, err)
+	require.Equal(t, math.LegacyNewDecWithPrec(40, 2), k.GetParams(ctx).FaucetFeeRatio)
+
+	// the gov module account succeeds; the 60/40 split is now tunable on-chain
+	_, err = srv.UpdateParams(ctx, &types.MsgUpdateParams{Authority: gov, Params: newP})
+	require.NoError(t, err)
+	require.Equal(t, math.LegacyNewDecWithPrec(50, 2), k.GetParams(ctx).FaucetFeeRatio)
 }
 
 // TestSplit6040 verifies the canonical 60/40 split (CLAUDE.md §5.4).

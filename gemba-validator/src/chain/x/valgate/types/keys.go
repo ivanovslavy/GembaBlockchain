@@ -12,3 +12,7 @@ const (
 
 // ParamsKey is the single KVStore key under which params are stored (proto-encoded).
 var ParamsKey = []byte{0x01}
+
+// DailyBondPrefix keys the per-validator daily bond-increase tracker (§6 daily cap).
+// Key = DailyBondPrefix ++ valoperBytes; value = 8-byte big-endian dayEpoch ++ math.Int(amount).
+var DailyBondPrefix = []byte{0x02}

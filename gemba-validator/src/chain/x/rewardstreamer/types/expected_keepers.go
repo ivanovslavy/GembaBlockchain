@@ -4,6 +4,7 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // BankKeeper is the subset of the bank keeper the reward streamer uses.
@@ -23,4 +24,17 @@ type BankKeeper interface {
 // AccountKeeper is the subset used to resolve the reserve module account address.
 type AccountKeeper interface {
 	GetModuleAddress(moduleName string) sdk.AccAddress
+}
+
+// FormulaStakingKeeper is the read-only slice of the staking keeper the reward FORMULA needs to
+// iterate bonded validators + their stake (regenesis §4). Read-only — no supply/stake mutation.
+type FormulaStakingKeeper interface {
+	IterateBondedValidatorsByPower(ctx context.Context, fn func(index int64, validator stakingtypes.ValidatorI) bool) error
+}
+
+// FormulaDistrKeeper is the slice of the distribution keeper used to credit each validator's
+// reward pool directly (so the per-validator CAP is honoured, unlike a proportional fee-collector
+// split). The backing coins are moved reserve->distribution by the bank keeper first.
+type FormulaDistrKeeper interface {
+	AllocateTokensToValidator(ctx context.Context, val stakingtypes.ValidatorI, tokens sdk.DecCoins) error
 }

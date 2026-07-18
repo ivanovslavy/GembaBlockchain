@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+# =============================================================================
+# init-gembad-multinode.sh — 4-validator gembad devnet (evmd + Phase 2 modules).
+# Same as chain/scripts/init-multinode.sh but with the gembad binary and the
+# reserve/faucet funded into MODULE accounts + custom-module genesis params.
+#   WARNING: PUBLIC well-known devnet test keys + 'test' keyring. DEVNET ONLY.
+# =============================================================================
+set -euo pipefail
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPTS="$HERE/../scripts"
+source "$SCRIPTS/gemba.params.sh"
+source "$SCRIPTS/lib.sh"
+
+EVMD="${GEMBAD:-/tmp/gembad}"
+[ -x "$EVMD" ] || command -v "$EVMD" >/dev/null 2>&1 || { echo "FATAL: gembad not found"; exit 1; }
+BASE="${BASE:-$HOME/.gembad-multinode}"
+N=4
+RS_RESERVE_ADDR="cosmos1s32mhm7c0eest48njscsr5fnn2c42mr9w8cnqe"
+FAUCET_ADDR="cosmos17s95c5jpc6x2l3edwh4dm8yhac68yru7cre47d"
+
+# ALL env-sourced, NEVER hardcoded (repo is public; a hardcoded mnemonic here was
+# reused for the live testnet faucet and had to be rotated — docs/security-pentest-2026-06-24.md P-1).
+VAL_MNEMONICS=(
+  "${DEV0_MNEMONIC:?set DEV0_MNEMONIC — see chain/.env.example}"
+  "${DEV1_MNEMONIC:?set DEV1_MNEMONIC — see chain/.env.example}"
+  "${DEV2_MNEMONIC:?set DEV2_MNEMONIC — see chain/.env.example}"
+  "${DEV3_MNEMONIC:?set DEV3_MNEMONIC — see chain/.env.example}"
+)
+
+echo ">> wiping $BASE"; rm -rf "$BASE"; N0="$BASE/node0"
+gacct(){ "$EVMD" genesis add-genesis-account "$1" "$(gmb "$2")$BASE_DENOM" --keyring-backend "$KEYRING" --home "$N0"; }
+
+for i in $(seq 0 $((N-1))); do
+  H="$BASE/node$i"
+  "$EVMD" init "gemba-val-$i" -o --chain-id "$COSMOS_CHAIN_ID" --home "$H" >/dev/null 2>&1
+  echo "${VAL_MNEMONICS[$i]}" | "$EVMD" keys add "val$i" --recover --keyring-backend "$KEYRING" --algo "$KEYALGO" --home "$H" >/dev/null 2>&1
+  [ "$i" -ne 0 ] && echo "${VAL_MNEMONICS[$i]}" | "$EVMD" keys add "val$i" --recover --keyring-backend "$KEYRING" --algo "$KEYALGO" --home "$N0" >/dev/null 2>&1
+done
+for b in foundation dao contingency founder publicfaucet; do "$EVMD" keys add "$b" --keyring-backend "$KEYRING" --algo "$KEYALGO" --home "$N0" >/dev/null 2>&1; done
+
+# allocation (fixed 100M GMB) — MAINNET split (decision 2026-06-29): NO circulation pool. The 4
+# validators enter with exactly SELF_BOND_GMB (10K) each, funded from the FOUNDER 5% (consensus
+# power comes from founder-seeded stake, never from a reserve). The former 10% circulation is
+# folded into the Contingency reserve (now 20M); the validator-reward reserve stays at 20M. = 100M.
+# Each validator gets SELF_BOND_GMB + 1 GMB: the gentx self-bonds exactly SELF_BOND_GMB, and the
+# 5-gwei fee ante runs on the gentx at InitChain BEFORE the self-bond, so an exactly-SELF_BOND
+# balance can't cover both (delegate fails "insufficient funds"). The +1 GMB/validator buffer
+# (N total) comes out of the founder allocation, so the 100M total is unchanged.
+VAL_ALLOC=$((SELF_BOND_GMB + 1))                             # 10,001 each (1 GMB liquid for the genesis fee)
+VAL_ENTRY_TOTAL=$((N * VAL_ALLOC))                           # 4 x 10,001 = 40,004 (carved from the founder 5M)
+# The 2 OPEN channels (validators, public faucet) are seeded FROM THE FOUNDER 5% — the founder
+# reduces its OWN balance; the 30M Public Reserve is NEVER touched for this. The publicfaucet
+# genesis account holds the day-1 seed; the launch runbook deploys the tested drip-faucet contract
+# and funds it from this account. GMB sales run via the GembaPayDispenser, funded operationally
+# from the founder EOA when needed — the on-chain GembaOnRamp was REMOVED (owner decision 2026-07-17).
+FOUNDER_EOA=$((ALLOC_FOUNDER - VAL_ENTRY_TOTAL - PUBLIC_FAUCET_SEED))   # founder keeps ~4,860,000
+for i in $(seq 0 $((N-1))); do gacct "val$i" "$VAL_ALLOC"; done
+gacct "$RS_RESERVE_ADDR" "$ALLOC_VAL_RESERVE"; gacct "$FAUCET_ADDR" "$ALLOC_PUBLIC_RESERVE"   # 20M reward module, 30M Public Reserve
+gacct foundation "$ALLOC_FOUNDATION"; gacct dao "$ALLOC_DAO"; gacct contingency "$ALLOC_CONTINGENCY"
+gacct publicfaucet "$PUBLIC_FAUCET_SEED"; gacct founder "$FOUNDER_EOA"
+echo ">> mainnet split: validators ${SELF_BOND_GMB} each + public-faucet ${PUBLIC_FAUCET_SEED} (all from founder); Public Reserve ${ALLOC_PUBLIC_RESERVE}; reward reserve ${ALLOC_VAL_RESERVE}; contingency ${ALLOC_CONTINGENCY}"
+
+GEN="$N0/config/genesis.json"; patch_economics "$GEN"
+TMP="$(mktemp)"
+# strip BaseAccounts at the module addresses (created lazily as ModuleAccounts)
+jq --arg a "$RS_RESERVE_ADDR" --arg b "$FAUCET_ADDR" '.app_state.auth.accounts |= map(select(.address != $a and .address != $b))' "$GEN" >"$TMP" && mv "$TMP" "$GEN"
+# custom module params (reward amplified for devnet visibility: 1000 GMB/block)
+jq '.app_state.rewardstreamer.params.enabled=true | .app_state.rewardstreamer.params.reward_denom="agmb" | .app_state.rewardstreamer.params.blocks_per_year=2000
+  | .app_state.feesplit.params.enabled=true | .app_state.feesplit.params.faucet_fee_ratio="0.400000000000000000" | .app_state.feesplit.params.faucet_account="faucet"' "$GEN" >"$TMP" && mv "$TMP" "$GEN"
+
+mkdir -p "$N0/config/gentx"
+for i in $(seq 0 $((N-1))); do
+  H="$BASE/node$i"
+  [ "$i" -ne 0 ] && cp "$GEN" "$H/config/genesis.json"
+  # --min-self-delegation MUST be >= the x/valgate floor (default gentx sets it to 1 wei,
+  # which valgate rejects at InitChain → "min_self_delegation 1 is below the minimum").
+  "$EVMD" genesis gentx "val$i" "$(gmb "$SELF_BOND_GMB")$BASE_DENOM" --min-self-delegation "$(gmb "$MIN_SELF_BOND_GMB")" --gas-prices "$MIN_GAS_PRICES_NODE" --keyring-backend "$KEYRING" --chain-id "$COSMOS_CHAIN_ID" --home "$H" >/dev/null 2>&1
+  cp "$H"/config/gentx/*.json "$N0/config/gentx/" 2>/dev/null || true
+done
+"$EVMD" genesis collect-gentxs --home "$N0" >/dev/null 2>&1
+"$EVMD" genesis validate-genesis --home "$N0"
+
+declare -a IDS
+for i in $(seq 0 $((N-1))); do
+  [ "$i" -ne 0 ] && cp "$GEN" "$BASE/node$i/config/genesis.json"
+  IDS[$i]="$("$EVMD" comet show-node-id --home "$BASE/node$i")"
+done
+
+for i in $(seq 0 $((N-1))); do
+  H="$BASE/node$i"; C="$H/config/config.toml"; A="$H/config/app.toml"
+  P2P=$((26656+i*100)); RPC=$((26657+i*100)); PROX=$((26658+i*100)); GRPC=$((9090+i*10)); API=$((1317+i*100)); JRPC=$((8545+i*100)); JWS=$((8546+i*100))
+  tune_cometbft "$C"
+  sed -i.bak "s|tcp://127.0.0.1:26658|tcp://127.0.0.1:$PROX|;s|tcp://127.0.0.1:26657|tcp://0.0.0.0:$RPC|;s|tcp://0.0.0.0:26656|tcp://0.0.0.0:$P2P|;s|localhost:6060|localhost:$((6060+i))|" "$C"
+  sed -i.bak 's|^addr_book_strict = true|addr_book_strict = false|;s|^allow_duplicate_ip = false|allow_duplicate_ip = true|' "$C"
+  PEERS=""; for j in $(seq 0 $((N-1))); do [ "$j" -eq "$i" ] && continue; PEERS="$PEERS,${IDS[$j]}@127.0.0.1:$((26656+j*100))"; done
+  sed -i.bak "s|^persistent_peers = .*|persistent_peers = \"${PEERS#,}\"|" "$C"
+  sed -i.bak "s|^minimum-gas-prices = .*|minimum-gas-prices = \"$MIN_GAS_PRICES_NODE\"|;s|^evm-chain-id = .*|evm-chain-id = $EVM_CHAIN_ID|;s|tcp://localhost:9090|tcp://localhost:$GRPC|;s|127.0.0.1:8545|127.0.0.1:$JRPC|;s|127.0.0.1:8546|127.0.0.1:$JWS|" "$A"
+  sed -i.bak "/^\[api\]/,/^\[/ s|tcp://localhost:1317|tcp://localhost:$API|;/^\[api\]/,/^\[/ s|^enable = false|enable = true|" "$A"
+  [ "$i" -eq 0 ] && sed -i.bak "/^\[json-rpc\]/,/^\[/ s|^enable = false|enable = true|" "$A"
+  rm -f "$C.bak" "$A.bak"
+done
+echo "=== 4-validator gembad devnet at $BASE | node0: rpc 26657 json-rpc 8545 ==="

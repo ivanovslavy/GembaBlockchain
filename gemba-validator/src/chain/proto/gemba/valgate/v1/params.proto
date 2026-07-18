@@ -15,4 +15,22 @@ message Params {
     (gogoproto.nullable) = false,
     (amino.dont_omitempty) = true
   ];
+  // max_self_bond is the MAXIMUM self-delegation (agmb) allowed when CREATING a validator —
+  // an anti-domination cap (a single party can't enter with a huge stake). Governance-tunable;
+  // 0 means no cap. Only enforced at creation; existing validators may grow past it. §5.2.
+  string max_self_bond = 2 [
+    (cosmos_proto.scalar) = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+  // max_daily_bond_increase: max GMB (agmb) that may be ADDED to an already-created validator's
+  // bonded stake per (block-time) day, from all sources combined. Anti-domination; slow, predictable
+  // growth. Governance-tunable; 0 means no cap. §6 regenesis spec.
+  string max_daily_bond_increase = 3 [
+    (cosmos_proto.scalar) = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
 }

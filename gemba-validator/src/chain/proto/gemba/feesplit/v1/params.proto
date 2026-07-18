@@ -1,0 +1,18 @@
+syntax = "proto3";
+package gemba.feesplit.v1;
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+import "amino/amino.proto";
+option go_package = "github.com/ivanovslavy/GembaBlockchain/chain/x/feesplit/types";
+
+// Params configures the fee split (CLAUDE.md §5.4: 40% faucet / 60% validators).
+message Params {
+  bool enabled = 1;
+  string faucet_fee_ratio = 2 [
+    (cosmos_proto.scalar) = "cosmos.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+  string faucet_account = 3;
+}
