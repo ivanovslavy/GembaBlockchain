@@ -63,9 +63,15 @@ reserves are never staked. Thresholds:
 Run the exporter on a 1-minute timer:
 ```bash
 REST_URL=http://localhost:1317 OUT=/var/lib/node_exporter/textfile/gemba.prom \
+  RESERVES_EXTRA="cosmos1<foundation> cosmos1<dao> cosmos1<contingency> cosmos1<founder>" \
   ./bonded-ratio-exporter.sh
 ```
-Add the real reserve addresses to the `RESERVES` list for the target network.
+The module-account reserves (rewardstreamer / tailreward / faucet) are built in —
+module addresses don't change between networks. The **genesis-seeded** reserves
+(foundation / dao / contingency / founder — the same addresses the genesis was built
+with) are chain-specific and go in `RESERVES_EXTRA`. **On mainnet (`gemba-1`) the
+exporter refuses to run without `RESERVES_EXTRA`** — an understated reserve sum would
+overstate circulating supply and under-report the bonded ratio exactly when it matters.
 
 Grafana: chart `gemba_bonded_ratio`, `cometbft_consensus_height`,
 `cometbft_p2p_peers`, and disk usage; the bonded-ratio panel is the headline

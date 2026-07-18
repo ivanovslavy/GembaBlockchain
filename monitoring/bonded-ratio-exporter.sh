@@ -19,16 +19,36 @@ REST="${REST_URL:-http://localhost:1317}"
 DENOM="${DENOM:-agmb}"
 OUT="${OUT:-/tmp/gemba_bonded_ratio.prom}"
 
-# Module/reserve accounts that hold non-voting supply (never staked, §3.4/§4.1).
-# Bech32 module-account addresses on a "cosmos"-prefix devnet; replace for mainnet.
+# Module accounts that hold non-voting supply (never staked, §3.4/§4.1). Module
+# addresses are derived from the module NAME + bech32 prefix, so they are the SAME
+# on devnet/testnet/mainnet — safe to keep as built-in defaults.
 RESERVES=(
-  cosmos1s32mhm7c0eest48njscsr5fnn2c42mr9w8cnqe # rewardstreamer (20M reserve)
+  cosmos1s32mhm7c0eest48njscsr5fnn2c42mr9w8cnqe # rewardstreamer (validator-reward reserve)
   cosmos1s9kaf3uygudq8ezy4nc38q8cuz5rfgujqz68e2 # tailreward buffer
-  cosmos17s95c5jpc6x2l3edwh4dm8yhac68yru7cre47d # faucet
-  # foundation / dao / liquidity / founder addresses go here for a real network
+  cosmos17s95c5jpc6x2l3edwh4dm8yhac68yru7cre47d # faucet (Public Reserve module acct)
 )
 
+# GENESIS-SEEDED reserves (foundation / dao / contingency / founder + any excluded
+# EVM reserve-contract accounts) are chain-specific and MUST be supplied via
+# RESERVES_EXTRA (space- or comma-separated bech32 list) — the same addresses the
+# genesis was built with (init-gembad-mainnet.sh: FOUNDATION_ADDR / DAO_ADDR /
+# CONTINGENCY_ADDR / FOUNDER_ADDR). Without them the reserve sum is understated and
+# the bonded ratio — THE security KPI (ADR-008) — reads too low exactly when it
+# matters, so on mainnet this exporter FAILS LOUD instead of lying quietly.
+if [[ -n "${RESERVES_EXTRA:-}" ]]; then
+  # shellcheck disable=SC2206 # deliberate word-split of the configured list
+  RESERVES+=(${RESERVES_EXTRA//,/ })
+fi
+
 q() { curl -sf "$REST$1"; }
+
+chain_id=$(q /cosmos/base/tendermint/v1beta1/node_info | jq -r '.default_node_info.network // empty')
+if [[ "$chain_id" == "gemba-1" && -z "${RESERVES_EXTRA:-}" ]]; then
+  echo "FATAL: mainnet (gemba-1) detected but RESERVES_EXTRA is unset — the bonded ratio" >&2
+  echo "would be computed without the genesis-seeded reserves (foundation/dao/contingency/" >&2
+  echo "founder) and silently under-report. Set RESERVES_EXTRA to the genesis addresses." >&2
+  exit 1
+fi
 
 bonded=$(q /cosmos/staking/v1beta1/pool | jq -r '.pool.bonded_tokens')
 total=$(q "/cosmos/bank/v1beta1/supply/by_denom?denom=$DENOM" | jq -r '.amount.amount')
