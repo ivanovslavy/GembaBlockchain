@@ -1,8 +1,46 @@
 # GembaBlockchain — progress log
 
 > Running change log (rule 3/5). Newest first. Detailed history lives in git; this file
-> captures notable milestones and decisions. Private repo only (gitignored from any public
-> mirror). Docs in English (rule 1).
+> captures notable milestones and decisions. NOTE: this repo is PUBLIC (CLAUDE.md §0.3)
+> and this file is tracked — keep operational secrets out (they live in gitignored
+> local files / the secret store). Docs in English (rule 1).
+
+## 2026-07-19 — full-repo code review → mainnet-readiness cleanup
+Read-only review (3 passes: contracts, chain/infra, hygiene) then a same-day fix sweep:
+- **Launch blocker fixed:** `gemba-validator/src/chain` was a 40-day-stale snapshot missing
+  the mainnet formula reward model + gov kill-switch + P-3 ldflags — a validator built from
+  the package would have earned NO rewards on mainnet. Refreshed via the documented
+  `git archive` procedure, verified byte-identical, and re-synced after later chain edits.
+- **CI activated:** `tests.yml` (forge + go, was `.proposed`) — and it immediately caught a
+  real reproducibility bug: fresh `forge install` pulls OZ with nested libs, auto-inferred
+  remappings enter solc metadata → DIFFERENT bytecode → the gembaswap pair init-code hash
+  and CREATE2 §41 address determinism break on any fresh checkout. Fixed by pinning all 5
+  remappings + `auto_detect_remappings=false`. CI green (170/0 forge; go all ok).
+- **Ceremony traps removed:** stale `QUORUM_PCT=66` instruction in DeployGovernance.s.sol
+  (would revert the mainnet deploy) + block-time comment drift corrected.
+- **Dead code removed:** HelloGemba.sol, SeamProbe.sol, the Phase-1 vanilla-evmd init
+  scripts (init-single-node/init-multinode/start-single-node); GembaFaucet marked
+  TESTNET-ONLY (live at 0x0147...f8aA, deliberately not in mainnet deploys);
+  src/onramp → src/payments rename (OnRamp is gone); stray MIT/^0.8.20 headers normalized.
+- **Docs de-drifted:** README (build status was ~7 phases behind; launch gates all resolved:
+  ADR-009 withdrawn, ADR-006 cleared, ADR-008 done), .env.example reconciled with the real
+  key set, this file's stale "private repo" claim fixed (repo is public by design).
+- **Guards added:** CI cmp-check keeps the gembapay hardhat drop-in byte-identical to
+  src/payments/GmbCollector.sol; gitleaks allowlist got the KEYALGO false-positive pinned
+  by exact string (not path).
+
+## 2026-07-17/18 — mainnet prep milestones (recorded from git)
+- **Genesis + product decisions locked** (owner): GMB pure utility coin — no liquidity, Buy-GMB
+  via dispenser only; `GembaOnRamp` removed entirely; "only validators vote at launch" via the
+  vGMB wrapper + EXCLUDE_EXTRA; contract set final.
+- **Readiness-audit remediation:** mainnet genesis builder with a 33-check verification
+  battery (`init-gembad-mainnet.sh`), exclusion pipeline, gmb1/2/3 RPC map, key-ceremony kit
+  (`scripts/key-ceremony.sh` + runbook), 4th genesis validator = `.208`.
+- **ADR-006 CLEARED** (owner accepts the upstream-audit gate; pinned v0.7.0 carries all
+  advisory fixes incl. ASA-2026-002).
+- **Validator auto-ops:** auto-unjail rewritten as a 3-layer watchdog (detect-stuck →
+  restart → sync-gate → unjail) + node-watchdog + disk-guard + alert email; in repo +
+  runbook, pending activation on the boxes.
 
 ## 2026-07-13 (later) — final architecture decided
 - **Target architecture locked in** (`docs/runbooks/target-architecture.md`, supersedes the
@@ -42,5 +80,6 @@
 ## Earlier (from git history — highlights)
 - Phases 0–9 + public testnet built: Cosmos-EVM `gembad`, custom modules
   (`rewardstreamer`, `feesplit`, `slashfunds`, `tailreward`), OZ-v5 treasury/governance
-  contracts, paymaster, access NFT, on-ramp, ticketing, Blockscout explorer, monitoring.
+  contracts, paymaster, access NFT, on-ramp (later removed 2026-07-17), ticketing,
+  Blockscout explorer, monitoring.
 - See `git log` and `CLAUDE.md` (§13 phased plan) for the authoritative record.

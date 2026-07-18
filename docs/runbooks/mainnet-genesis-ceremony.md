@@ -24,7 +24,18 @@ Topology (P1, €0-reuse): 4 validators = Contabo **.82/.83/.84** + the 4th box;
   mempool base-fee #1223) — if tagged, bump `EVM_VERSION` in `build-gembad.sh` +
   rebuild/retest; otherwise launch on v0.7.0.
 - ✅ Full test evidence recorded: `forge test` (contracts), `go test ./...` (chain),
-  security e2e re-run — see hardening §B/§C and `security/results/`.
+  security e2e re-run — see hardening §B/§C and `security/results/`. Since 2026-07-19
+  both suites also run in CI on every push (`.github/workflows/tests.yml`).
+- ✋ **Deployment EOA keys OUT of the plaintext dotfile (owner action, 2026-07-19 review).**
+  `contracts/.env` currently holds FOUNDER_PK / FOUNDATION_PK / DAO_PK / CONTINGENCY_PK /
+  FAUCETRESERVE_PK in plaintext on the laptop (gitignored, never committed — but these EOAs
+  control the 15M/10M/20M reserve funding). Before genesis: move them to a hardware wallet
+  or the encrypted ceremony store (`scripts/key-ceremony.sh` pattern — gpg AES256 +
+  restore-test), export into the ceremony shell only for the deploy, then shred the dotfile.
+- ✋ **Verify pentest P-1 key rotation.** P-1 (docs/security-pentest-2026-06-24.md) found a
+  live faucet key derivable from a public devnet mnemonic. The init scripts carrying it were
+  deleted (2026-07-19) and mainnet keys are ceremony-fresh by design — confirm on genesis
+  day that NO mainnet account reuses any devnet/testnet mnemonic-derived key.
 - ✋ Testnet farewell: announce the stop date, then execute Phase 0.5 below.
 
 ## Phase 0.5 — TESTNET DECOMMISSION + fresh boxes (THE NEXT STEP — owner plan 2026-07-18)

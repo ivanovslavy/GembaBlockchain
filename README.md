@@ -47,34 +47,54 @@ community-run open-source chain registries — both pull requests **merged**:
 ## Repository layout
 
 ```
-chain/       Cosmos EVM app (Go): genesis, node config, devnet scripts, custom modules
-contracts/   Solidity (Foundry): governor, treasuries, NFTs, paymaster
-services/    Node.js/Express backends (on-ramp, access-control API, indexers)
-frontend/    React
-explorer/    Blockscout docker setup ("GembaScan")
-docs/        Detailed specs and runbooks (start with docs/risks.md)
+chain/            Cosmos EVM app (Go): custom modules (rewardstreamer, feesplit,
+                  tailreward, valgate, slashfunds), gembad build + genesis builders
+contracts/        Solidity (Foundry): governance, reserves, payments, tickets,
+                  access NFT, paymaster, DEX infra (gembaswap)
+services/         Node.js/Express backends: access-control, purchase-backend,
+                  testnet-faucet, contact-form, blockchain-notifier
+gemba-validator/  Self-contained validator install package + auto-ops daemons
+                  (3-layer watchdog, auto-compound, disk-guard, alert email)
+frontend/         React (landing, swap dApp) + static gmb/addresses pages
+explorer/         Blockscout docker setup ("GembaScan") + Apache proxy confs
+monitoring/       Prometheus/Alertmanager + bonded-ratio exporter (ADR-008)
+security/         Adversarial pentest harness + mainnet prevalidation battery
+stress/ endurance/ EVM load-test harnesses (burst + 24h soak)
+scripts/          Mainnet ops: validator installer, key ceremony
+docs/             Detailed specs and runbooks (start with docs/risks.md)
 ```
 
 ## Build status
 
-The project is built in phases (see `CLAUDE.md` §13).
+The project is built in phases (see `CLAUDE.md` §13, which carries the full
+per-phase record). **All nine technical phases are COMPLETE** (status 2026-07-19):
 
-- Phase 0, Scaffolding: complete. Monorepo structure, secret hygiene, risk register.
-- Phase 1, Local devnet: complete. Single-node and 4-validator devnets built from
-  the pinned upstream `cosmos/evm` `evmd` (v0.7.0), with GembaBlockchain's economics
-  baked into genesis (zero inflation, a non-zero gas-price floor, EVM chainId
-  821206, ~2s blocks, the fixed 100M GMB allocation). Verified end to end: MetaMask
-  connection, a GMB transfer, a Solidity deploy, and 4-validator BFT liveness with
-  one validator down. See [`chain/scripts`](./chain/scripts).
-- Phase 2, Custom chain modules: next. The validator reward streamer, the 60/40 fee
-  split, and the post-reserve tail reward, all zero-inflation (no minting).
+- **Phase 0-1** — scaffolding + local devnets (single-node and 4-validator BFT)
+  from the pinned upstream `cosmos/evm` (v0.7.0).
+- **Phase 2** — custom zero-inflation Go modules: `rewardstreamer` (reserve-funded
+  validator rewards, incl. the mainnet formula model + gov kill-switch),
+  `feesplit` (60/40), wired into the **`gembad`** binary (`chain/gembad`).
+- **Phase 3-4** — governance + treasury contracts (two-tier Governor, Timelock,
+  UUPS reserves, EmergencyPause; reserves excluded from voting) and EIP-1559
+  tuning + EIP-2771 sponsored gas.
+- **Phase 5-6** — soulbound access NFT + GDPR-split backend; **Buy-GMB** via
+  `GembaPayDispenser` (the ONLY sale channel — the on-chain `GembaOnRamp` was
+  removed entirely, owner decision 2026-07-17).
+- **Phase 7-8** — GembaScan (Blockscout on a dedicated archive node) + ticketing/
+  perks contracts.
+- **Phase 9** — hardening: `tailreward` module (ADR-008b), monitoring with the
+  bonded-ratio security metric, runbooks (halt recovery, upgrades, tmkms),
+  multi-round security audits + pentest, validator auto-ops.
 
-**Live test network.** The GembaBlockchain **test network is up and working end to
-end** — producing ~2 s blocks, serving EVM JSON-RPC, accepting MetaMask, and the
-**first GMB transfer has been made and is indexed in GembaScan** (the self-hosted
-Blockscout explorer). This is the valueless dress-rehearsal testnet (`gemba-testnet-1`,
-EVM chainId `821207`), not mainnet — public launch is still gated by the blockers
-below. Details and the first-transaction record: [`docs/testnet-status.md`](./docs/testnet-status.md).
+**Live public testnet.** `gemba-testnet-1` (EVM chainId `821207`, valueless) has
+been live for weeks: ~2 s blocks, EVM JSON-RPC, MetaMask, GembaScan indexing,
+drip faucet, swap dApp. Details: [`docs/testnet-status.md`](./docs/testnet-status.md).
+
+**Mainnet (`gemba-1`, chainId 821206) is in final launch preparation** — genesis
+builder with a 33-check verification battery (`chain/gembad/init-gembad-mainnet.sh`),
+key-ceremony kit (`scripts/key-ceremony.sh`), prevalidation battery (`security/`),
+and the launch runbooks under `docs/runbooks/`. Per the 2026-06-29 decision the
+testnet fleet is reused for mainnet (testnet stops at cutover).
 
 ## Quick start (local devnet)
 
@@ -83,19 +103,17 @@ compiler (for CGO), `jq`, and [Foundry](https://book.getfoundry.sh) for the
 transfer/deploy demos.
 
 ```bash
-# 1. Build the pinned node binary once.
-git clone --branch v0.7.0 https://github.com/cosmos/evm
-cd evm && make install            # installs evmd to $(go env GOPATH)/bin
-export PATH="$PATH:$(go env GOPATH)/bin"
+# 1. Build the wired gembad binary once (fetches pinned cosmos/evm v0.7.0
+#    and applies the Gemba wiring patch — custom modules included).
+cd /path/to/GembaBlockchain/chain/gembad
+./build-gembad.sh
 
 # 2. Single-node devnet.
-cd /path/to/GembaBlockchain
-./chain/scripts/init-single-node.sh
-./chain/scripts/start-single-node.sh
+./init-gembad.sh
 
 # 3. Or a 4-validator BFT devnet (tolerates one validator down).
-./chain/scripts/init-multinode.sh
-./chain/scripts/start-multinode.sh
+./init-gembad-multinode.sh
+EVMD=/tmp/gembad BASE=~/.gembad-multinode ../scripts/start-multinode.sh
 ```
 
 Endpoints: CometBFT RPC `26657`, gRPC `9090`, REST `1317`, EVM JSON-RPC `8545`
@@ -111,19 +129,26 @@ for how each genesis parameter maps to its specification section.
 | Chain ID | `821206` |
 | Currency symbol | GMB |
 
-## Conscious trade-offs and hard launch blockers
+## Conscious trade-offs and launch gates
 
 This is a real public chain with honestly recorded risks. See `CLAUDE.md` §16 and
-the full Architecture Decision Records in [`docs/risks.md`](./docs/risks.md). Public
-launch is blocked until all of the following clear:
+the full Architecture Decision Records in [`docs/risks.md`](./docs/risks.md).
+The three original hard launch blockers have all been resolved:
 
-1. MiCA classification confirmed in writing by a Bulgarian fintech lawyer (ADR-009).
-2. The upstream Cosmos EVM audit lands, plus our own review (ADR-006).
-3. The long-term security-budget tail reward is implemented and tested, and
-   bonded-ratio monitoring is live (ADR-008).
+1. **ADR-009 (MiCA)** — *withdrawn 2026-06-06*: no liquidity, no exchange, no
+   public sale by design (ADR-003), so the public-sale MiCA trigger does not
+   arise. Revisit only if a fiat-adjacent on-ramp is ever introduced.
+2. **ADR-006 (upstream audit)** — *cleared 2026-07-18*: the pinned v0.7.0 carries
+   every published advisory fix (incl. ASA-2026-002), the codebase was
+   Sherlock-audited upstream, and our own multi-phase audit covered the
+   integration + custom modules.
+3. **ADR-008 (security budget)** — *done*: the recirculation-funded tail reward
+   (`chain/x/tailreward`) is implemented, supply-invariant-tested and live on
+   testnet; bonded-ratio monitoring ships in `monitoring/`.
 
-Devnet, testnet, and closed formula-based institutional grants are not blocked by
-these gates.
+What remains before the `gemba-1` genesis is operational, not architectural: the
+key ceremony, final prevalidation battery, and launch-day runbook execution
+(`docs/runbooks/`).
 
 ## Secret hygiene
 
