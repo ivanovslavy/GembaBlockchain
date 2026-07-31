@@ -34,6 +34,17 @@ log(){ echo "[$(date -Is)] compound: $*" >>"$LOG"; }
 command -v jq >/dev/null || { log "jq missing"; exit 1; }
 command -v bc >/dev/null || { log "bc missing"; exit 1; }
 
+# GUARD: the configured CHAIN_ID must be the chain this node is actually on. A mismatch (e.g. a
+# mainnet box left on the template's gemba-testnet-1) makes every tx we sign invalid, so the
+# unjail/delegate would fail forever while the log still looked busy. Shout instead of pretending.
+_net=$(curl -s --max-time 5 "${RPC_HTTP:-http://localhost:26657}/status" 2>/dev/null \
+       | jq -r '.result.node_info.network // empty' 2>/dev/null || true)
+if [ -n "$_net" ] && [ "$_net" != "$CHAIN_ID" ]; then
+  log "CONFIG ERROR: CHAIN_ID=$CHAIN_ID but this node is on '$_net' — refusing to submit anything"
+  notify "CONFIG ERROR: CHAIN_ID=$CHAIN_ID but the node is on $_net"
+  exit 1
+fi
+
 valoper=$($GEMBAD keys show "$KEY" --bech val -a $KR 2>/dev/null) || { log "cannot read valoper"; exit 1; }
 [ -z "$valoper" ] && { log "cannot read valoper (empty) — key $KEY missing?"; exit 1; }
 deladdr=$($GEMBAD keys show "$KEY" -a $KR 2>/dev/null)

@@ -63,6 +63,17 @@ command -v wd_detect_stuck >/dev/null || { log "watchdog-lib.sh missing (repo di
 wd_acquire_lock auto-unjail
 wd_load_state
 wd_gather_local     # -> peers, height, catching
+
+# GUARD: the configured CHAIN_ID must be the chain this node is actually on. A mismatch (e.g. a
+# mainnet box left on the template's gemba-testnet-1) makes every tx we sign invalid, so the
+# unjail/delegate would fail forever while the log still looked busy. Shout instead of pretending.
+_net=$(curl -s --max-time 5 "${RPC_HTTP:-http://localhost:26657}/status" 2>/dev/null \
+       | jq -r '.result.node_info.network // empty' 2>/dev/null || true)
+if [ -n "$_net" ] && [ "$_net" != "$CHAIN_ID" ]; then
+  log "CONFIG ERROR: CHAIN_ID=$CHAIN_ID but this node is on '$_net' — refusing to submit anything"
+  notify "CONFIG ERROR: CHAIN_ID=$CHAIN_ID but the node is on $_net"
+  exit 1
+fi
 wd_gather_tip       # -> TIP, LOCAL_EVM, behind
 wd_freeze_check     # -> first_run, moved (persists height for the next run)
 

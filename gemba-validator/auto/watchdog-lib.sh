@@ -58,10 +58,37 @@ evm_height(){ # $1=url -> decimal height or empty
         | jq -r '.result // empty' 2>/dev/null)
   [[ "$r" =~ ^0x[0-9a-fA-F]+$ ]] && printf '%d' "$r" || true
 }
+evm_chainid(){ # $1=url -> decimal EVM chain id or empty
+  local r; r=$(curl -s --max-time 6 -X POST "$1" -H 'content-type: application/json' \
+        -d '{"jsonrpc":"2.0","method":"eth_chainId","id":1}' 2>/dev/null \
+        | jq -r '.result // empty' 2>/dev/null)
+  [[ "$r" =~ ^0x[0-9a-fA-F]+$ ]] && printf '%d' "$r" || true
+}
+# GUARD: a tip from a DIFFERENT chain is far worse than no tip at all. `behind` becomes a huge
+# bogus number, so the LAYER-2 sync gate never reports "synced" and the validator is then NEVER
+# unjailed — a silent, total loss of the watchdog's entire purpose, visible only as an endless
+# "jailed but not fully synced yet" in the log. This is a live footgun: the shipped
+# validator-auto.env carries the TESTNET explorer RPCs, so a mainnet box whose operator forgets
+# to repoint TIP_EVM_RPCS would look healthy and never recover from its first jail.
+# So: only trust a tip whose eth_chainId matches THIS node's. If none does, leave `behind` empty
+# and let the gate fall back to the plain forward-progress check (which needs no external tip).
 wd_gather_tip(){
-  TIP=""; local u; for u in $TIP_EVM_RPCS; do TIP=$(evm_height "$u"); [ -n "$TIP" ] && break; done
-  LOCAL_EVM=""; [ -n "$LOCAL_EVM_RPC" ] && LOCAL_EVM=$(evm_height "$LOCAL_EVM_RPC")
-  behind=""; [ -n "$TIP" ] && [ -n "$LOCAL_EVM" ] && behind=$(( TIP - LOCAL_EVM ))
+  TIP=""; LOCAL_EVM=""; behind=""
+  [ -n "$LOCAL_EVM_RPC" ] && LOCAL_EVM=$(evm_height "$LOCAL_EVM_RPC")
+  local mine=""; [ -n "$LOCAL_EVM_RPC" ] && mine=$(evm_chainid "$LOCAL_EVM_RPC")
+  local u theirs
+  for u in $TIP_EVM_RPCS; do
+    if [ -n "$mine" ]; then
+      theirs=$(evm_chainid "$u")
+      [ -z "$theirs" ] && continue                     # unreachable -> just try the next one
+      if [ "$theirs" != "$mine" ]; then
+        log "IGNORING tip RPC $u — its chain-id $theirs != this node's $mine (TIP_EVM_RPCS points at the wrong network)"
+        continue
+      fi
+    fi
+    TIP=$(evm_height "$u"); [ -n "$TIP" ] && break
+  done
+  [ -n "$TIP" ] && [ -n "$LOCAL_EVM" ] && behind=$(( TIP - LOCAL_EVM ))
   return 0   # the && list above returns 1 when no tip is configured — must not kill a `set -e` caller
 }
 
