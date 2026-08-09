@@ -7,18 +7,18 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
   <link rel="canonical" href="https://addresses.gembachain.io/" />
   <meta name="robots" content="index, follow, max-image-preview:large" />
-  <meta name="description" content="Official GembaBlockchain contract & genesis addresses — testnet and mainnet. Reserves, governance (Governor/Timelock), DEX (GembaSwap Router V2, WGMB, Factory), validators, faucet & test stablecoins (USDT/USDC/EURC). Verified on GembaScan." />
+  <meta name="description" content="Official GembaBlockchain contract & genesis addresses — testnet. Reserves, governance (Governor/Timelock), DEX (GembaSwap Router V2, WGMB, Factory), validators, faucet & test stablecoins (USDT/USDC/EURC). Verified on GembaScan." />
   <meta property="og:title" content="GembaBlockchain — official addresses" />
-  <meta property="og:description" content="All important GembaBlockchain addresses (testnet + mainnet): reserves, governance, DEX router/WGMB, validators, faucet & test stablecoins." />
+  <meta property="og:description" content="All important GembaBlockchain addresses (testnet): reserves, governance, DEX router/WGMB, validators, faucet & test stablecoins." />
   <meta property="og:url" content="https://addresses.gembachain.io/" />
   <meta property="og:image" content="https://gembachain.io/gemba-icon.png" />
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="GembaBlockchain — official addresses" />
   <meta name="twitter:image" content="https://gembachain.io/gemba-icon.png" />
-  <title>GembaBlockchain — official addresses (testnet & mainnet)</title>
+  <title>GembaBlockchain — official addresses (testnet)</title>
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"WebPage","name":"GembaBlockchain official addresses","url":"https://addresses.gembachain.io/","description":"Official GembaBlockchain contract and genesis addresses for testnet and mainnet.","publisher":{"@type":"Organization","name":"GembaBlockchain","legalName":"GEMBA EOOD","url":"https://gembachain.io/"}}
+  {"@context":"https://schema.org","@type":"WebPage","name":"GembaBlockchain official addresses","url":"https://addresses.gembachain.io/","description":"Official GembaBlockchain contract and genesis addresses for testnet.","publisher":{"@type":"Organization","name":"GembaBlockchain","legalName":"GEMBA EOOD","url":"https://gembachain.io/"}}
   </script>
   <style>
     :root{--bg:#0a0b16;--card:#13152a;--card2:#171a33;--border:#262a4d;--text:#b7bad2;--dim:#7a7e9e;--head:#f4f5fb;--indigo:#6366f1;--cyan:#22d3ee;--grad:linear-gradient(120deg,#6366f1,#22d3ee);--ok:#34d399}
@@ -62,7 +62,6 @@
     <p class="sub">All important GembaBlockchain addresses — genesis reserves, governance, the GembaSwap DEX (Router V2, WGMB, Factory) and validators. Every contract is verified on GembaScan. Always confirm an address here before interacting.</p>
     <div class="tabs">
       <button class="tab on" data-net="testnet" onclick="sel('testnet')">Testnet</button>
-      <button class="tab" data-net="mainnet" onclick="sel('mainnet')">Mainnet</button>
     </div>
     <div id="content"></div>
     <div class="foot">Source of truth: this page + GembaScan verification. Built by <a href="https://gembait.com">GEMBA EOOD</a>. PII / private keys are never published — addresses are public on-chain identifiers.</div>
@@ -82,7 +81,7 @@
             ["DAOReserve", "0x68093A1C9682df9D1C59586b2Cfc04ed132e7eE5", "10,000,000 GMB — held in this contract (verified). Owner = Timelock; released via governance + timelock."],
             ["ContingencyReserve", "0xCBbf84966335e0846cffB52d8624a9aeF58227b4", "10,000,000 GMB — held in this contract (verified). Owner = Timelock; unforeseen/strategic needs only, via governance + timelock."],
             ["Circulation / liveness pool", "", "10,000,000 GMB at genesis (2,000,000 × 5 accounts) — seeds the 4 genesis validators and early on-chain activity plus a neutral voting base independent of the founder. Idle balances were consolidated into the reward reserve at regenesis; the validator operating accounts are listed under “Validators” below."],
-            ["Founder (deployer, non-voting)", "0x5578c75F22dE0bf1caA4BdD46BA28406C696a5dC", "5,000,000 GMB — operations & sale treasury. Excluded from voting, no protocol privilege, never validates with special power."],
+            ["Founder (deployer, non-voting)", "0x5578c75F22dE0bf1caA4BdD46BA28406C696a5dC", "5,000,000 GMB — operations treasury. Excluded from voting, no protocol privilege, never validates with special power."],
           ] },
           { title: "Governance", rows: [
             ["GembaGovernor", "0xCCd9f78047E1BB8Bec419490E80409bfBf3B7b72", "supermajority 66%, quorum 50%"],
@@ -90,7 +89,7 @@
             ["GembaVotes", "0x0056ab3c91FF5ba8eCdBA8c7C453fd9F424F7F39", "1 GMB = 1 vote · reserves excluded"],
             ["EmergencyPause", "0x372462Fc8e28c558E2A1bcE6b9CF56a47c71DeA0", "guardian, pause-only"],
           ] },
-          { title: "DEX & ecosystem (developer reference)", rows: [
+          { title: "DEX & ecosystem (testnet, developer reference)", rows: [
             ["GembaSwapRouter02", "0x49Da581bf5C09aE24312574D4835d416EE5eEfd5", "Uniswap V2 router (full ABI)"],
             ["GembaSwapFactory", "0x15752A99d2e06d001F5d228AA158EbD687276DB4", "Uniswap V2 factory"],
             ["WGMB — wrapped GMB", "0x4A74DB9c9cE285960d01B53a626945DDd100e8d8", "wrapped native coin"],
@@ -99,7 +98,6 @@
             ["DemoToken (DEMO)", "0xDA9dFb87f77ED2176C00339da0cEae2Ac6E5e722", "example dev token"],
           ] },
           { title: "Application contracts", rows: [
-            ["GembaOnRamp — public on-ramp sale", "0xC35E5F9AD571499785060aa63e3Eb492DbB3Fd17", "buy GMB via GembaPay at a fixed 1 GMB = 1 EUR (the only way to buy GMB), to USE — Gemba dApps at a 20% discount + validator entry (daily GMB rewards). Non-commercial, for society; not a market/liquidity offering. Seeded from the founder."],
             ["GembaTicketing", "0xDe541f5E11af36cAE643D04F2e49fA54Cf14B6ce", "ERC-1155 event tickets"],
             ["GembaPerks", "0x0c4ab65FC5A295995A0ef50714aA4e2f33b6ada6", "employee perks & bonuses"],
             ["AccessControlNFT", "0xE2DCB80ee598Dd0eb0dda8179A51c02b7C266a98", "soulbound workplace-access capability (no PII)"],
@@ -120,12 +118,6 @@
           ] },
         ],
       },
-      mainnet: {
-        chain: { name: "GembaBlockchain (mainnet)", cosmos: "gemba-1", evm: 821206, symbol: "GMB" },
-        explorer: "https://gembascan.io",
-        notLive: true,
-        todo: "At mainnet genesis these will be (re)deployed & verified here: genesis reserves, governance (Governor/Timelock/Votes/EmergencyPause), the GembaSwap DEX (Router02 / WGMB / Factory / NativePoolFactory / LiquidityLocker) and the application contracts. None exist on mainnet yet.",
-      },
     };
 
     function netCard(c) {
@@ -143,15 +135,6 @@
       const d = DATA[net];
       let html = netCard(d.chain);
       if (d.note) html += `<div class="net" style="border-style:dashed">${d.note}</div>`;
-      if (d.notLive) {
-        html += `<div class="notlive"><b style="color:var(--head)">Mainnet is not launched yet.</b><br>The official mainnet addresses (reserves, governance, DEX) will be published here at mainnet genesis. EVM chainId ${d.chain.evm}.` +
-          (d.todo ? `<br><br><span style="font-size:13px">${d.todo}</span>` : "") + `</div>`;
-      } else {
-        for (const g of d.groups) {
-          html += `<div class="grp"><h2>${g.title}</h2><table>`;
-          for (const [n, a, note] of g.rows) html += row(n, a, note, d.explorer);
-          html += `</table></div>`;
-        }
       }
       document.getElementById("content").innerHTML = html;
     }
@@ -161,7 +144,7 @@
       history.replaceState({}, "", "#" + net);
     }
     function cp(a, el) { navigator.clipboard?.writeText(a); const o = el.textContent; el.textContent = "✓"; setTimeout(() => (el.textContent = o), 1200); }
-    sel(location.hash === "#mainnet" ? "mainnet" : "testnet");
+    sel("testnet");
   </script>
 </body>
 </html>
