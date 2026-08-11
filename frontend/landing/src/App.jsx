@@ -202,120 +202,6 @@ function ClaimButtons() {
   );
 }
 
-function BuyGmb() {
-  const [conf, setConf] = useState({ pricePerGmbEur: 1, minGmb: 10, maxGmb: 10000 });
-  const [addr, setAddr] = useState("");
-  const [gmb, setGmb] = useState(100);
-  const [phase, setPhase] = useState("form"); // form | creating | awaiting | success
-  const [formErr, setFormErr] = useState("");
-  const [txHash, setTxHash] = useState("");
-  const [boughtGmb, setBoughtGmb] = useState(0);
-  const [agreed, setAgreed] = useState(false);
-  const pollRef = useRef(null);
-
-  useEffect(() => {
-    fetch("/api/purchase/config").then((r) => r.json()).then((c) => c && setConf(c)).catch(() => {});
-    return () => clearInterval(pollRef.current);
-  }, []);
-
-  const eur = (Number(gmb) * (conf.pricePerGmbEur || 0) || 0).toFixed(2);
-  const isAddr = /^0x[a-fA-F0-9]{40}$/.test(addr.trim());
-  const valid = isAddr && Number(gmb) >= conf.minGmb && Number(gmb) <= conf.maxGmb;
-
-  const poll = (oid) => {
-    clearInterval(pollRef.current);
-    pollRef.current = setInterval(async () => {
-      try {
-        const r = await fetch(`/api/purchase/status/${oid}`);
-        const j = await r.json();
-        if (j.ok && j.status === "fulfilled") {
-          clearInterval(pollRef.current);
-          setTxHash(j.txHash || "");
-          setBoughtGmb(j.gmb || 0);
-          setPhase("success");
-        }
-      } catch { /* keep polling */ }
-    }, 4000);
-  };
-
-  const buy = async () => {
-    setFormErr("");
-    if (!valid) { setFormErr("Enter a valid 0x… address and an amount within range."); return; }
-    if (!agreed) { setFormErr("Please accept the Terms of Service to continue."); return; }
-    setPhase("creating");
-    try {
-      const r = await fetch("/api/purchase/create", {
-        method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ evmAddress: addr.trim(), gmbAmount: Number(gmb) }),
-      });
-      const j = await r.json().catch(() => ({}));
-      if (j.ok && j.checkoutUrl) {
-        window.open(j.checkoutUrl, "_blank", "noopener,noreferrer");
-        setPhase("awaiting");
-        poll(j.orderId);
-      } else { setPhase("form"); setFormErr("Couldn't start checkout — please try again."); }
-    } catch { setPhase("form"); setFormErr("Couldn't start checkout — please try again."); }
-  };
-
-  const close = () => { clearInterval(pollRef.current); setPhase("form"); setTxHash(""); };
-
-  return (
-    <div className="contact-form">
-      <label className="buy-label">Your GembaBlockchain (EVM) address — GMB is sent here</label>
-      <input placeholder="0x…" value={addr} onChange={(e) => setAddr(e.target.value)} maxLength={42} spellCheck="false" />
-      <div className="contact-row">
-        <div>
-          <label className="buy-label">Amount of GMB</label>
-          <input type="number" min={conf.minGmb} max={conf.maxGmb} step="1" value={gmb} onChange={(e) => setGmb(e.target.value)} />
-        </div>
-        <div>
-          <label className="buy-label">You pay</label>
-          <input value={`€ ${eur}`} readOnly tabIndex={-1} style={{ opacity: 0.85 }} />
-        </div>
-      </div>
-      <label className="buy-consent">
-        <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
-        <span>I have read and agree to the <a href="/terms/" target="_blank" rel="noopener">Terms of Service</a>,
-        and I understand GMB is a <strong>utility coin</strong> for paying for services — there is
-        <strong> no buyback and no fiat redemption</strong> (<a href="https://gmb.gembachain.io" target="_blank" rel="noopener">learn about GMB</a>).</span>
-      </label>
-      <button className="btn" disabled={phase === "creating" || !agreed} onClick={buy}>
-        {phase === "creating" ? "Opening checkout…" : "Pay with GembaPay"}
-      </button>
-      <p className="form-msg muted" style={{ color: "var(--text-tertiary)" }}>
-        {conf.minGmb}–{conf.maxGmb} GMB · pay by card or crypto via GembaPay · GMB is delivered to your
-        address automatically once payment is confirmed.
-      </p>
-      {formErr && <p className="form-msg err">{formErr}</p>}
-
-      {(phase === "awaiting" || phase === "success") && (
-        <div className="pay-overlay" role="dialog" aria-modal="true">
-          <div className={`pay-card ${phase === "success" ? "ok" : ""}`}>
-            <button className="pay-close" onClick={close} aria-label="Close">×</button>
-            {phase === "awaiting" ? (
-              <>
-                <div className="pay-spinner" />
-                <h3>Awaiting payment…</h3>
-                <p>Complete your payment in the new tab. Your GMB is delivered automatically once payment
-                is confirmed — keep this window open.</p>
-              </>
-            ) : (
-              <>
-                <div className="pay-check">
-                  <svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" fill="none" /><path fill="none" d="M14 27l8 8 16-16" /></svg>
-                </div>
-                <h3>Payment successful</h3>
-                <p>{boughtGmb ? `${Number(boughtGmb).toLocaleString("en-US")} GMB` : "Your GMB"} has been sent to your address.</p>
-                {txHash && <a className="btn" href={`${NET.explorer}/tx/${txHash}`} target="_blank" rel="noopener">View GMB transfer ↗</a>}
-              </>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 const TURNSTILE_SITEKEY = "0x4AAAAAADr41oPreDMPGC0C";
 
 function ContactForm() {
@@ -443,7 +329,6 @@ function App() {
             Swap
           </a>
           <a href="#faucet">Faucet</a>
-          <a href="#buy">Buy GMB</a>
           <a href={NET.explorer} target="_blank" rel="noopener">
             Explorer
           </a>
@@ -472,7 +357,7 @@ function App() {
           <p className="lede">
             GembaBlockchain is a sovereign, public, permissionless Cosmos EVM PoS L1 —
             <strong> the first blockchain built in Bulgaria</strong>. Its native coin
-            <strong> Gemba (GMB)</strong> is a pure utility coin: cheaper service access,
+            <strong> Gemba (GMB)</strong> is a pure utility coin: service access,
             workplace access control, tickets and perks. <strong>By design no liquidity
             is provided for GMB and we operate no exchange</strong> — the chain is not
             made for speculation or trading. It exists for the good of society: for
@@ -492,12 +377,11 @@ function App() {
 
         <section className="appblock">
           <div className="txt">
-            <h2>GembaSwap — the ecosystem DEX</h2>
+            <h2>GembaSwap — the ecosystem DEX (testnet demo)</h2>
             <p>
-              Our own app on GembaBlockchain: <strong>swap tokens</strong>, wrap{" "}
+              Our own testnet app on GembaBlockchain: <strong>swap tokens</strong>, wrap{" "}
               <strong>GMB ↔ WGMB (1:1)</strong>, <strong>add &amp; remove liquidity</strong>{" "}
-              (including fee-on-transfer tokens), and <strong>lock / unlock LP tokens</strong>. No
-              platform fees — we take no cut. Gas is near-zero (~1 gwei).
+              (including fee-on-transfer tokens), and <strong>lock / unlock LP tokens</strong>. Gas is near-zero (~1 gwei). Testnet only — the tokens have no monetary value.
             </p>
             <div className="feats">
               <span>Swap</span>
@@ -591,31 +475,9 @@ function App() {
               ))}
             </div>
             <p className="muted registries-note">
-              The faucet is also built into the dApps with a full UI and cooldown timers:{" "}
-              <a href="https://win.gembait.com/en/faucet" target="_blank" rel="noopener">GembaWin faucet</a>
-              {" · "}
-              <a href="https://escrow.gembait.com/en/faucet" target="_blank" rel="noopener">GembaEscrow faucet</a>.
               Stablecoins are minted on demand; the native GMB reserve has a global daily cap, so a
               sybil swarm can never drain it.
             </p>
-          </div>
-        </section>
-
-        <section className="details" id="buy">
-          <div className="details-inner">
-            <h2>Buy GMB</h2>
-            <p className="buy-discount">
-              Pay <strong>20% less</strong> for Gemba ecosystem services when you pay with GMB.{" "}
-              <a href="https://gmb.gembachain.io" target="_blank" rel="noopener">Learn what GMB is &amp; what you can do with it →</a>
-            </p>
-            <p className="muted">
-              Get GMB delivered straight to your wallet. Pay by card or crypto through
-              <strong> GembaPay</strong>; once the payment is confirmed, GMB is sent automatically
-              to the address you provide. GMB is a <strong>utility coin</strong> — used for cheaper
-              access to services, <strong>not</strong> for trading: no buyback, no fiat redemption.
-              (Testnet GMB has no monetary value — this is the same flow that will run on mainnet.)
-            </p>
-            <BuyGmb />
           </div>
         </section>
 
@@ -655,7 +517,6 @@ function App() {
             Swap
           </a>
           <a href="#faucet">Faucet</a>
-          <a href="#buy">Buy GMB</a>
           <a href={NET.explorer} target="_blank" rel="noopener">
             Explorer
           </a>

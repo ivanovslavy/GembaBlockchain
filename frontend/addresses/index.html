@@ -135,6 +135,10 @@
       const d = DATA[net];
       let html = netCard(d.chain);
       if (d.note) html += `<div class="net" style="border-style:dashed">${d.note}</div>`;
+      for (const g of d.groups) {
+        html += `<div class="grp"><h2>${g.title}</h2><table>`;
+        for (const [n, a, note] of g.rows) html += row(n, a, note, d.explorer);
+        html += `</table></div>`;
       }
       document.getElementById("content").innerHTML = html;
     }
