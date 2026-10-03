@@ -1,0 +1,74 @@
+diff --git a/mempool/internal/queue/queue.go b/mempool/internal/queue/queue.go
+index 5ec4301..772e6c9 100644
+--- a/mempool/internal/queue/queue.go
++++ b/mempool/internal/queue/queue.go
+@@ -193,12 +193,28 @@ func (iq *Queue[Tx]) waitForNewTxs() bool {
+ }
+ 
+ // insertTxs inserts Tx's, returning any errors that have occurred.
+-func (iq *Queue[Tx]) insertTxs(txs []*Tx) []error {
++func (iq *Queue[Tx]) insertTxs(txs []*Tx) (errs []error) {
+ 	defer func(t0 time.Time) {
+ 		insertDuration.Record(context.Background(), float64(time.Since(t0).Milliseconds()), iq.metricAttrs)
+ 	}(time.Now())
+ 
+-	errs := iq.insert(txs)
++	// GEMBA PATCH (2026-10-03): this runs in the queue's OWN goroutine, started by New, where
++	// nothing recovers — so a panic anywhere inside insert, which runs the application's full
++	// ante handler, takes the entire node down. A transaction whose AuthInfo.Fee was nil reached
++	// x/auth/ante.SetUpContextDecorator -> x/auth/tx.(*wrapper).GetGas and SIGSEGV'd a live
++	// validator exactly this way. baseapp recovers the identical ante on its synchronous path;
++	// a background worker must not be the one place where it is fatal. Turn the panic into an
++	// error for the batch and keep serving.
++	defer func() {
++		if r := recover(); r != nil {
++			errs = make([]error, len(txs))
++			for i := range errs {
++				errs[i] = fmt.Errorf("panic while inserting tx into the mempool: %v", r)
++			}
++		}
++	}()
++
++	errs = iq.insert(txs)
+ 	if len(errs) != len(txs) {
+ 		panic(fmt.Errorf("expected a %d errors from insert but instead got %d", len(txs), len(errs)))
+ 	}
+diff --git a/mempool/recheck_pool.go b/mempool/recheck_pool.go
+index 5a38319..3093c50 100644
+--- a/mempool/recheck_pool.go
++++ b/mempool/recheck_pool.go
+@@ -210,6 +210,34 @@ func (m *RecheckMempool) Insert(_ context.Context, tx sdk.Tx) (err error) {
+ 		ctx, write = m.rechecker.GetContext()
+ 	}
+ 
++	// GEMBA PATCH (2026-10-03): never judge a new transaction against a STALE context. The
++	// rechecker's ctx is a long-lived cache that this function writes back into (see write()
++	// below), and it only rolls over when doRecheck calls rechecker.Update on a new head — a
++	// path that logs and RETURNS SILENTLY when GetLatestContext fails. Once it stops, every
++	// later CheckTx is evaluated against the block time and the accumulated ante writes of the
++	// moment it froze, with nothing in the logs to say so.
++	//
++	// That locked a validator out of the x/valgate §6 daily bond cap for thirteen days: its own
++	// node kept answering "50 GMB already added today" with the day frozen at its last
++	// successful bond, so no amount — not even 1 agmb — could bond, and because the counter only
++	// advances on a SUCCESSFUL bond it could never roll over either. Every other node accepted
++	// the very same signed transaction. A restart was the only cure.
++	//
++	// So: compare the cached context against the chain head and refresh rather than trust it.
++	// On a healthy node this never fires; on a node whose refresh path has died it is the
++	// difference between a stale answer and a correct one.
++	if head := m.blockchain.CurrentBlock(); head != nil && head.Number != nil &&
++		ctx.BlockHeight() > 0 && ctx.BlockHeight() < head.Number.Int64()-1 {
++		m.logger.Error("rechecker context is stale — refreshing it before the insert",
++			"ctx_height", ctx.BlockHeight(), "chain_head", head.Number.Int64())
++		freshCtx, err := m.blockchain.GetLatestContext()
++		if err != nil {
++			return fmt.Errorf("refreshing a stale rechecker context: %w", err)
++		}
++		m.rechecker.Update(freshCtx, head)
++		ctx, write = m.rechecker.GetContext()
++	}
++
+ 	if _, err := m.rechecker.RecheckCosmos(ctx, tx); err != nil {
+ 		return fmt.Errorf("ante handler failed: %w", err)
+ 	}
