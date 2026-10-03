@@ -61,5 +61,12 @@ func (d DailyBondRecorder) PostHandle(ctx sdk.Context, tx sdk.Tx, simulate, succ
 			}
 		}
 	}
+	if next == nil {
+		// Defensive: an empty SDK post-handler chain is nil (sdk.ChainPostDecorators returns nil
+		// for zero decorators), and a wiring that passes that through as `next` would panic here
+		// on the very first transaction — which is exactly what happened the first time this
+		// decorator was wired into evmd. Our charge has already been applied; just return.
+		return ctx, nil
+	}
 	return next(ctx, tx, simulate, success)
 }

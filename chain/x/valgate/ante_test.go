@@ -200,6 +200,22 @@ func TestDailyBondChargedOnlyWhenTheMessagesSucceeded(t *testing.T) {
 	require.True(t, k.RemainingDailyBond(ctx, va).IsZero(), "a successful delegation is charged")
 }
 
+// TestDailyBondRecorderToleratesNilNext: an empty SDK post-handler chain is nil, and a wiring that
+// hands that through as `next` used to panic InitChain on the genesis gentx. The charge must still
+// be applied and the handler must return cleanly.
+func TestDailyBondRecorderToleratesNilNext(t *testing.T) {
+	ctx, k := setupKeeper(t)
+	ctx = ctx.WithBlockTime(time.Unix(1_700_000_000, 0))
+	r := valgate.NewDailyBondRecorder(k)
+	vo := sdk.ValAddress([]byte("nil-next-validator!!")).String()
+	va, err := sdk.ValAddressFromBech32(vo)
+	require.NoError(t, err)
+
+	_, err = r.PostHandle(ctx, mockTx{[]sdk.Msg{del(vo, 50)}}, false, true, nil)
+	require.NoError(t, err, "a nil next must not panic")
+	require.True(t, k.RemainingDailyBond(ctx, va).IsZero(), "the charge is still applied")
+}
+
 // TestDailyBondCapWithinOneTx: two delegations to the SAME validator in one transaction are summed,
 // so the cap cannot be split across messages — and the ante catches it before anything executes.
 func TestDailyBondCapWithinOneTx(t *testing.T) {

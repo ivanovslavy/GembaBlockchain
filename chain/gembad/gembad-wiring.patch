@@ -1,5 +1,5 @@
 diff --git a/evmd/app.go b/evmd/app.go
-index 204345c..b7c13fc 100644
+index 204345c..954c856 100644
 --- a/evmd/app.go
 +++ b/evmd/app.go
 @@ -24,6 +24,7 @@ import (
@@ -200,7 +200,7 @@ index 204345c..b7c13fc 100644
  }
  
  func (app *EVMD) onPendingTx(hash common.Hash) {
-@@ -834,7 +932,18 @@ func (app *EVMD) setPostHandler() {
+@@ -834,7 +932,28 @@ func (app *EVMD) setPostHandler() {
  		panic(err)
  	}
  
@@ -213,10 +213,20 @@ index 204345c..b7c13fc 100644
 +	// CheckTx mode, so the counter is never written during CheckTx at all. The ante still CHECKS the
 +	// cap, read-only, so an over-cap delegation is still refused in the mempool before it executes.
 +	// See chain/x/valgate/posthandler.go and docs/runbooks/validator-binary-refresh-2026-10.md.
++	//
++	// NOTE the nil: posthandler.NewPostHandler with no options builds an EMPTY decorator chain,
++	// and sdk.ChainPostDecorators returns nil for that — baseapp then reads nil as "no
++	// post-handler at all". Handing that nil to our decorator as its `next` dereferences it on the
++	// first transaction, which panics InitChain on the genesis gentx. Chain through
++	// ChainPostDecorators instead: it supplies its own terminal handler.
 +	valgateRecorder := valgate.NewDailyBondRecorder(app.ValgateKeeper)
-+	app.SetPostHandler(func(ctx sdk.Context, tx sdk.Tx, simulate, success bool) (sdk.Context, error) {
-+		return valgateRecorder.PostHandle(ctx, tx, simulate, success, postHandler)
-+	})
++	if postHandler == nil {
++		app.SetPostHandler(sdk.ChainPostDecorators(valgateRecorder))
++	} else {
++		app.SetPostHandler(func(ctx sdk.Context, tx sdk.Tx, simulate, success bool) (sdk.Context, error) {
++			return valgateRecorder.PostHandle(ctx, tx, simulate, success, postHandler)
++		})
++	}
  }
  
  // Name returns the name of the App
