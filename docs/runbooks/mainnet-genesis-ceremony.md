@@ -22,7 +22,27 @@ Topology (P1, €0-reuse): 4 validators = Contabo **.82/.83/.84** + the 4th box;
   at genesis day:** check github.com/cosmos/evm for a `v0.7.1` tag (two security-adjacent
   backports were pending on `release/v0.7.x` on 2026-07-17: statedb locked-balance #1187,
   mempool base-fee #1223) — if tagged, bump `EVM_VERSION` in `build-gembad.sh` +
-  rebuild/retest; otherwise launch on v0.7.0.
+  rebuild/retest; otherwise launch on v0.7.0. **Done for the mempool half (2026-10-03):**
+  v0.7.1/v0.7.2/v0.7.3 are tagged, `build-gembad.sh` is pinned to **v0.7.3** (which carries the
+  base-fee backport #1223), rebuilt and devnet-tested. Still open: confirm whether statedb
+  locked-balance #1187 landed in the 0.7.x line.
+- 🔴 **GATE — the genesis binary must be reproducible, and must carry the mempool fixes.**
+  This is not bookkeeping; it is the one gate genesis cannot revisit afterwards. The live testnet
+  runs `d8a454f-dirty`, built 2026-06-26 from a tree with uncommitted changes, so the running
+  state machine **corresponds to no commit in this repository** — unauditable and unreproducible
+  for the life of that chain. Do not let mainnet inherit it. On genesis day:
+  1. `git -C chain status --porcelain` is EMPTY and `git describe --tags --always --dirty`
+     carries **no `-dirty`** suffix.
+  2. `./build-gembad.sh`, then `gembad version --long` → version and commit equal that commit,
+     with no `-dirty`.
+  3. Record the binary's **sha256** in the launch notes beside `GENESIS_SHA256`, and ship that
+     same artefact to every founder validator — compare hashes per box, never rebuild per box.
+  4. Confirm the build applied **`gembad-mempool-fixes.patch`** (it prints `>> applying gembad
+     mempool fixes`). Without it a validator can lock itself out of the §6 daily bond cap
+     indefinitely and a malformed transaction can kill a node — both diagnosed on the testnet on
+     2026-10-03, see [`validator-binary-refresh-2026-10.md`](validator-binary-refresh-2026-10.md).
+  5. Ship `auto-compound.sh` from the same commit, so a failed compound alerts from day one
+     instead of failing silently for thirteen days as it did on .83.
 - ✅ Full test evidence recorded: `forge test` (contracts), `go test ./...` (chain),
   security e2e re-run — see hardening §B/§C and `security/results/`. Since 2026-07-19
   both suites also run in CI on every push (`.github/workflows/tests.yml`).
