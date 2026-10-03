@@ -208,6 +208,78 @@ not ours.
 5. **Never two validators down at once** — the bonded set would drop below the 2/3 quorum and the
    chain would halt. This is the same rule as the 2026-07-31 jail drill.
 
+### Phase 2 — RESULT (executed 2026-10-03 evening)
+
+Artefact: `version 39daa6e`, no `-dirty`, go1.25.9,
+`sha256 fd9deac77b0cd97a17d7cea41d7a7f7cf677f5a3e7c0fbbeb2c99a43fbd3b4e0` — built once and
+**shipped** to every box; each box's hash compared before the swap, never rebuilt per box.
+
+| box | before → after | result |
+|---|---|---|
+| archive `.137` (canary) | `d8a454f-dirty` → `39daa6e` | 64 blocks in 150 s, 3 peers, `catching_up=false`, **0** app-hash mismatches, 0 panics |
+| `.82` | `d8a454f-dirty` → `39daa6e` | signing in the first block after the restart; **130/130** blocks signed over the following audit, weight unchanged, not jailed |
+| `.84` | `d8a454f-dirty` → `39daa6e` | signing in the first block after the restart; **60/60** blocks over the window after it; weight unchanged |
+| node2 `.208` | `d8a454f-dirty` → `39daa6e` | signing in the first block; 38/40 over its restart window; 3 peers, weight unchanged |
+| `.83` | `d8a454f-dirty` → `39daa6e` | signing in the first block; 47/50 (the three being its own restart); weight unchanged |
+
+Each box missed only the blocks of its own ~35 s restart — far from the jail threshold (more than
+50 of 100). The chain never lost a block: with one validator restarting, three of four kept
+signing, which is why **only ever one at a time**.
+
+### Phase 3 — RESULT (verification per box)
+
+```
+.82     ✅ 39daa6e · sha fd9deac77b0c…      node2  ✅ 39daa6e · sha fd9deac77b0c…
+.83     ✅ 39daa6e · sha fd9deac77b0c…      archive ✅ 39daa6e · sha fd9deac77b0c…
+.84     ✅ 39daa6e · sha fd9deac77b0c…
+```
+
+No `-dirty` anywhere, one identical artefact on all five boxes. Signing over the 50 blocks after
+the last swap: node2 50/50, .84 50/50, .82 50/50, .83 47/50 (its own restart). All four BONDED,
+none jailed.
+
+End-to-end on `.83`, the box the incident started on:
+
+```
+committed §6 counter : day 20729 · 49.0 GMB used
+delegation           : …653248 → …653249   (+1 agmb, code=0, through ITS OWN node)
+auto-compound        : "capped to the 999999999999999996 agmb still free under today's §6 cap"
+stale-context guard  : 0 messages — silent on a healthy node
+```
+
+The counter it reads now agrees with the chain, it bonds through its own node, and the compound
+sizes itself to the real remainder instead of asking for the full cap. The last end-to-end proof
+is the 03:2x compound run after the next UTC midnight, when `.83`'s allowance resets to the full
+50 GMB for the first time since 2026-09-20.
+
+
+**Consensus compatibility: measured.** At the same height the canary on the new binary and two
+validators on the old one returned the *identical* block hash and app hash — and then, with a real
+transaction (a 1 agmb delegation, which exercises the ante, the §6 counter write, staking and
+distribution), block `H`'s hash and block `H+1`'s app hash — the state *after* executing it — were
+identical across new and old:
+
+```
+3671426  app=1CB016BC…A9F12D  txs=1     the block carrying the transaction
+3671427  app=600D139B…8733A6            the state after it — same on new and on both old binaries
+```
+
+That is what justifies the rolling swap over halting the chain. Empty blocks alone would not have
+proven it; insist on a transaction.
+
+#### Two traps worth knowing before you repeat this
+
+- **`grep -ci panic` over a node journal gives false positives.** `gembad`'s own `--help` lists
+  `panic` as a log level, and the old process prints its usage on shutdown, so a clean swap reported
+  "panics: 2" on `.84`. Match `^panic:|runtime error|SIGSEGV` instead, and confirm against
+  `systemctl show -p NRestarts` — a real panic restarts the unit.
+- **node2 (`.208`) needs no special binary handling.** Its container is plain `ubuntu:24.04` with
+  the HOST's `/usr/local/bin/gembad` bind-mounted read-only, so swapping the host file and
+  restarting `gembad.service` (not `gembad-val`, and with `sudo`) is the whole procedure.
+
+Pause the box's `gemba-auto-unjail.timer` for the duration of each swap so the watchdog does not
+race the restart, and start it again afterwards.
+
 ### Phase 3 — verification per box
 - `gembad version --long` → the expected commit, **no `-dirty`**.
 - synced (`catching_up=false`), peers > 0, signing (appears in `/commit`), not jailed.
