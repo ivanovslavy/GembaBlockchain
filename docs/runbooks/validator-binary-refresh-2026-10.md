@@ -110,21 +110,37 @@ state machine therefore corresponds to *no commit in this repository*: it is `d8
 that was only committed later (or never). That is the deeper problem to remove — a chain whose
 source of truth is unrecoverable cannot be audited, reproduced, or safely patched.
 
-## This is a CONSENSUS-BREAKING upgrade — not a rolling one
+## Is it consensus-breaking? Measured, not assumed — and the answer is no
 
-`git diff --stat d8a454f..HEAD -- chain/` touches the state machine:
+The first draft of this plan said a rolling upgrade was impossible because `d8a454f..HEAD` touches
+the state machine. That is true of the *code*; what matters is whether it changes **execution against
+the state this chain actually holds**. Each change, checked:
 
-| change | commit | effect |
+| change | commit | effect on the live chain |
 |---|---|---|
-| valgate §6 cap on the EVM staking precompile | `677e5e2` (audit M1) | new rejection path during EVM execution |
-| valgate genesis caps | `5f82ba4` (audit H1) | genesis validation |
-| rewardstreamer formula + gov-gated `MsgUpdateFormulaParams` | `5f82ba4`, `0459bf2` (M2, M4) | **per-block minting changes** |
-| begin-blocker order assertion | `f808ab1` (audit L1) | startup assertion |
+| rewardstreamer aggregate daily budget `MaxTotalPerDay` | `5f82ba4`, M4 | **inert.** The streamer binds it only `if budget.IsPositive()`, the live params predate the field so it unmarshals nil → `MaxTotalPerBlock()` returns zero, and nothing backfills a default on read. Even if it were set, four validators accrue ≈512 GMB/day against a 5,479 GMB/day budget |
+| gov-gated `MsgUpdateFormulaParams` | `0459bf2`, M2 | a new message type — inert until one is submitted |
+| valgate genesis caps | `5f82ba4`, H1 | `InitGenesis` only; never runs on a live chain |
+| valgate §6 cap on the EVM staking precompile | `677e5e2`, M1 | the one real runtime change: a delegation **through the precompile** above the cap now fails. Nothing else moves |
+| begin-blocker order assertion | `f808ab1`, L1 | startup assertion only — and the devnet boots with this exact wiring, so it passes |
+| new/changed events | several | events and logs are excluded from `LastResultsHash`; they cannot diverge an app hash |
 
-Swapping one box at a time would diverge the app hash and fork that box off the chain. The swap
-must happen at a single height for every validator: **`docs/runbooks/coordinated-upgrade.md` path A**
-(`software-upgrade` proposal + staged binary), or path B (announced simultaneous halt and swap) on
-a testnet where coordination is a single operator. Rolling is not an option.
+So the expected divergence surface is a single path (the staking precompile) that the founder
+validators do not use. **That makes a canary possible, and a canary is strictly safer than halting
+the chain.**
+
+### Rollout shape: canary first, then one validator at a time
+
+The **archive node** (`13.140.148.137`) is the ideal canary: it validates every block against the
+live chain's app hash yet carries **no voting power**, so if the new binary computes anything
+differently it halts *itself* with an app-hash mismatch and the chain does not notice. Swap it,
+watch it follow the chain, and only then move voting power.
+
+If the archive **does** diverge, the rolling path is off and the coordinated halt is mandatory:
+set `halt-height H` on every node, let them all stop at the same height, swap, restart. Path A of
+[`coordinated-upgrade.md`](coordinated-upgrade.md) with governance is the formal version; on a
+four-validator testnet with a single operator, `halt-height` is the same thing without the voting
+period.
 
 ## Phases
 
@@ -158,16 +174,38 @@ Acceptance tests, all of which must pass before any live box is touched:
 5. Chain-level: 4/4 signing, no app-hash mismatch in any journal, a deliberate jail still recovers
    through the watchdog.
 
-### Phase 2 — live rollout (one height, all boxes)
+### Phase 1 — RESULT (run 2026-10-03, 4-node devnet on the new binary)
+
+| check | result |
+|---|---|
+| four validators produce and sign blocks | ✅ all four signing, chain `gemba-1` past height 140 |
+| panics / app-hash mismatches in any node log | ✅ none (the only `appHash=` line is the height-0 handshake) |
+| the stale-rechecker guard stays quiet on healthy nodes | ✅ zero occurrences across all four logs while transactions flowed |
+| §6 cap enforced per validator, with the correct day | ✅ val0 at 50/50 refused a further 1 GMB with the proper message; val1, counter empty, accepted 1 GMB and recorded `day 20729 · 1 GMB` |
+| the queue panic cannot kill a node | ✅ regression test passes patched; **crashes the test binary unpatched** |
+| day rollover with a full counter | not run — it needs a UTC midnight. The rollover is demonstrated continuously on the live chain, where the three healthy validators' records advance 20717 → 20718 → 20719 daily; what failed on .83 was the frozen cache, which is what the guard addresses |
+
+Two notes for whoever runs this next. `query valgate params` prints **only** `min_self_bond`
+even though the store holds all three values (verified by reading key `0x01` directly on the
+devnet: 1000 / 10000 / 50 GMB) — a display defect in the query response, not a state problem, and
+**not** evidence about which valgate version a chain runs; an earlier draft of this document drew
+exactly that wrong conclusion from the live chain. And `go test ./mempool/...` fails
+`TestNewEVMMempoolIterator_BothEmpty` identically on a clean v0.7.3 clone — pre-existing upstream,
+not ours.
+
+### Phase 2 — live rollout (canary, then one validator at a time)
 1. **Backup first:** per box, `cp /usr/local/bin/gembad /usr/local/bin/gembad.PROVEN-d8a454f-dirty`
    (md5 `59fd14b9e705c59de82960edab80e4ad`) and snapshot `priv_validator_key.json` +
    `priv_validator_state.json`. Rollback is then one `cp` and a restart.
 2. Stage the new binary on all six boxes (4 validators, archive `.137`, explorer node) **without**
    swapping.
-3. Announce/submit the upgrade height. At the height: halt, swap, restart, in the order
-   **archive → .82 → .84 → node2 → .83** (archive first: it carries no consensus weight, so it
-   proves the binary starts and replays before any voting power moves).
-4. **Never two validators down at once** — the bonded set would drop below the 2/3 quorum and the
+3. **Canary:** swap the archive `.137` only, restart it, and watch it follow the chain for at
+   least 100 blocks — no app-hash mismatch, height advancing, peers > 0. This is the measurement
+   that turns the analysis above into a fact. If it diverges, stop and switch to `halt-height`.
+4. Then the validators, **one at a time**, in the order **.82 → .84 → node2 → .83**, each time
+   waiting for ≥30 minutes of clean signing before touching the next. .83 last, since it is the
+   box whose behaviour we understand least.
+5. **Never two validators down at once** — the bonded set would drop below the 2/3 quorum and the
    chain would halt. This is the same rule as the 2026-07-31 jail drill.
 
 ### Phase 3 — verification per box
@@ -175,6 +213,31 @@ Acceptance tests, all of which must pass before any live box is touched:
 - synced (`catching_up=false`), peers > 0, signing (appears in `/commit`), not jailed.
 - `gemba-auto-compound.sh --dry-run` → exit 0 and a sane `today's §6 allowance:` line.
 - The §6 invariant from Phase 1 test 1, run against the live box.
+
+## Found by the devnet acceptance run — a separate defect, deliberately NOT bundled
+
+Delegating on the devnet with the new binary surfaced a defect of **our own module**, unrelated to
+the mempool: a delegation that passes the ante and then **fails during message execution** still
+burns the day's §6 allowance. Evidence, from the run:
+
+```
+tx:      code=5  failed to delegate; 1433817519999990000agmb is smaller than
+                 50000000000000000000agmb: insufficient funds
+stake:   unchanged
+§6 record: day 20729 · used 50.0 GMB      <-- charged in full for a delegation that never happened
+```
+
+The cause is structural: `CheckAndRecordDailyBond` both checks *and writes* from the ante, and ante
+state writes are intentionally kept when the message itself fails (that is how gas and sequence
+survive a failed tx). So any delegation that reverts — out of gas, insufficient funds, a staking
+error — costs the validator a day of compounding.
+
+The fix is to **check in the ante and record where it can revert with the message**, but that
+changes *when* state is written, which would make the new binary diverge from the live chain and
+forfeit the canary rollout above. It is therefore a follow-up with its own coordinated upgrade, not
+a passenger on this one. Until then the practical exposure is small: `auto-compound.sh` now sizes
+the delegation to the real remaining allowance and verifies the stake actually grew, so a burnt
+allowance shows up as a loud failure the next day rather than as silence.
 
 ## Mitigation already in place (does not need the upgrade)
 
