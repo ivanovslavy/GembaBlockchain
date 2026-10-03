@@ -168,6 +168,40 @@ Three more box-ops pieces, meant for **every** box from genesis:
 Install: validators get all of this from `install-validator-auto.sh`; archive/explorer use
 `install-node-ops.sh [--with-watchdog]` (watchdog only for gembad nodes, i.e. the archive).
 
+## Compound: real remaining allowance + alerting (added 2026-10-03)
+
+`auto-compound.sh` used to clamp the reinvest amount to the §6 **limit** (`MAX_DAILY_ADD_AGMB`,
+50 GMB), so every run asked for the full cap even when part of it had already been bonded that day,
+and the whole compound was rejected instead of topping up the difference. It now **asks the chain**:
+it reads the per-validator counter straight out of the valgate store
+(`/store/valgate/key`, key `0x02 ++ valoperBytes`, value = 8-byte big-endian day epoch ++ the amount
+as ASCII digits), compares the stored day with the day of the chain's latest **block time** (never
+wall-clock — the cap is consensus state), and clamps to what is genuinely free. Every run now logs
+
+```
+compound: today's §6 allowance: 999999999999999998 agmb still free of 50000000000000000000
+```
+
+which is the number whose absence hid a 13-day outage on .83 (see
+[`validator-binary-refresh-2026-10.md`](validator-binary-refresh-2026-10.md)).
+
+Because that read comes from **committed** state, it also works as a cross-check: when the local
+node refuses a delegation the chain would accept, the node's own CheckTx view has gone stale, and
+the script says so by name, retries through `FALLBACK_NODE` when one is set, and e-mails. A smaller
+amount cannot fix that state — restarting the node service can.
+
+| new env var | default | what it does |
+|---|---|---|
+| `FALLBACK_NODE` | *(empty)* | second RPC to submit through when the local node disagrees with committed state |
+| `COMPOUND_FAIL_STATE` | `/var/lib/gemba/compound-fail.count` | consecutive-failure counter |
+| `COMPOUND_ALERT_AFTER` | `2` | failed days before the first e-mail (and a recovery e-mail after) |
+
+The compound had **no alerting at all** until now: it logged and exited 1, so .83 failed silently
+every day from 2026-09-21 to 2026-10-03. Jails and disks have e-mailed since 2026-07-18; the
+compound does now too — including a "recovered" message so an alert never dead-ends. Note that
+`notify()` was *called* by the chain-id guard but never *defined* in this script, so that alert
+could never have fired either; it is defined now.
+
 ## Mainnet (from genesis)
 
 On mainnet each operator runs `install-validator-auto.sh` on their own box with their own

@@ -30,6 +30,33 @@ COMMON="--home $HOME_DIR --keyring-backend $KB --chain-id $CHAIN_ID --node $NODE
 KR="--home $HOME_DIR --keyring-backend $KB"   # `keys show` rejects --chain-id/--node
 TX="--gas auto --gas-adjustment 1.5 --gas-prices $GAS_PRICES -y -o json"
 log(){ echo "[$(date -Is)] compound: $*" >>"$LOG"; }
+RPC_HTTP=${RPC_HTTP:-http://localhost:26657}
+FALLBACK_NODE=${FALLBACK_NODE:-}      # optional second RPC to submit through when the local node lies
+
+# NOTIFY_CMD is run directly (word-split command + the message as ONE argument) — not eval'd,
+# the same convention auto-unjail.sh uses.
+NOTIFY_CMD=${NOTIFY_CMD:-}
+notify(){ [ -n "$NOTIFY_CMD" ] && $NOTIFY_CMD "gemba-compound: $*" >/dev/null 2>&1 || true; }
+
+# A FAILING COMPOUND MUST SHOUT. From 2026-09-21 to 2026-10-03 this script was rejected every
+# single day on validator .83 and nothing but a log line said so: 13 days and ~650 GMB of lost
+# compounding, found only because the stake looked flat. The jail watchdog has e-mailed since
+# 2026-07-18; the compound never did. It does now, and it also reports its own recovery.
+FAIL_STATE=${COMPOUND_FAIL_STATE:-/var/lib/gemba/compound-fail.count}
+ALERT_AFTER=${COMPOUND_ALERT_AFTER:-2}   # consecutive failed days before the first e-mail
+_fails(){ cat "$FAIL_STATE" 2>/dev/null || echo 0; }
+fail(){   # $1 = one-line reason (already logged in full above)
+  local n; n=$(( $(_fails) + 1 ))
+  mkdir -p "$(dirname "$FAIL_STATE")" 2>/dev/null || true
+  printf '%s\n' "$n" >"$FAIL_STATE" 2>/dev/null || true
+  [ "$n" -ge "$ALERT_AFTER" ] && notify "FAILED $n day(s) in a row: $1"
+  exit 1
+}
+clear_fails(){
+  local n; n=$(_fails)
+  [ "$n" -ge "$ALERT_AFTER" ] && notify "recovered after $n failed day(s) — delegating again"
+  rm -f "$FAIL_STATE" 2>/dev/null || true
+}
 
 command -v jq >/dev/null || { log "jq missing"; exit 1; }
 command -v bc >/dev/null || { log "bc missing"; exit 1; }
@@ -90,8 +117,48 @@ reinvest=$(echo "$received * $PCT / 100" | bc)
 # Clamp to the §6 daily bond-increase cap so the on-chain ante NEVER rejects us — if we'd exceed
 # the cap, delegate the MAX allowed and leave the rest liquid (no error, no panic).
 MAX_DAILY_ADD=${MAX_DAILY_ADD_AGMB:-50000000000000000000}  # 50 GMB default (= valgate cap)
-if [ "$(echo "$reinvest > $MAX_DAILY_ADD" | bc)" = "1" ]; then
-  log "reinvest $reinvest capped to daily max $MAX_DAILY_ADD (§6)"; reinvest=$MAX_DAILY_ADD
+
+# ASK THE CHAIN HOW MUCH IS ACTUALLY LEFT TODAY — do not assume the whole cap is free. Clamping to
+# the limit made every run request the full 50 GMB, so a validator that had already bonded anything
+# that day got its whole compound rejected instead of topping up the difference.
+#
+# The counter lives in the valgate store: key = 0x02 ++ valoperBytes, value = 8-byte big-endian day
+# epoch ++ the amount as ASCII digits. A stored day that is not the CHAIN's current day (block time,
+# never wall-clock — the cap is consensus state) means the counter has rolled over and the full cap
+# is free again. This is a plain store query: it reads COMMITTED state and every node answers it
+# correctly, including one whose CheckTx view has gone stale — which is what makes it a usable
+# cross-check against a node that refuses a delegation the chain would accept (see the submit below).
+daily_remaining(){
+  local hex b64 t day stored used raw b
+  hex=$($GEMBAD debug addr "$valoper" 2>/dev/null | sed -n 's/^Address hex: *0[xX]//p' | tr 'A-Z' 'a-z')
+  [ -n "$hex" ] || return 1
+  t=$(curl -s --max-time 8 "$RPC_HTTP/status" 2>/dev/null | jq -r '.result.sync_info.latest_block_time // empty')
+  [ -n "$t" ] || return 1
+  day=$(( $(date -u -d "$t" +%s) / 86400 ))
+  b64=$(curl -s --max-time 8 -G "$RPC_HTTP/abci_query" \
+         --data-urlencode 'path="/store/valgate/key"' \
+         --data-urlencode "data=0x02$hex" 2>/dev/null | jq -r '.result.response.value // empty')
+  used=0
+  if [ -n "$b64" ] && [ "$b64" != "null" ]; then
+    raw=$(mktemp); printf '%s' "$b64" | base64 -d >"$raw" 2>/dev/null || { rm -f "$raw"; return 1; }
+    stored=0; for b in $(od -An -tu1 -N8 "$raw"); do stored=$(( stored * 256 + b )); done
+    [ "$stored" = "$day" ] && used=$(tail -c +9 "$raw" | tr -cd '0-9')
+    rm -f "$raw"
+  fi
+  echo "$(echo "$MAX_DAILY_ADD - ${used:-0}" | bc)"
+}
+remaining=$(daily_remaining || true)
+if [ -z "$remaining" ]; then
+  log "could not read today's §6 allowance from the chain — falling back to the full cap $MAX_DAILY_ADD"
+  remaining=$MAX_DAILY_ADD
+fi
+log "today's §6 allowance: $remaining agmb still free of $MAX_DAILY_ADD"
+if [ "$(echo "$remaining <= 0" | bc)" = "1" ]; then
+  log "today's §6 allowance is already used up (0 of $MAX_DAILY_ADD left) — nothing to do"; exit 0
+fi
+if [ "$(echo "$reinvest > $remaining" | bc)" = "1" ]; then
+  log "reinvest $reinvest capped to the $remaining agmb still free under today's §6 cap (of $MAX_DAILY_ADD)"
+  reinvest=$remaining
 fi
 if [ "$(echo "$reinvest < $MIN_REINVEST" | bc)" = "1" ]; then log "reinvest $reinvest < min $MIN_REINVEST — skip"; exit 0; fi
 
@@ -117,14 +184,48 @@ fi
 # 2>&1 made the JSON unparseable, so txhash came back empty.
 _err=$(mktemp)
 if ! out=$($GEMBAD tx staking delegate "$valoper" "${reinvest}${DENOM}" --from "$KEY" $COMMON $TX 2>"$_err"); then
-  log "delegate submit error: $(tail -c 200 "$_err")"; rm -f "$_err"; exit 1
+  log "delegate submit error: $(tail -c 200 "$_err")"; rm -f "$_err"
+  fail "delegate could not be submitted: $(tail -c 120 "$_err" | tr -d '\n')"
 fi
 rm -f "$_err"
-submit_code=$(printf '%s' "$out" | jq -r '.code // 0' 2>/dev/null || echo 0)
-txhash=$(printf '%s' "$out" | jq -r '.txhash // empty' 2>/dev/null || true)
-if [ -z "$txhash" ]; then txhash=$(printf '%s' "$out" | grep -oiE '[0-9A-F]{64}' | head -1 || true); fi
+_code_of(){ printf '%s' "$1" | jq -r '.code // 0' 2>/dev/null || echo 0; }
+_hash_of(){ local h; h=$(printf '%s' "$1" | jq -r '.txhash // empty' 2>/dev/null || true)
+            [ -n "$h" ] || h=$(printf '%s' "$1" | grep -oiE '[0-9A-F]{64}' | head -1 || true); printf '%s' "$h"; }
+submit_code=$(_code_of "$out"); txhash=$(_hash_of "$out")
 if [ "$submit_code" != "0" ]; then
-  log "delegate rejected at submit code=$submit_code raw=$(printf '%s' "$out" | jq -r '.raw_log // empty' 2>/dev/null | head -c 160)"; exit 1
+  _raw=$(printf '%s' "$out" | jq -r '.raw_log // empty' 2>/dev/null | head -c 300)
+  log "delegate rejected at submit code=$submit_code raw=$_raw"
+
+  # DOES THE CHAIN AGREE WITH THE NODE THAT JUST REFUSED US? `remaining` came from a store query
+  # (committed state); the rejection came from this node's own CheckTx. When the two disagree, the
+  # node is judging transactions against a stale view of its own — the §6 counter it remembers, not
+  # the one the chain holds. That is exactly what froze .83 from 2026-09-21 to 2026-10-03: its last
+  # successful bond left a "50 GMB used" entry in the node's check state that never rolled over, so
+  # it refused every later delegation — including 1 agmb — while every other node accepted the very
+  # same signed transaction. A smaller amount can never fix that; restarting the node service can,
+  # and submitting through any healthy RPC gets today's compound in anyway.
+  if [ "$(echo "$remaining >= $reinvest" | bc)" = "1" ]; then
+    log "THIS NODE DISAGREES WITH THE CHAIN — committed state leaves $remaining agmb of today's §6 cap free, yet the local node refused. Its CheckTx view is stale; restart the node service to clear it."
+    if [ -n "$FALLBACK_NODE" ]; then
+      log "retrying the same delegation through the fallback RPC $FALLBACK_NODE"
+      _err2=$(mktemp)
+      if out=$($GEMBAD tx staking delegate "$valoper" "${reinvest}${DENOM}" --from "$KEY" \
+                 --home "$HOME_DIR" --keyring-backend "$KB" --chain-id "$CHAIN_ID" \
+                 --node "$FALLBACK_NODE" $TX 2>"$_err2"); then
+        submit_code=$(_code_of "$out"); txhash=$(_hash_of "$out")
+      else
+        log "fallback submit error: $(tail -c 200 "$_err2")"; submit_code=1
+      fi
+      rm -f "$_err2"
+      [ "$submit_code" = "0" ] \
+        && notify "local node refused a valid delegation (stale CheckTx state) — compounded through $FALLBACK_NODE instead; RESTART the node service" \
+        || fail "local node's CheckTx state is stale AND the fallback RPC also refused (chain says $remaining agmb free)"
+    else
+      fail "local node's CheckTx state is stale — it refuses a delegation the chain allows ($remaining agmb free today); restart the node service"
+    fi
+  else
+    fail "delegate rejected at submit: $_raw"
+  fi
 fi
 sleep 8  # wait for the block to commit
 
@@ -136,13 +237,15 @@ grew=$(echo "$del_after - $del_before" | bc)
 exec_json=$($GEMBAD q tx "$txhash" --node "$NODE" -o json 2>/dev/null || echo '{}')
 exec_code=$(printf '%s' "$exec_json" | jq -r '.code // empty' 2>/dev/null || echo "")
 if [ -n "$exec_code" ] && [ "$exec_code" != "0" ]; then
-  log "delegate EXECUTION FAILED code=$exec_code txhash=$txhash grew=$grew raw=$(printf '%s' "$exec_json" | jq -r '.raw_log // empty' 2>/dev/null | head -c 160)"; exit 1
+  log "delegate EXECUTION FAILED code=$exec_code txhash=$txhash grew=$grew raw=$(printf '%s' "$exec_json" | jq -r '.raw_log // empty' 2>/dev/null | head -c 160)"
+  fail "the delegation reverted in the block (code=$exec_code)"
 fi
 
 # Tolerance: 1% slack absorbs a slash landing between the two reads.
 min_expected=$(echo "$reinvest * 99 / 100" | bc)
 if [ "$(echo "$grew < $min_expected" | bc)" = "1" ]; then
   log "delegate NOT REFLECTED ON CHAIN — self-delegation grew by $grew, expected >= $min_expected (reinvest=$reinvest txhash=${txhash:-?}) — likely a §6 daily-cap revert"
-  exit 1
+  fail "the stake did not grow: +$grew, expected >= $min_expected"
 fi
+clear_fails
 log "OK received=$received reinvest=$reinvest (${PCT}%) to $valoper | txhash=${txhash:-?} verified=delegation_delta grew=$grew before=$del_before after=$del_after${exec_code:+ exec_code=$exec_code}"

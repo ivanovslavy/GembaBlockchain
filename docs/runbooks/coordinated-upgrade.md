@@ -39,6 +39,13 @@ proposal:
 3. Distribute binary + genesis via the agreed channel; verify checksums.
 4. Everyone restarts **together** from the agreed height.
 
+## The October 2026 binary refresh
+
+The live testnet binary is `d8a454f-dirty` — built 2026-06-26 from a tree with uncommitted changes,
+so it matches no commit — and HEAD carries consensus-affecting module changes on top of it. The
+dated plan, its acceptance tests and the rollout order are in
+[`validator-binary-refresh-2026-10.md`](validator-binary-refresh-2026-10.md).
+
 ## Rules
 
 - **Same height, same binary, verified checksums** — a subset upgrading early/late,
