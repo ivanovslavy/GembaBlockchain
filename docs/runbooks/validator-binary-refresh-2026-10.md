@@ -338,9 +338,56 @@ mid-window, which is precisely the wrong way to learn. So: `halt-height` on ever
 — path B of [`coordinated-upgrade.md`](coordinated-upgrade.md). Bundle the regenerated
 `params.pb.go` descriptor fix into the same swap, since it is inert and already in the tree.
 
-Until then the practical exposure is small: `auto-compound.sh` sizes the delegation to the real
-remaining allowance and verifies the stake actually grew, so a burnt allowance surfaces as a loud
-failure the next day rather than as silence.
+### IMPLEMENTED 2026-10-04 (commits `26a12ab`, `87f161a`) — proven, awaiting the halt-height window
+
+Artefact: `version 87f161a`, no `-dirty`,
+`sha256 7df02eda9f61be2db9cbabcf6442f507bf7b970a1436ec30645037adf8c5aaa9`.
+
+Devnet acceptance, reproducing exactly the scenario that exposed the defect:
+
+```
+50 GMB delegation with 1.4 GMB liquid → submit code=0, in the block code=5 insufficient funds
+§6 counter afterwards: NO RECORD — nothing burned        (it used to charge the full 50)
+1 GMB delegation → succeeds, counter reads day 20729 · 1.0 GMB
+```
+
+Plus unit tests for success=false charging nothing, success=true charging once, intra-transaction
+summing, and a nil `next`. **The devnet earned its keep twice:** the first wiring panicked
+InitChain on the genesis gentx, because `posthandler.NewPostHandler(HandlerOptions{})` builds an
+empty decorator chain and `sdk.ChainPostDecorators` returns **nil** for that — which baseapp reads
+as "no post-handler" but which our decorator dereferenced as its `next`. The unit tests could not
+have caught it; they passed a non-nil next.
+
+### Rolling it out: halt-height, not a canary
+
+A canary cannot validate this one — new and old agree on every successful delegation and differ
+only on a failing one, so the canary would look clean until someone's delegation failed. Use the
+coordinated halt instead:
+
+1. **Pick a height** ~200 blocks out (≈8 minutes at 2.3 s) and note it as `H`.
+2. **One box at a time** (never two validators down at once), still on the OLD binary: set
+   `halt-height = H` in `~/.gembad*/config/app.toml` and restart the node. Pause each box's
+   `gemba-auto-unjail.timer` for the window so the watchdog does not fight the deliberate stop.
+3. **At `H` every node exits by itself.** The chain stops here — that is the point. Note that a
+   node restarted while `halt-height` is still set exits again immediately, so systemd will
+   crash-loop it until step 4; that is expected, not a fault.
+4. **Per box:** swap the binary to `87f161a`, remove `halt-height` (set it back to `0`), start the
+   node. Do the archive first (it proves the binary boots and replays without consensus weight),
+   then the validators.
+5. **Resume:** the chain produces again once more than ⅔ of voting power is back. Re-arm the
+   timers. Verify per box as in Phase 3, then submit one deliberately failing delegation on the
+   live chain and confirm the §6 counter does not move — the same check the devnet ran.
+
+Rollback at any point: `cp /usr/local/bin/gembad.PROVEN-d8a454f-dirty` is the pre-refresh binary,
+and the previous good one is `39daa6e` (`sha256 fd9deac7…`), which every box ran from 2026-10-03.
+
+**Sequencing note.** Do this AFTER the 03:19–03:35 compound run, not before: that run is the last
+end-to-end proof of the mempool fix (`.83` bonding a full 50 GMB for the first time since
+2026-09-20), and swapping binaries first would mix two independent changes in one observation.
+
+Until the swap, the practical exposure of the §6 defect stays small: `auto-compound.sh` sizes the
+delegation to the real remaining allowance and verifies the stake actually grew, so a burnt
+allowance surfaces as a loud failure the next day rather than as silence.
 
 ## Mitigation already in place (does not need the upgrade)
 
