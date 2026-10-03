@@ -24,8 +24,10 @@ Topology (P1, €0-reuse): 4 validators = Contabo **.82/.83/.84** + the 4th box;
   mempool base-fee #1223) — if tagged, bump `EVM_VERSION` in `build-gembad.sh` +
   rebuild/retest; otherwise launch on v0.7.0. **Done for the mempool half (2026-10-03):**
   v0.7.1/v0.7.2/v0.7.3 are tagged, `build-gembad.sh` is pinned to **v0.7.3** (which carries the
-  base-fee backport #1223), rebuilt and devnet-tested. Still open: confirm whether statedb
-  locked-balance #1187 landed in the 0.7.x line.
+  base-fee backport #1223), rebuilt and devnet-tested. **The residual action is now CLOSED in
+  full:** statedb locked-balance #1187 (backport #1189) is in both v0.7.0 and v0.7.3, and #1254
+  ("harden statedb balance and event amount handling", backport of #1176, merged to release/v0.7.x
+  on 2026-08-19) is absent from v0.7.0 but present in v0.7.3 — so the pin bump picked it up.
 - 🔴 **GATE — the genesis binary must be reproducible, and must carry the mempool fixes.**
   This is not bookkeeping; it is the one gate genesis cannot revisit afterwards. The live testnet
   runs `d8a454f-dirty`, built 2026-06-26 from a tree with uncommitted changes, so the running

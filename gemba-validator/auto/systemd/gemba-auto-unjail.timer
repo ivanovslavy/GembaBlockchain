@@ -1,9 +1,18 @@
 [Unit]
 Description=Run GembaBlockchain auto-unjail every 5 minutes
 
+# WHY OnCalendar AND NOT OnBootSec/OnUnitActiveSec (changed 2026-10-03):
+# monotonic-only timers can silently lose their schedule. OnBootSec elapses once per boot, and
+# OnUnitActiveSec is measured from the LAST ACTIVATION OF THE SERVICE — so if that reference is
+# lost (a daemon-reload/reexec, or the unit being started long after boot), systemd has nothing
+# left to compute a next elapse from and the timer sits "active" with next = "-" FOREVER, with
+# nothing in the logs. `Persistent=true` does not help: it only applies to OnCalendar timers.
+# Found the hard way: the archive's node-watchdog last ran 2026-07-18 and had been dead for 2.5
+# months while reporting active+enabled, i.e. a stuck archive would never have been restarted.
+# A wall-clock OnCalendar schedule is always computable, and Persistent=true then really does
+# catch up a run missed while the box was down.
 [Timer]
-OnBootSec=3min
-OnUnitActiveSec=5min
+OnCalendar=*:0/5
 AccuracySec=30s
 Persistent=true
 

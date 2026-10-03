@@ -202,6 +202,32 @@ compound does now too — including a "recovered" message so an alert never dead
 `notify()` was *called* by the chain-id guard but never *defined* in this script, so that alert
 could never have fired either; it is defined now.
 
+## 🔴 Timers must be OnCalendar, not monotonic (fixed 2026-10-03)
+
+`gemba-auto-unjail.timer`, `gemba-node-watchdog.timer` and `gemba-disk-guard.timer` shipped with
+monotonic triggers only — `OnBootSec` plus `OnUnitActiveSec` — and `Persistent=true`, which does
+nothing for a monotonic timer (it only applies to `OnCalendar`). Such a timer can **silently lose
+its schedule**: `OnBootSec` elapses once per boot, `OnUnitActiveSec` is measured from the last
+activation of the *service*, and if that reference is lost — a daemon-reload/reexec, or the unit
+started long after boot — systemd has nothing left to compute from. The unit then sits `active` and
+`enabled` with next elapse `-` **forever**, and nothing is logged.
+
+How it was found: the archive's `gemba-node-watchdog.timer` last ran **2026-07-18 06:10** and had
+been dead for two and a half months while every status check said active+enabled. A stuck archive
+would never have been restarted. Verify with the NEXT column, never with `is-active`:
+
+```
+systemctl list-timers --all | grep gemba        # a "-" in NEXT means dead
+systemctl show <unit>.timer -p NextElapseUSecRealtime
+```
+
+All three now use wall-clock schedules (`OnCalendar=*:0/5`, disk-guard `*:0/10`), where
+`Persistent=true` finally means something — it catches up a run missed while the box was down.
+Applied to the archive on 2026-10-03 (next elapse confirmed). **The four validators' timers were
+armed and working at the time, so they were left alone** — but they carry the same unit files, so
+harden them at the next touch: copy the timer in, `systemctl daemon-reload`, then
+`systemctl restart <unit>.timer`. No node restart, nothing interrupted.
+
 ## Mainnet (from genesis)
 
 On mainnet each operator runs `install-validator-auto.sh` on their own box with their own

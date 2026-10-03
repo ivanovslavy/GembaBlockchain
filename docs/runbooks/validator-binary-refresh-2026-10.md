@@ -90,6 +90,12 @@ patch, on the pin bumped to **v0.7.3**):
 | panic in the queue worker kills the node | `recover()` in `insertTxs`, turning the panic into an error for the batch — what baseapp already does for the same ante synchronously | regression test added to upstream's own `queue_test.go`. **Against unpatched v0.7.3 it does not fail — it crashes the test binary**, with the same stack shape as the live crash (`created by …queue.New[...]`). Patched: PASS |
 | new transactions judged against a frozen context | `Insert` compares the cached context's height with the chain head and refreshes instead of trusting it | the guard cannot fire on a healthy node (heights track); devnet Phase 1 test 1 asserts it stays quiet while transactions flow |
 
+Two further upstream questions were closed while picking the pin. The statedb locked-balance fix
+(#1187, backported as #1189) is in **both** v0.7.0 and v0.7.3. But **#1254** — "harden statedb
+balance and event amount handling", the backport of #1176, merged to `release/v0.7.x` on
+2026-08-19 — is **not** in v0.7.0 and **is** in v0.7.3, so the pin bump brought it along. That
+closes the ADR-006 residual action in the genesis ceremony in full.
+
 `go test ./mempool/...` on the patched tree: every package ok except
 `TestNewEVMMempoolIterator_BothEmpty`, which **fails identically on a clean v0.7.3 clone** — a
 pre-existing upstream failure, not ours. Don't chase it.
@@ -304,12 +310,37 @@ state writes are intentionally kept when the message itself fails (that is how g
 survive a failed tx). So any delegation that reverts — out of gas, insufficient funds, a staking
 error — costs the validator a day of compounding.
 
-The fix is to **check in the ante and record where it can revert with the message**, but that
-changes *when* state is written, which would make the new binary diverge from the live chain and
-forfeit the canary rollout above. It is therefore a follow-up with its own coordinated upgrade, not
-a passenger on this one. Until then the practical exposure is small: `auto-compound.sh` now sizes
-the delegation to the real remaining allowance and verifies the stake actually grew, so a burnt
-allowance shows up as a loud failure the next day rather than as silence.
+### What the fix looks like (designed, not yet implemented)
+
+1. **Split the keeper call.** `CheckAndRecordDailyBond` becomes two: `CheckDailyBond` (read-only —
+   reads the counter, compares, returns an error) and `RecordDailyBond` (the write). Nothing else
+   about the §6 arithmetic changes.
+2. **The ante only CHECKS.** `x/valgate/ante.go` calls the read-only variant. The cheap
+   mempool-level rejection of an over-cap delegation is preserved, and — a second benefit worth as
+   much as the first — **the ante stops writing state during CheckTx at all**, so the mempool's
+   cached recheck context can never again carry a phantom "50 GMB already added". That is the same
+   failure this upgrade patched in upstream; removing the write removes our half of it.
+3. **Record where it reverts with the message.** Wire `CapEnforcingStakingMsgServer` (which already
+   exists and is proven for the EVM precompile) into the staking message route itself, so the
+   check+record runs inside the message's own cache: a delegation that fails afterwards rolls the
+   counter back with it. It also picks up authz-wrapped delegations for free, since authz routes
+   the inner message through the same router — today the ante has to unwrap `MsgExec` by hand.
+   The staking hooks are NOT an option: `AfterDelegationModified` does not carry the amount.
+4. **Tests:** the devnet scenario that exposed this (a delegation that passes the ante and fails on
+   insufficient funds must leave the counter untouched), plus the existing cap tests, plus one for
+   a two-delegation transaction where the second exceeds the cap.
+
+**Why it needs its own upgrade.** The change alters *when* the counter is written. For a
+**successful** delegation the end state is byte-identical, so the app hash matches the current
+binary; the two diverge only on a delegation that **fails after the ante** — exactly the case being
+fixed. A canary rollout would therefore look clean right up until someone's delegation fails
+mid-window, which is precisely the wrong way to learn. So: `halt-height` on every node, swap, restart
+— path B of [`coordinated-upgrade.md`](coordinated-upgrade.md). Bundle the regenerated
+`params.pb.go` descriptor fix into the same swap, since it is inert and already in the tree.
+
+Until then the practical exposure is small: `auto-compound.sh` sizes the delegation to the real
+remaining allowance and verifies the stake actually grew, so a burnt allowance surfaces as a loud
+failure the next day rather than as silence.
 
 ## Mitigation already in place (does not need the upgrade)
 
