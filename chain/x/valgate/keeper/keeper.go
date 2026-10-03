@@ -80,19 +80,51 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 // — a normal failure, the chain keeps running, NEVER a panic). On success it records the new total.
 // Writes only commit in DeliverTx, atomically with the tx (CheckTx is a dry run).
 func (k Keeper) CheckAndRecordDailyBond(ctx sdk.Context, valoper sdk.ValAddress, amount math.Int) error {
-	limit := k.GetParams(ctx).MaxDailyBondIncrease
-	if limit.IsNil() || !limit.IsPositive() { // 0/nil = no cap
+	limit, used, err := k.checkDailyBond(ctx, valoper, amount)
+	if err != nil {
+		return err
+	}
+	if limit.IsNil() || !limit.IsPositive() { // 0/nil = no cap, nothing to record
 		return nil
 	}
-	used := k.dailyBondUsed(ctx, valoper)
+	k.setDailyBondUsed(ctx, valoper, used.Add(amount))
+	return nil
+}
+
+// CheckDailyBond answers the same question as CheckAndRecordDailyBond but WRITES NOTHING.
+//
+// The ante uses this one so that an over-cap delegation is still refused early and cheaply — at
+// CheckTx, before anything executes — while the authoritative charge happens exactly once, in the
+// post-handler, in the same store branch as the delegation it pays for.
+//
+// Keeping the ante read-only buys two things. A delegation that passes the ante and then FAILS
+// during execution (out of gas, insufficient funds, a staking error) no longer burns the
+// validator's whole day: ante writes survive a failed message, post-handler writes do not. And a
+// CheckTx can no longer leave a §6 charge behind in a node's cached mempool state — the shape of
+// failure that froze validator .83 for thirteen days (see
+// docs/runbooks/validator-binary-refresh-2026-10.md).
+func (k Keeper) CheckDailyBond(ctx sdk.Context, valoper sdk.ValAddress, amount math.Int) error {
+	_, _, err := k.checkDailyBond(ctx, valoper, amount)
+	return err
+}
+
+// checkDailyBond is the single implementation of the §6 question: it returns the governance cap and
+// the amount already used today, and an error if `amount` would push the day over the cap. Having
+// one body means the ante and the post-handler can never disagree about what the cap means or
+// report it differently.
+func (k Keeper) checkDailyBond(ctx sdk.Context, valoper sdk.ValAddress, amount math.Int) (limit, used math.Int, err error) {
+	limit = k.GetParams(ctx).MaxDailyBondIncrease
+	if limit.IsNil() || !limit.IsPositive() { // 0/nil = no cap
+		return limit, math.ZeroInt(), nil
+	}
+	used = k.dailyBondUsed(ctx, valoper)
 	if used.Add(amount).GT(limit) {
-		return fmt.Errorf(
+		return limit, used, fmt.Errorf(
 			"validator %s would add %s to its stake today, exceeding the %s/day max bond increase (governance-set, x/valgate §6); already added %s today",
 			valoper, amount, limit, used,
 		)
 	}
-	k.setDailyBondUsed(ctx, valoper, used.Add(amount))
-	return nil
+	return limit, used, nil
 }
 
 // RemainingDailyBond returns how much MORE may be bonded to `valoper` today (0 at the cap; a huge

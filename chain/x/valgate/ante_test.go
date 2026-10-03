@@ -45,6 +45,7 @@ func cv(gmb int64) sdk.Msg {
 	return &stakingtypes.MsgCreateValidator{Value: sdk.NewCoin("agmb", amt), MinSelfDelegation: amt}
 }
 func next(ctx sdk.Context, _ sdk.Tx, _ bool) (sdk.Context, error) { return ctx, nil }
+func nextPost(ctx sdk.Context, _ sdk.Tx, _, _ bool) (sdk.Context, error) { return ctx, nil }
 
 // TestMinSelfBondEnforced: below the 1,000 GMB floor is rejected; >= is accepted.
 func TestMinSelfBondEnforced(t *testing.T) {
@@ -133,20 +134,94 @@ func TestDailyBondCap(t *testing.T) {
 	ctx, k := setupKeeper(t) // default cap 50 GMB/day
 	ctx = ctx.WithBlockTime(time.Unix(1_700_000_000, 0))
 	d := valgate.NewMinSelfBondDecorator(k)
+	r := valgate.NewDailyBondRecorder(k)
 	vo := sdk.ValAddress([]byte("daily-cap-validator!")).String()
+	va, err := sdk.ValAddressFromBech32(vo)
+	require.NoError(t, err)
 
-	_, err := d.AnteHandle(ctx, mockTx{[]sdk.Msg{del(vo, 40)}}, false, next)
-	require.NoError(t, err, "40 GMB (under the 50/day cap) accepted")
+	// A transaction is checked by the ante, then charged by the post-handler — the pair is what
+	// enforces the cap, so the test drives both, in order, exactly as baseapp does.
+	send := func(gmb int64, success bool) error {
+		tx := mockTx{[]sdk.Msg{del(vo, gmb)}}
+		if _, err := d.AnteHandle(ctx, tx, false, next); err != nil {
+			return err
+		}
+		_, err := r.PostHandle(ctx, tx, false, success, nextPost)
+		return err
+	}
 
-	_, err = d.AnteHandle(ctx, mockTx{[]sdk.Msg{del(vo, 20)}}, false, next)
-	require.Error(t, err, "another 20 (total 60 > 50) must be rejected")
+	require.NoError(t, send(40, true), "40 GMB (under the 50/day cap) accepted")
+	require.Equal(t, math.NewInt(10).Mul(oneGmb), k.RemainingDailyBond(ctx, va), "10 GMB left")
 
-	_, err = d.AnteHandle(ctx, mockTx{[]sdk.Msg{del(vo, 10)}}, false, next)
-	require.NoError(t, err, "10 more (total exactly 50) accepted")
+	require.Error(t, send(20, true), "another 20 (total 60 > 50) must be rejected")
+	require.Equal(t, math.NewInt(10).Mul(oneGmb), k.RemainingDailyBond(ctx, va),
+		"a rejected delegation must not consume anything")
+
+	require.NoError(t, send(10, true), "10 more (total exactly 50) accepted")
+	require.True(t, k.RemainingDailyBond(ctx, va).IsZero(), "the day is now spent")
 
 	next2 := ctx.WithBlockTime(ctx.BlockTime().Add(24 * time.Hour))
-	_, err = d.AnteHandle(next2, mockTx{[]sdk.Msg{del(vo, 50)}}, false, next)
+	tx := mockTx{[]sdk.Msg{del(vo, 50)}}
+	_, err = d.AnteHandle(next2, tx, false, next)
 	require.NoError(t, err, "new day → full 50 available again")
+}
+
+// TestDailyBondChargedOnlyWhenTheMessagesSucceeded is the regression test for the defect a devnet
+// run exposed on 2026-10-03: a delegation that passed the ante and then FAILED during execution
+// still burned the validator's whole day, because the ante both checked and wrote, and ante writes
+// survive a failed message. The charge now lives in the post-handler, which baseapp calls with
+// success=false in exactly that case.
+func TestDailyBondChargedOnlyWhenTheMessagesSucceeded(t *testing.T) {
+	ctx, k := setupKeeper(t)
+	ctx = ctx.WithBlockTime(time.Unix(1_700_000_000, 0))
+	d := valgate.NewMinSelfBondDecorator(k)
+	r := valgate.NewDailyBondRecorder(k)
+	vo := sdk.ValAddress([]byte("failed-delegation-va")).String()
+	va, err := sdk.ValAddressFromBech32(vo)
+	require.NoError(t, err)
+	full := math.NewInt(50).Mul(oneGmb)
+	tx := mockTx{[]sdk.Msg{del(vo, 50)}}
+
+	// The ante passes it (it is within the cap) and writes NOTHING — which is also what makes a
+	// CheckTx harmless to the counter.
+	_, err = d.AnteHandle(ctx, tx, false, next)
+	require.NoError(t, err)
+	require.Equal(t, full, k.RemainingDailyBond(ctx, va), "the ante must not record")
+
+	// Execution failed: nothing may be charged.
+	_, err = r.PostHandle(ctx, tx, false, false, nextPost)
+	require.NoError(t, err)
+	require.Equal(t, full, k.RemainingDailyBond(ctx, va),
+		"a delegation that reverted must not cost the day")
+
+	// Execution succeeded: now it is charged, once.
+	_, err = r.PostHandle(ctx, tx, false, true, nextPost)
+	require.NoError(t, err)
+	require.True(t, k.RemainingDailyBond(ctx, va).IsZero(), "a successful delegation is charged")
+}
+
+// TestDailyBondCapWithinOneTx: two delegations to the SAME validator in one transaction are summed,
+// so the cap cannot be split across messages — and the ante catches it before anything executes.
+func TestDailyBondCapWithinOneTx(t *testing.T) {
+	ctx, k := setupKeeper(t)
+	ctx = ctx.WithBlockTime(time.Unix(1_700_000_000, 0))
+	d := valgate.NewMinSelfBondDecorator(k)
+	r := valgate.NewDailyBondRecorder(k)
+	vo := sdk.ValAddress([]byte("two-in-one-tx-valop")).String()
+	va, err := sdk.ValAddressFromBech32(vo)
+	require.NoError(t, err)
+
+	over := mockTx{[]sdk.Msg{del(vo, 30), del(vo, 30)}}
+	_, err = d.AnteHandle(ctx, over, false, next)
+	require.Error(t, err, "30 + 30 to one validator in one tx exceeds the 50/day cap")
+
+	under := mockTx{[]sdk.Msg{del(vo, 20), del(vo, 20)}}
+	_, err = d.AnteHandle(ctx, under, false, next)
+	require.NoError(t, err, "20 + 20 is within the cap")
+	_, err = r.PostHandle(ctx, under, false, true, nextPost)
+	require.NoError(t, err)
+	require.Equal(t, math.NewInt(10).Mul(oneGmb), k.RemainingDailyBond(ctx, va),
+		"both messages are charged, once, as one sum")
 }
 
 // TestDailyBondCapZeroMeansNoCap: cap = 0 disables the daily limit.
