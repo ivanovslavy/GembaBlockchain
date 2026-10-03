@@ -34,10 +34,15 @@ Two more facts from the same session:
 
 - `gembad-val` on .83 **panicked** during the investigation:
   `panic: runtime error: invalid memory address or nil pointer dereference` in
-  `github.com/cosmos/evm/mempool/internal/queue`, reached through an ordinary CometBFT
-  `/check_tx` of a Cosmos (non-EVM) transaction. systemd restarted it in ~5 s; no jail. The RPC
-  listens on `127.0.0.1` only, so this is not remotely reachable — but it is a crash on a code
-  path any local tooling can hit.
+  `github.com/cosmos/evm/mempool/internal/queue`, reached through an ordinary transaction check on
+  the local CometBFT RPC. systemd restarted it in ~5 s; no jail, no missed-block penalty.
+  **Exposure, stated precisely:** the node binds 26657/8545/8546/9090 to `127.0.0.1` only, `ufw`
+  opens 22 and P2P 26656 to the world and 443 to the Cloudflare ranges only — so the CometBFT RPC
+  path that produced the panic is not remotely reachable. The public EVM endpoints, however, are
+  served through that 443 proxy into `127.0.0.1:8545`, and a submitted EVM transaction enters the
+  **same mempool component**. Whether this specific nil-pointer is reachable that way is unproven
+  and deliberately untested against live validators. Treat it as unbounded until the binary is
+  refreshed: that is what moves this plan from hygiene to priority.
 - `/check_tx` on this build is **not** read-only: cosmos/evm's mempool inserts the transaction, so
   a "probe" is a broadcast. Three probe transactions landed on chain during the investigation.
 
@@ -96,8 +101,10 @@ Acceptance tests, all of which must pass before any live box is touched:
    counter read from `/store/valgate/key`. Disagreement = the bug is still present.
 2. **Day rollover:** with the counter at the cap, cross UTC midnight (or run the devnet with a
    genesis time placed just before it) and confirm the next bond succeeds **without a restart**.
-3. **Panic replay:** submit the `/check_tx` shape that crashed .83 (a Cosmos `MsgDelegate`
-   generated + signed offline) and confirm the node stays up.
+3. **Panic replay:** on the devnet, replay the transaction shape recorded in the incident notes
+   against both the CometBFT and the EVM submit paths, and confirm every node stays up. This is the
+   test that decides whether the public endpoints were ever exposed — run it on the devnet, never
+   against a validator carrying voting power.
 4. **Compounding at the cap:** `auto-compound.sh` logs `today's §6 allowance:` with the real
    remainder and tops up only the difference.
 5. Chain-level: 4/4 signing, no app-hash mismatch in any journal, a deliberate jail still recovers
