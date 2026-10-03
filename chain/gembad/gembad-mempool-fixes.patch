@@ -33,6 +33,49 @@ index 5ec4301..772e6c9 100644
  	if len(errs) != len(txs) {
  		panic(fmt.Errorf("expected a %d errors from insert but instead got %d", len(txs), len(errs)))
  	}
+diff --git a/mempool/internal/queue/queue_test.go b/mempool/internal/queue/queue_test.go
+index 2bc3de5..bb0cb0e 100644
+--- a/mempool/internal/queue/queue_test.go
++++ b/mempool/internal/queue/queue_test.go
+@@ -191,3 +191,38 @@ func TestInsertQueue_RejectsWhenFull(t *testing.T) {
+ 		t.Fatal("did not receive error from full queue")
+ 	}
+ }
++
++// TestInsertQueue_PanicInInsertDoesNotKillTheQueue is the GEMBA regression test for the defect
++// that SIGSEGV'd a live validator on 2026-10-03. insert() runs the application's full ante
++// handler inside the queue's OWN goroutine, where nothing recovers, so a panic there does not
++// fail a transaction — it takes the whole node down. WITHOUT the recover in insertTxs this test
++// does not fail, it crashes the entire test binary.
++func TestInsertQueue_PanicInInsertDoesNotKillTheQueue(t *testing.T) {
++	pool := newMockPool()
++	first := true
++	insert := func(txs []*ethtypes.Transaction) []error {
++		if first {
++			first = false
++			panic("boom: the ante handler dereferenced a nil fee")
++		}
++		return pool.insert(txs)
++	}
++
++	iq := New[ethtypes.Transaction]("test", insert, 1000)
++	defer iq.Close()
++
++	bad := ethtypes.NewTransaction(1, [20]byte{0x01}, nil, 21000, nil, nil)
++	select {
++	case err := <-iq.Push(bad):
++		require.ErrorContains(t, err, "panic while inserting tx into the mempool")
++	case <-time.After(2 * time.Second):
++		t.Fatal("the panicking insert never reported an error back to the caller")
++	}
++
++	// And the worker must still be alive: a later transaction still gets inserted.
++	good := ethtypes.NewTransaction(2, [20]byte{0x02}, nil, 21000, nil, nil)
++	_ = iq.Push(good)
++	require.Eventually(t, func() bool {
++		return len(pool.getTxs()) == 1
++	}, 2*time.Second, 10*time.Millisecond, "the queue must keep serving after a panicking insert")
++}
 diff --git a/mempool/recheck_pool.go b/mempool/recheck_pool.go
 index 5a38319..3093c50 100644
 --- a/mempool/recheck_pool.go

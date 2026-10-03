@@ -49,6 +49,54 @@ Two more facts from the same session:
 Both live in **cosmos/evm v0.7.0's** mempool, not in our modules — and both are the real reason to
 refresh the binary rather than only patch the ops scripts.
 
+## The defect, located in upstream code (2026-10-03)
+
+The investigation above said the node's CheckTx view had gone stale. The code says exactly how.
+
+`cosmos/evm`'s mempool **replaces the application's CheckTx**: `NewCheckTxHandler` takes
+`_ sdk.RunTx` — it never calls it — and simply decodes the transaction and inserts it into the
+custom mempool, returning the insert error as the CheckTx code. (This is also why `/check_tx` on
+this build is not a read-only probe: it inserts, so it broadcasts.) The insert path is
+`RecheckMempool.Insert` in `mempool/recheck_pool.go`:
+
+1. it branches the rechecker's **long-lived cached context** (`TxRechecker.ctx`),
+2. runs the **full ante handler** against that branch — including x/valgate's §6 decorator, which
+   *writes* the per-validator daily-bond counter,
+3. and on success calls `write()`, persisting those ante writes **back into the cached context**.
+
+That cache is only rolled over by `doRecheck`, which calls `rechecker.Update(latestCtx, newHead)`
+on each new head — and which **logs and returns silently** when `GetLatestContext` fails
+(`recheck_pool.go`: `"failed to get context for recheck"`). That the call can fail is not
+hypothetical: .83's own journal carries `ERR failed to initialize rechecker context err="failed
+to get latest context: …"` from the same path at startup.
+
+So once the refresh stops, every later CheckTx is judged against the block time **and the
+accumulated ante writes** of the moment it froze. For .83 that moment was its successful compound
+on 2026-09-20: counter at 50 GMB, day stuck at 20716. Nothing could bond — and because the counter
+only advances on a *successful* bond, nothing could ever roll it over either. Self-sustaining,
+node-local, silent.
+
+The panic has the same origin: `insert()` runs that ante inside the queue's **own goroutine**
+(started by `queue.New`), where nothing recovers, so a nil `AuthInfo.Fee` reaching
+`x/auth/ante.SetUpContextDecorator` killed the process.
+
+### The fix, and how it is proven
+
+`chain/gembad/gembad-mempool-fixes.patch` (tracked, applied by `build-gembad.sh` after the wiring
+patch, on the pin bumped to **v0.7.3**):
+
+| defect | fix | proof |
+|---|---|---|
+| panic in the queue worker kills the node | `recover()` in `insertTxs`, turning the panic into an error for the batch — what baseapp already does for the same ante synchronously | regression test added to upstream's own `queue_test.go`. **Against unpatched v0.7.3 it does not fail — it crashes the test binary**, with the same stack shape as the live crash (`created by …queue.New[...]`). Patched: PASS |
+| new transactions judged against a frozen context | `Insert` compares the cached context's height with the chain head and refreshes instead of trusting it | the guard cannot fire on a healthy node (heights track); devnet Phase 1 test 1 asserts it stays quiet while transactions flow |
+
+`go test ./mempool/...` on the patched tree: every package ok except
+`TestNewEVMMempoolIterator_BothEmpty`, which **fails identically on a clean v0.7.3 clone** — a
+pre-existing upstream failure, not ours. Don't chase it.
+
+Built artefact (reproducible, from a clean tree): `version: 87c6577`, **no `-dirty`**, go1.25.9,
+`sha256 8b94496c4b92d936cd816420018ab9e191039f47ada7f1fd22a4601e948a8d70`.
+
 ## What is running, and why it is not reproducible
 
 ```
