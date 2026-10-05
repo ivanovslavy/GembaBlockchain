@@ -23,6 +23,10 @@ install -m 0755 "$DIR/disk-guard.sh"       /usr/local/bin/gemba-disk-guard.sh
 install -m 0755 "$DIR/gemba-alert-email.sh" /usr/local/bin/gemba-alert-email.sh
 install -D -m 0644 "$DIR/watchdog-lib.sh"  /usr/local/lib/gemba/watchdog-lib.sh
 
+echo "==> sysctl -> /etc/sysctl.d/99-gemba-p2p.conf (P2P resilience; see the file for why)"
+install -m 0644 "$DIR/sysctl/99-gemba-p2p.conf" /etc/sysctl.d/99-gemba-p2p.conf
+sysctl -q --system 2>/dev/null || true
+echo "    tcp_retries2=$(sysctl -n net.ipv4.tcp_retries2) keepalive=$(sysctl -n net.ipv4.tcp_keepalive_time)s"
 echo "==> logrotate -> /etc/logrotate.d/gemba"
 install -m 0644 "$DIR/logrotate-gemba" /etc/logrotate.d/gemba
 

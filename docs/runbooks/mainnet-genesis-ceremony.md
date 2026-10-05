@@ -45,6 +45,17 @@ Topology (P1, €0-reuse): 4 validators = Contabo **.82/.83/.84** + the 4th box;
      2026-10-03, see [`validator-binary-refresh-2026-10.md`](validator-binary-refresh-2026-10.md).
   5. Ship `auto-compound.sh` from the same commit, so a failed compound alerts from day one
      instead of failing silently for thirteen days as it did on .83.
+- 🔴 **GATE — the P2P resilience sysctl must be in place on EVERY box before the first block.**
+  `gemba-validator/auto/sysctl/99-gemba-p2p.conf` (both installers ship it; verify with
+  `sysctl -n net.ipv4.tcp_retries2` → **6**, not the default 15). This is not tuning for its own
+  sake: with the default, a founder validator whose path breaks for two minutes is jailed for
+  twenty, because the REMOTE validators hold the dead socket for 15.4 minutes and refuse every
+  reconnect as a duplicate node ID. On the testnet that cost node2 sixteen jails in a hundred days
+  and about 15% of its stake. Mainnet must not inherit it — the slash is 1% of stake per jail and
+  there is no governance route to undo one. See
+  [`validator-auto-ops-deploy.md`](validator-auto-ops-deploy.md) for the full diagnosis.
+  Note for operators joining later: this is a per-box kernel setting, so every new validator needs
+  it too, not just the founders. `join-validator.md` carries the same step.
 - ✅ Full test evidence recorded: `forge test` (contracts), `go test ./...` (chain),
   security e2e re-run — see hardening §B/§C and `security/results/`. Since 2026-07-19
   both suites also run in CI on every push (`.github/workflows/tests.yml`).

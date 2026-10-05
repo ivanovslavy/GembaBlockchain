@@ -228,6 +228,60 @@ armed and working at the time, so they were left alone** — but they carry the 
 harden them at the next touch: copy the timer in, `systemctl daemon-reload`, then
 `systemctl restart <unit>.timer`. No node restart, nothing interrupted.
 
+## 🔴 P2P resilience sysctl — why node2 kept getting jailed (added 2026-10-05)
+
+Validator node2 (the home box, behind NAT) was downtime-jailed **16 times in 100 days** — twice in
+the first four days of October — each costing a 1% slash: exactly **125.64 GMB** on 2026-10-04
+(12,564.46 → 12,438.82). Compounded over 16 jails that is about **−15% of its stake**, which is the
+whole reason it sits at 12,438 GMB while .84 is at 14,874.
+
+**The recorded cause was wrong.** This runbook and the notes said "the home A1 line drops the peers,
+not a software defect". A cross-check killed that explanation: **Qortal runs on the same box, the
+same line and the same NAT, and did not notice the 2026-10-04 incident at all** — zero log lines
+between 19:20 and 20:00, all 21 of its peers intact — and the kernel logged no carrier, link or DHCP
+event. The line did not go down. What died were exactly node2's three P2P flows to
+`13.140.139.0/24`.
+
+**What actually manufactured the jail was an asymmetry.** node2 could still send, so its CometBFT
+noticed the dead peers within ~105 s (ping 60 s + pong timeout 45 s), closed the sockets and
+re-dialled. The three remote validators could not get packets out to it, so their MConnection never
+reached its pong timeout and the sockets were left to TCP's own death clock:
+`net.ipv4.tcp_retries2 = 15` ≈ **924 s = 15.4 minutes**. Until then every re-dial from node2 was
+refused:
+
+```
+Ignoring inbound connection: error while adding peer err="duplicate ID<63b04f9b…>"
+```
+
+54,238 refused attempts in 22 minutes (.82 19,058 · .84 18,347 · .83 16,833). The chain jails after
+50 missed blocks of 100 — **about 1.9 minutes**. So a ~2-minute network disturbance became a
+20-minute jail purely because the far side held a dead socket for 15 minutes.
+
+**Two consequences worth remembering.** Restarting node2 cannot shorten this — the node ID stays the
+same, so the refusals continue; the watchdog's restart only ever waited. And the jail timing is not
+random: **9 of the 16 jails fall between 17:00 and 21:00 UTC** (the evening peak), with a second
+cluster at 06:00–08:00.
+
+**The fix** is `sysctl/99-gemba-p2p.conf`, installed by both installers and applied to all five live
+boxes on 2026-10-05:
+
+| setting | from | to | effect |
+|---|---|---|---|
+| `tcp_retries2` | 15 (~924 s) | **6 (~25 s)** | a black-holed socket dies inside the 1.9-minute jail window, so node2's reconnect succeeds while it is still signing |
+| `tcp_keepalive_time` | 7200 s | **300 s** | holds NAT/conntrack mappings warm instead of relying on a two-hour idle timeout |
+| `tcp_keepalive_intvl` / `probes` | 75 s / 9 | **30 s / 5** | a dead path is confirmed in ~2.5 min instead of ~11 |
+
+The trade is that any TCP connection surviving more than ~25 s of total packet loss is dropped. On
+these boxes that is what we want: CometBFT reconnects in seconds, so a dropped peer is cheap while a
+black hole costs 1% of stake. Verified after applying: peers unchanged (4/4/4/3/3), heights in sync,
+79 of 80 possible signatures in the following 20 blocks.
+
+**What this does NOT fix** is the trigger itself — whatever briefly breaks the path to
+`13.140.139.0/24` in the evenings. It makes the trigger harmless rather than expensive. If jails
+continue after this, the next step is not another sysctl but moving node2's P2P off the home path
+(a tunnel to one of the Contabo boxes), or accepting that a validator on a home line will be
+occasionally slashed.
+
 ## Mainnet (from genesis)
 
 On mainnet each operator runs `install-validator-auto.sh` on their own box with their own

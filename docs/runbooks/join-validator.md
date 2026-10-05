@@ -5,6 +5,22 @@ Permissionless (CLAUDE.md §3): anyone can run a node and, with stake, validate.
 binary from source (so it matches your machine's glibc — no portability traps),
 pulls + verifies the official genesis, wires the seeds, and starts a systemd service.
 
+## Required kernel setting (P2P resilience)
+
+Before you start the node, install `gemba-validator/auto/sysctl/99-gemba-p2p.conf` (the auto-ops
+installer does it for you) and confirm:
+
+```
+sysctl -n net.ipv4.tcp_retries2      # must be 6, not the default 15
+sysctl -n net.ipv4.tcp_keepalive_time # must be 300, not the default 7200
+```
+
+With the default `tcp_retries2 = 15`, a validator whose network path breaks for two minutes gets
+**jailed for twenty** and slashed 1%: the other validators hold the black-holed socket for 15.4
+minutes and refuse every reconnect as a duplicate node ID, while the chain jails after 50 missed
+blocks of 100 — about 1.9 minutes. Diagnosed on the testnet 2026-10-05 after sixteen such jails;
+see [`validator-auto-ops-deploy.md`](validator-auto-ops-deploy.md).
+
 ## Install / update (one line)
 
 The network is an EXPLICIT choice (since 2026-07-17) — a node silently joining the
