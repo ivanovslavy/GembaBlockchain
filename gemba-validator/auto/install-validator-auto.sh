@@ -20,6 +20,9 @@ echo "==> scripts -> /usr/local/bin (+ shared watchdog lib -> /usr/local/lib/gem
 install -m 0755 "$DIR/auto-unjail.sh"      /usr/local/bin/gemba-auto-unjail.sh
 install -m 0755 "$DIR/auto-compound.sh"    /usr/local/bin/gemba-auto-compound.sh
 install -m 0755 "$DIR/disk-guard.sh"       /usr/local/bin/gemba-disk-guard.sh
+# Chain-halt monitor. Rides the unjail watchdog's existing 5-minute timer (drop-in below),
+# because per-box watchdogs are blind to consensus: a halted chain was SILENT until 2026-10-19.
+install -m 0755 "$DIR/chain-watch.sh"      /usr/local/bin/gemba-chain-watch.sh
 install -m 0755 "$DIR/gemba-alert-email.sh" /usr/local/bin/gemba-alert-email.sh
 install -D -m 0644 "$DIR/watchdog-lib.sh"  /usr/local/lib/gemba/watchdog-lib.sh
 
@@ -42,6 +45,9 @@ echo "          printf %s '<smtp-password>' > /etc/gemba/smtp_password && chmod 
 echo "          and set SMTP_HOST + ALERT_TO in /etc/gemba/notify.env."
 
 echo "==> systemd units"
+install -d -m 0755 /etc/systemd/system/gemba-auto-unjail.service.d
+install -m 0644 "$DIR"/systemd/gemba-auto-unjail.service.d-10-chain-watch.conf \
+        /etc/systemd/system/gemba-auto-unjail.service.d/10-chain-watch.conf
 install -m 0644 "$DIR"/systemd/gemba-auto-*.service     /etc/systemd/system/
 install -m 0644 "$DIR"/systemd/gemba-auto-*.timer       /etc/systemd/system/
 install -m 0644 "$DIR"/systemd/gemba-disk-guard.service /etc/systemd/system/

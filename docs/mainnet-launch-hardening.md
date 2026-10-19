@@ -131,3 +131,86 @@ correctly; it uses DEVNET-loose gov + a devnet-amplified reward rate. For mainne
     a timer on EVERY box from genesis) emails WARN@85% / CRIT@95% via **gemba-alert-email** before the
     disk fills — closing the "silent write-crash-loop" gap. Disk sizing remains the primary defence;
     see `runbooks/validator-auto-ops-deploy.md`.
+
+## E. Operational lessons from the testnet, Aug–Oct 2026 — build these in from genesis
+
+Everything below was learned by running the testnet, after this checklist was first written. None of
+it is theoretical; each line cost either money or an outage.
+
+### E1 — 🔴 FOUR VALIDATORS TOLERATE EXACTLY ONE OUTAGE. Mainnet needs seven.
+
+Measured on the testnet set, 2026-10-19:
+
+```
+total voting power   57 978        quorum (>2/3)   38 653
+one validator down   42 510–44 918   ✅ consensus holds, whichever one it is
+two validators down  27 197–30 781   🔴 CONSENSUS STOPS — every one of the six pairs
+```
+
+With four near-equal validators the set survives one failure and no more; that is the arithmetic of
+⅔, not a defect of any provider. **Mainnet must launch with ≥7 validators** (⌊(7−1)/3⌋ = 2 tolerated)
+and must not place a majority of voting power behind one provider, one region, or one network path.
+
+🔴 **On the testnet three of the four sat at the same provider (Contabo, one IP range).** On
+2026-10-18/19 that provider rebooted all three for host maintenance inside twenty hours. Only the
+fact that it staggered them — 15:23, 19:58, then 11:19 the next day — kept the chain alive. That was
+their schedule protecting us, not our design.
+
+### E2 — Provider maintenance reboots are routine. Plan for them, do not be surprised.
+
+Signature seen twice (2026-10-16 and 2026-10-18/19): a clean `systemd-poweroff`, 15–25 minutes down,
+the VM returns on a newer kernel. `Unattended-Upgrade::Automatic-Reboot` is **off** on every box, so
+these are not ours. Each one jails that validator until the watchdog unjails it (~5–9 minutes
+observed).
+
+How to read it from the outside, so this is diagnosed in minutes rather than hours:
+- **Cloudflare 521** = the origin refused the connection → the process is dead, the machine is up.
+- **Cloudflare 522** = the origin was not reachable at all → the machine is down.
+- nginx `connect() failed (111: Connection refused) while connecting to upstream` pins it to the
+  backend process; a gap of missing minutes in the nginx **access** log pins it to the machine.
+- 🔑 `journalctl --list-boots` showing a single row is the start of the retained journal, **not** a
+  reboot. Always confirm with `uptime -s`.
+
+### E3 — Nothing was watching the CHAIN. Ship `gemba-chain-watch.sh` from genesis.
+
+Every watchdog we had was per-box: each one checks its own node and is blind to consensus. A halted
+chain was therefore **silent** — the wallet listeners simply read no new blocks, and silence raises
+no alarm. Added 2026-10-19, running from the existing 5-minute `gemba-auto-unjail.timer` on **every**
+validator (so two boxes can be down and the third still reports):
+
+- the height is the **max** of the local node and the public RPCs, so a locally stuck node raises no
+  chain alarm — that is the other watchdog's job;
+- **no answer is not a halt** — if every source fails to reply, that box is isolated; it logs and
+  stays quiet rather than crying wolf;
+- one mail per episode via a marker file, plus one on recovery, exactly like the jail watchdog;
+- the alert carries the stuck height and the signature count, so the mail already says *why*.
+
+### E4 — P2P death clock: `tcp_retries2`. Already fixed; mainnet must not inherit the default.
+
+Carried in `runbooks/mainnet-genesis-ceremony.md` and `99-gemba-p2p.conf`; repeated here because it
+is a genesis-time setting. Default `tcp_retries2 = 15` ≈ 924 s means a validator whose path breaks
+for two minutes is **jailed for twenty**, because the remote validators hold the black-holed socket
+for 15.4 minutes and refuse every reconnect as a duplicate node ID, while the chain jails after ~50
+missed blocks ≈ 1.9 minutes. On the testnet this cost node2 **sixteen jails in a hundred days and
+about 15% of its stake**. The recorded cause was wrong for months — it was blamed on the home line,
+while Qortal on the same box, same line, same NAT logged nothing at all during the incident.
+
+Provision every validator with `net.ipv4.tcp_retries2 = 6`, `tcp_keepalive_time = 300`,
+`tcp_keepalive_intvl = 30`, `tcp_keepalive_probes = 5`. **Result on the testnet: the home validator
+has gone from jailing twice in four days to eight days without a single jail.**
+
+### E5 — Alerting discipline: an alarm that cries wolf is worse than no alarm.
+
+Two separate incidents taught the same lesson, so it is a rule now, not an anecdote:
+
+- A listener mailed **48 messages in one day** reading "0 RPC failure(s), 40 switch(es)" — every one
+  saying nothing was wrong. The cause was accounting, not the network: one global "current endpoint"
+  overwritten by two classes of call, each overwrite reported as a switch.
+- A weekly check demanded "the release that fixes **SN-2026-011** within 7 days" while the installed
+  release was already the one that fixed it — because the advisory id was **hardcoded** into the
+  message, so every future release would look like an emergency forever.
+
+**Rules for anything that mails on this chain:** count what it sends per day when nothing is wrong,
+and if the answer is not "one" or "zero" it is noise; never hardcode an advisory id or a deadline
+into a generic message — derive it from the data; a real failure gets a mail, a self-healed blip gets
+a counter and a daily line.
