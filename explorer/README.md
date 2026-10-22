@@ -142,3 +142,13 @@ explorer (staking/governance/validator views over the Cosmos REST 1317 / RPC 266
 ping.pub is a static front-end; self-host by cloning it and dropping this config in
 its chains directory. Lightweight — no archive node needed (it reads current Cosmos
 state). Optional for Phase 7; can be deferred to Phase 9.
+
+
+## IPFS gateway (2026-10-23)
+
+`ipfs.io` / `dweb.link` were retired on 2026-09-21, so Blockscout's default gateway no longer returns NFT
+metadata stored as `ipfs://` (it answers 429). `envs/backend.env` sets `IPFS_GATEWAY_URL` and
+`IPFS_PUBLIC_GATEWAY_URL` to our own gateway `https://ipfs.gembaticket.com/ipfs` — the token URIs stay `ipfs://`.
+After a change, recreate the backend only (`docker compose -p gembascan up -d --no-deps backend`) and refetch
+a token with `PATCH /api/v2/tokens/<address>/instances/<id>/refetch-metadata`. The IPFS node on the dApp
+server has its swarm port 4001 open so other gateways can fetch from it as well.
