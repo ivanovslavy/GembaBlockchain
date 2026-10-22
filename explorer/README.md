@@ -152,3 +152,8 @@ metadata stored as `ipfs://` (it answers 429). `envs/backend.env` sets `IPFS_GAT
 After a change, recreate the backend only (`docker compose -p gembascan up -d --no-deps backend`) and refetch
 a token with `PATCH /api/v2/tokens/<address>/instances/<id>/refetch-metadata`. The IPFS node on the dApp
 server has its swarm port 4001 open so other gateways can fetch from it as well.
+
+Blockscout renders an NFT's `animation_url` (the GembaTicket ticket page) in an iframe. The gateway therefore must
+allow framing: the `ipfs.gembaticket.com` vhost unsets the server-wide `X-Frame-Options: SAMEORIGIN` and sends
+`Content-Security-Policy: frame-ancestors *; sandbox allow-scripts` (2026-10-23) — without it the inventory shows a
+placeholder even though the metadata loads.
