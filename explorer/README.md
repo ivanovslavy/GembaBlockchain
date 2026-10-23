@@ -157,3 +157,12 @@ Blockscout renders an NFT's `animation_url` (the GembaTicket ticket page) in an 
 allow framing: the `ipfs.gembaticket.com` vhost unsets the server-wide `X-Frame-Options: SAMEORIGIN` and sends
 `Content-Security-Policy: frame-ancestors *; sandbox allow-scripts` (2026-10-23) — without it the inventory shows a
 placeholder even though the metadata loads.
+
+Since 2026-10-23 the gateway serves **only content pinned on our node** (kubo `Gateway.NoFetch`) — a foreign CID
+answers 404, so nobody can host pages under our domain. GembaChain NFTs minted with our metadata keep working; an NFT
+whose metadata lives only elsewhere on IPFS will not render here.
+
+**Wallets:** MetaMask resolves IPFS only as subdomains (`https://<CIDv1>.ipfs.<gateway>`). The subdomain gateway
+`*.ipfs.gembaticket.com` runs on .208 and translates to `ipfs.gembaticket.com`; in MetaMask set
+**Settings → Security & privacy → IPFS gateway = `gembaticket.com`**. Multi-page GembaTicket keepsakes are best viewed
+in the NFT Viewer, https://nftviewer.gembait.com (wallets and the explorer show only the first page).
