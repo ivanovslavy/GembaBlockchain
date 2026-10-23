@@ -114,3 +114,111 @@ gembad-archive` re-enters block-sync. If Blockscout's read flood is what starved
 Hardware: Contabo "NVMe" ≈ HDD-speed disk I/O; an archive node applying fat 5× blocks **and**
 serving the explorer's trace/eth_call load exceeds it. Real fix = right hardware (Hetzner NVMe)
 + a dedicated pruned node so sync and serving don't fight. See topology in `docs/SERVER-TOPOLOGY.md`.
+
+---
+
+## 2026-10-23 — three missing blocks drove a permanent retry storm. Fixed.
+
+### Symptom
+
+The archive `.137` logged, continuously:
+
+```
+WRN Served eth_getBlockByNumber ... duration=15..30
+    err="failed to get rpc block from comet block: failed to get receipts from comet block:
+         tx not found: hash=0xe40372f2... error=GetTxByEthHash ...: ethereum tx not found"
+```
+
+Three transaction hashes, over and over, each attempt costing 15–30 s. `gembad` sat at ~170 % CPU.
+
+### Root cause, in order of discovery
+
+1. The requester is **Blockscout on `213.136.85.32`**, reaching `.137:8545` over its autossh
+   tunnel (`ETHEREUM_JSONRPC_HTTP_URL=http://host.docker.internal:8545`).
+2. It was retrying **exactly three blocks**: `620930`, `673957`, `674217` —
+   `select * from missing_block_ranges` returned three single-block ranges, and the three tx
+   hashes belong to them.
+3. `.137` cannot serve them because **`enable-indexer = false`** in its `app.toml`. That is the
+   **EVM** transaction indexer (eth hash → cosmos tx). Without it `GetTxByEthHash` fails, receipts
+   cannot be assembled, and the whole `eth_getBlockByNumber` errors.
+4. 🔑 **`rpc2` (`.84`) CAN serve those blocks** — 52, 18 and 25 transactions respectively — because
+   it has `enable-indexer = true` and never lost its index. **`rpc1` (`.83`) cannot**: it was
+   rebuilt on 2026-07-15 from `.208`'s data dir with `tx_index.db` deliberately EXCLUDED, so it has
+   no index for history before that date — and these blocks are from exactly that era.
+
+### Why NOT simply `enable-indexer = true` on `.137`
+
+Measured on the box, same day:
+
+```
+/ total 193 GB · 47 GB free (76 % used) · RAM 11 GB with ~10 used + swap
+application.db 71 GB (pruning=nothing) · tx_index.db 18 GB · blockstore.db 8 GB · state.db 7.9 GB
+```
+
+Enabling the EVM indexer means `gembad index-eth-tx backward` across 4.4 M blocks — a new database
+on a disk already at 76 % and a box with no spare RAM. The 2026-07-15 disk-fill on validator `.82`
+(100 % full → crash-loop → val0 jailed) is what this would be inviting back.
+
+The setting was **never changed** on `.137`, by the way: `app.toml` and both backups
+(`2026-06-27`, `2026-07-13`) all read `false`. It is the stock default, not a past decision.
+
+### The fix — three steps, and only the third one actually stopped it
+
+```bash
+# 1. let Blockscout fetch the three blocks from an endpoint that HAS the index
+#    /root/gembascan/envs/backend.env  (backup: .bak-20261023-gapfill)
+ETHEREUM_JSONRPC_HTTP_URL=https://rpc2.gembascan.io     # TRACE_URL left on .137
+sudo bash -c 'cd /root/gembascan && docker compose -p gembascan up -d --force-recreate --no-deps backend'
+#    -> missing_block_ranges went 3 -> 0 within a minute; 95 transactions imported
+#    -> then REVERT the URL to the tunnel and recreate again
+
+# 2. the three blocks now wanted internal transactions, which need TRACE_URL = .137 -> same failure,
+#    now as debug_traceTransaction. The archive can never trace them, so stop asking:
+delete from pending_block_operations where block_number in (620930, 673957, 674217);
+
+# 3. 🔑 THE STEP THAT MATTERED — Blockscout keeps the retry batch IN MEMORY.
+#    The DELETE alone changed nothing; the storm continued at the same rate.
+sudo docker restart gembascan-backend-1
+```
+
+### Result
+
+| | before | after |
+|---|---|---|
+| `ethereum tx not found` per minute | continuous | **0** |
+| `debug_traceTransaction` per minute | 1 000 (journald-capped) | **0** |
+| `gembad` CPU (instantaneous) | 170 % | **42 %** |
+| `missing_block_ranges` | 3 | **0** |
+| blocks 620930/673957/674217 | not indexed | **indexed, 95 txs, visible in the explorer** |
+
+Strictly better than the starting point: the three blocks are now in the explorer AND the storm is
+gone. What is given up is the *internal-transactions* view for those three blocks only.
+
+### 🔴 Two measurement traps that cost an hour here
+
+- **journald rate-limits.** "81 505 errors/hour" and the suspiciously round "1000/minute" were the
+  journal's cap, not the real rate — `journalctl | grep -c` is not a rate meter. There were
+  `Suppressed … messages` lines to prove it.
+- **`ps -o pcpu` is an average over the whole process lifetime** (4 days here), so it read a
+  constant 213 % and showed no change at all. Measure instantaneously instead:
+  ```bash
+  P=$(pgrep -o gembad); a=$(awk '{print $14+$15}' /proc/$P/stat); sleep 10
+  b=$(awk '{print $14+$15}' /proc/$P/stat); echo $(( (b-a)/10 ))%   # percent of one core
+  ```
+
+### Sizing the dedicated pruned node (asked 2026-10-23, deferred)
+
+A 2-core / 4 GB / **40 GB** box is **too small** — 40 GB is below the floor before the OS. Three
+things do not shrink with state pruning, measured on the archive today:
+
+```
+blockstore.db  8.0 GB   the blocks themselves
+state.db       7.9 GB
+tx_index.db   18.0 GB   REQUIRED — no hash lookups, no receipts, no use to Blockscout
+             + application.db ~2–5 GB at keep-recent=100, + the EVM indexer DB, + OS
+≈ 42 GB today, and blockstore/tx_index grow with the chain (~0.45 blocks/s)
+```
+
+Shape to buy: **4 vCPU / 8 GB RAM / ≥160 GB NVMe**. Not 2/4/40. And check the CPU architecture
+first — Hetzner's cheap CAX line is **ARM64** while `gembad` is built for x86 on the Contabo
+fleet; either confirm an ARM build or stay on x86.
