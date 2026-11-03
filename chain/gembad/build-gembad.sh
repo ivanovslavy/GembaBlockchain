@@ -82,10 +82,12 @@ echo ">> building gembad -> $OUT"
 # advertising "Version dev ()" — exactly the P-3 leak.
 GEMBAD_VERSION="${GEMBAD_VERSION:-$(git -C "$CHAIN_DIR" describe --tags --always --dirty 2>/dev/null || echo "v0.1.0")}"
 GEMBAD_COMMIT="${GEMBAD_COMMIT:-$(git -C "$CHAIN_DIR" rev-parse --short HEAD 2>/dev/null || echo none)}"
-# Reproducible by default: the build date is the COMMIT's date (not the wall clock) and -trimpath
-# drops the build directory and module-cache paths from the binary, so the same commit + the same
-# Go toolchain gives the same sha256 on any machine — the sha in the runbook can be re-derived
-# instead of trusted, and a lost artefact can be rebuilt bit for bit.
+# The build date is the COMMIT's date (not the wall clock) and -trimpath drops the build directory
+# and module-cache paths from the binary. That removes two known sources of drift, but it is NOT
+# enough for bit-for-bit reproducibility — measured 2026-11-03: four builds of the same commit with
+# the same go1.25.9 gave three different sha256s, differing in .text/.rodata (not in metadata;
+# `go version -m` is identical). Until that is tracked down: build ONCE, record that artefact's
+# sha256, ship that one file to every box and compare the hash before each swap.
 BUILD_DATE="${BUILD_DATE:-$(TZ=UTC git -C "$CHAIN_DIR" log -1 --format=%cd --date=format-local:%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u +%Y-%m-%dT%H:%M:%SZ)}"
 SDK_VER="github.com/cosmos/cosmos-sdk/version"
 EVM_VER="github.com/cosmos/evm/version"
