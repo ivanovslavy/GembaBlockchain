@@ -29,14 +29,14 @@ documented follow-up. DripFaucet seeded 10,000 GMB. Guardians: founder/foundatio
 
 | Contract | Address |
 |---|---|
-| GembaSwapRouter02 | 0x49Da581bf5C09aE24312574D4835d416EE5eEfd5 |
-| GembaSwapFactory | 0x15752A99d2e06d001F5d228AA158EbD687276DB4 |
+| GembaSwapRouter02 | 0x3d4D69Fe757eeF1190Aa28e78F648e510f6F428A (redeployed 2026-11-03; was 0x49Da581bf5C09aE24312574D4835d416EE5eEfd5, deprecated) |
+| GembaSwapFactory | 0xc8Ae9BE32927Ba03A24F8f152319702E3BDF1674 (redeployed 2026-11-03; was 0x15752A99d2e06d001F5d228AA158EbD687276DB4, deprecated) |
 | WGMB (wrapped native GMB) | 0x4A74DB9c9cE285960d01B53a626945DDd100e8d8 |
 | GembaNativePoolFactory | 0x92F048fDF7fB98F800C4cF3c78F779681A208a99 |
 | LiquidityLocker | 0xa2bf89D6FDAA3d72310DD82A9da40032abd398c6 |
 | DemoToken (DEMO, example) | 0xDA9dFb87f77ED2176C00339da0cEae2Ac6E5e722 |
 
-GembaSwap = Uniswap V2 renamed 1:1 (core 0.5.16 / periphery 0.6.6); init-code-hash recomputed.
+GembaSwap = a modified Uniswap V2 (core 0.5.16 / periphery 0.6.6), GPL-3.0-or-later; LP token `GembaSwap V2`/`GSWAP-V2`; init-code-hash recomputed (`0xb154cd52…19d83f` since 2026-11-03). See `docs/testnet-deployments.md` for the deprecated 2026-06-27 pair.
 NOT project-operated, NOT for GMB liquidity (§2/§8/§16.1) — reference contracts for ecosystem devs.
 
 ## Faucet & test stablecoins (system faucet, founder-owned)

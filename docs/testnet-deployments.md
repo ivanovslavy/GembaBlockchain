@@ -50,15 +50,33 @@
 
 | Contract | Address |
 |---|---|
-| `GembaSwapRouter02` (Uniswap V2 router, full ABI) | `0x49Da581bf5C09aE24312574D4835d416EE5eEfd5` |
-| `GembaSwapFactory` (Uniswap V2 factory) | `0x15752A99d2e06d001F5d228AA158EbD687276DB4` |
+| `GembaSwapRouter02` (modified Uniswap V2 router, full ABI) — **current, 2026-11-03** | `0x3d4D69Fe757eeF1190Aa28e78F648e510f6F428A` |
+| `GembaSwapFactory` (modified Uniswap V2 factory; LP token `GembaSwap V2`/`GSWAP-V2`) — **current, 2026-11-03** | `0xc8Ae9BE32927Ba03A24F8f152319702E3BDF1674` |
 | `WGMB` (wrapped native GMB) | `0x4A74DB9c9cE285960d01B53a626945DDd100e8d8` |
 | `GembaNativePoolFactory` | `0x92F048fDF7fB98F800C4cF3c78F779681A208a99` |
 | `LiquidityLocker` | `0xa2bf89D6FDAA3d72310DD82A9da40032abd398c6` |
 | `DemoToken` (DEMO, example dev token) | `0xDA9dFb87f77ED2176C00339da0cEae2Ac6E5e722` |
 
-> GembaSwap = Uniswap V2 renamed 1:1. NOT for GMB liquidity; see `contracts/src/dex/README.md` and
-> `CLAUDE.md` §9. Verified + full swap/liquidity/lock E2E proven 2026-06-27.
+> GembaSwap = a modified Uniswap V2 (GPL-3.0-or-later, `contracts/src/dex/gembaswap/NOTICE`). NOT for
+> GMB liquidity; see `contracts/src/dex/README.md` and `CLAUDE.md` §9. WGMB, the native pool factory,
+> the locker and DEMO are independent of the factory and were not redeployed.
+>
+> **2026-11-03 redeploy** (`contracts/script/RedeployGembaSwap.s.sol`, founder deployer, both verified on
+> GembaScan): the licence-hygiene change renamed the LP token and so moved the pair init-code hash to
+> `0xb154cd52…19d83f`, which a router can only use with a factory built from the same pair bytecode.
+> Factory tx `0xe8854bfb…dc9d2d22`, router tx `0xa4b90661…e6af114d24` (blocks 4,814,356–4,814,357).
+> Live E2E through the new router: DEMO/WGMB pair `0x4b59d122AC938366618bb7B5c6ab209c7c414cf4` reads `GembaSwap V2` / `GSWAP-V2`;
+> `addLiquidityETH` (0.1 GMB + 100 DEMO) and `swapExactETHForTokens` (0.01 GMB) both `status 1`.
+>
+> **Deprecated (still on chain, still functional — do not build on them):**
+>
+> | Contract | Address | Why |
+> |---|---|---|
+> | `GembaSwapRouter02` (2026-06-27) | `0x49Da581bf5C09aE24312574D4835d416EE5eEfd5` | LP token still named `Uniswap V2`/`UNI-V2`; superseded 2026-11-03 |
+> | `GembaSwapFactory` (2026-06-27) | `0x15752A99d2e06d001F5d228AA158EbD687276DB4` | its 9 pairs keep working through the old router only |
+>
+> The swap dApp (`frontend/swap`, swap.gembachain.io) still points at the deprecated pair of contracts —
+> moving it is a separate product change (its users' existing LP positions live in the old factory).
 
 ---
 

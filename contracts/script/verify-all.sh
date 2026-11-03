@@ -57,7 +57,7 @@ verify_one() {
 }
 
 shopt -s nullglob
-BCS=(broadcast/DeployGovernance.s.sol/$CHAIN_ID/run-latest.json broadcast/DeployDex.s.sol/$CHAIN_ID/run-latest.json)
+BCS=(broadcast/DeployGovernance.s.sol/$CHAIN_ID/run-latest.json broadcast/DeployDex.s.sol/$CHAIN_ID/run-latest.json broadcast/RedeployGembaSwap.s.sol/$CHAIN_ID/run-latest.json)
 found=0
 for bc in "${BCS[@]}"; do
   [ -f "$bc" ] || continue
