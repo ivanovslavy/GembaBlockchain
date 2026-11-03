@@ -279,7 +279,7 @@ function ContactForm() {
 const FEATURES = [
   {
     title: "Permissionless PoS",
-    body: "CometBFT BFT Proof-of-Stake — ~5s blocks with instant finality (no reorgs). Anyone with enough stake can validate — no operator approves participants, no KYC, no whitelist.",
+    body: "CometBFT BFT Proof-of-Stake — ~2.3 s blocks with instant finality (no reorgs). Anyone with enough stake can validate — no operator approves participants, no KYC, no whitelist.",
   },
   {
     title: "Full EVM",
@@ -381,7 +381,7 @@ function App() {
             <p>
               Our own testnet app on GembaBlockchain: <strong>swap tokens</strong>, wrap{" "}
               <strong>GMB ↔ WGMB (1:1)</strong>, <strong>add &amp; remove liquidity</strong>{" "}
-              (including fee-on-transfer tokens), and <strong>lock / unlock LP tokens</strong>. Gas is near-zero (~1 gwei). Testnet only — the tokens have no monetary value.
+              (including fee-on-transfer tokens), and <strong>lock / unlock LP tokens</strong>. Gas is near-zero (5 gwei floor). Testnet only — the tokens have no monetary value.
             </p>
             <div className="feats">
               <span>Swap</span>

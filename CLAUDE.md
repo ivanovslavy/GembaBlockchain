@@ -12,7 +12,7 @@
 
 > **⏭ REGENESIS PLANNED (locked 2026-06-26).** A full testnet regenesis (then mainnet) moves the
 > economics to: capped validator reward `max(10, min(100, stake×1%))` GMB/day; min/max self-bond
-> 1,000/10,000 at entry + **50 GMB/day** bond-increase cap; **~3s blocks** (timeout_commit 1s);
+> 1,000/10,000 at entry + **50 GMB/day** bond-increase cap; **~3s blocks** (timeout_commit 1s; measured ~2.3 s on the testnet since);
 > **5 gwei** fee floor; faucet 0.1 GMB/day per-acct+per-IP; 2-tier governance (40/51 std, 51/66
 > crit, 3-day period); the ~8M idle on validator accounts folded into the reward reserve; 4 genesis
 > validators funded 10K each from the founder; **wallets (WA) preserved, contracts (CA) preserved
@@ -74,13 +74,13 @@
 | Network name | **GembaBlockchain** |
 | Native coin | **Gemba**, ticker **GMB** (also the staking + gas coin) |
 | Framework | **Cosmos SDK + Cosmos EVM module** (`github.com/cosmos/evm`), reference impl `evmd` |
-| Consensus | **CometBFT** (BFT Proof-of-Stake), instant finality, no reorgs (~5 s blocks live; ~2 s is the tunable target) |
+| Consensus | **CometBFT** (BFT Proof-of-Stake), instant finality, no reorgs (~2.3 s blocks measured on the live testnet, 2026-11-03) |
 | Permissionless | Yes — anyone with stake ≥ threshold can validate; anyone can hold/send GMB |
 | EVM-compatible | Full EVM: Solidity, `0x...` addresses, MetaMask, Foundry/Hardhat, ethers/viem, JSON-RPC |
 | Cosmos chain-id | `gemba-1` (string) |
 | EVM chainId | **821206** (EIP-155 integer; verified free on chainlist.org — 123321 was taken) |
 | Account type | `eth_secp256k1`, SLIP-0044 coin type **60** (Ethereum standard → `0x` + MetaMask) |
-| Block time | ~5 s live (CometBFT `timeout_commit`; ~2 s target, governance/upgrade-tunable) |
+| Block time | **~2.3 s** measured on the live testnet (2.29 s avg over 10,000 blocks, 2026-11-03) — CometBFT `timeout_commit` 1 s + the inter-validator round-trip (regenesis target ~3 s); upgrade-tunable |
 | Total supply | **fixed**, minted once at genesis, **never again** → 0% inflation |
 | Gas / fees | real fees in GMB (EIP-1559); **low but non-zero, scaling with usage** — cheap per-tx, but aggregate fees are the long-run security budget (§16.8) |
 | Block explorer | **Blockscout** self-hosted ("GembaScan"); optional Cosmos-side explorer (e.g. ping.pub) |
@@ -488,7 +488,7 @@ treasuries and app logic live in **Solidity**.
 - Put public-facing RPC/JSON-RPC **behind Apache reverse proxy + Let's Encrypt =
   HTTPS** (existing DevOps stack). Permissionless networking ≠ unprotected: rate-limit
   and TLS-terminate the public endpoints.
-- **State growth:** continuous ~5 s blocks ⇒ configure Cosmos **pruning** (e.g.
+- **State growth:** continuous ~2.3 s blocks (~37,000/day) ⇒ configure Cosmos **pruning** (e.g.
   `pruning = "custom"` with sane keep-recent/interval) and document archive vs
   pruned node disk needs for institutions running a node.
 
@@ -542,7 +542,7 @@ the box.
 - **Phase 0 — Scaffolding.** Monorepo (section 14), `.env.example`, `.gitignore`,
   `README.md`, `/docs`. No secrets committed.
 - **Phase 1 — Local devnet.** Build from `evmd`/`cosmos/evm`: set `gemba-1` +
-  EVM chainId **821206**, eth_secp256k1 / coin type 60, ~5 s blocks (2 s target), **mint
+  EVM chainId **821206**, eth_secp256k1 / coin type 60, ~2.3 s blocks (measured; timeout_commit 1 s), **mint
   inflation = 0**, native GMB genesis alloc per section 4.1. Single node first, then
   a 4-validator local multi-node. Verify MetaMask connects and a GMB transfer + a
   Solidity deploy work.
@@ -615,8 +615,8 @@ the box.
   supply-invariant tested + live); `/monitoring` (Prometheus + the **bonded-ratio**
   security metric & ADR-008 alerts at 66/50/33); `docs/runbooks/` (peers & pruning
   validator-vs-archive, tmkms key mgmt, backups, halt recovery, coordinated
-  upgrade). The **security audit (ADR-006)** remains the founder's separate, non-code
-  track and a hard launch blocker (§16).*
+  upgrade). The **security audit (ADR-006)** was a separate, non-code track; the owner
+  cleared it on 2026-07-18 (see the launch-blocker box in §16 and `docs/risks.md`).*
 - **Public testnet (mainnet dress rehearsal).** `gemba-testnet-1` (distinct chain-id
   + EVM chainId 821207, valueless tokens): `chain/testnet` (genesis generator,
   verified locally as a 5-validator network producing blocks), `services/testnet-faucet`
@@ -704,7 +704,8 @@ contradictions.
 5. **You cannot control already-distributed GMB.** Control is on the faucet's
    inflow (formula + vesting + governance cap), never on tokens after they leave.
 6. **Cosmos EVM is pre-v1 (audit pending).** Pin a known-good version; isolate custom
-   modules; do not launch to the public before the upstream audit and our own review.
+   modules. Gate cleared 2026-07-18 (Sherlock-audited upstream + our own review, ADR-006);
+   re-check the pin against upstream advisories before genesis (v0.7.4 is open).
 7. **Censorship is not auto-slashable** — only objectively provable faults are
    (double-sign, downtime). Censorship is handled at the governance/social layer.
 8. **Long-term security budget (after the ~10-yr validator reserve runs out).**
@@ -760,9 +761,10 @@ contradictions.
 
 > **Hard launch blockers (do not ship a public launch until all clear):**
 > **Upstream audit** — Cosmos EVM pre-v1 (risk 6, ADR-006). **CLEARED 2026-07-18:**
-> owner-accepted — Sherlock-audited codebase + v0.7.0 pins every published advisory
-> fix + our own multi-phase audit; bump to v0.7.1 if it tags before genesis (see
-> `docs/risks.md` ADR-006).
+> owner-accepted — Sherlock-audited upstream codebase (v0.3.x) + our own multi-phase
+> audit. Pin today: **v0.7.3** + two tracked patches (live binary `39daa6e`).
+> **Open:** upstream v0.7.4 (2026-11-02) carries six security advisories v0.7.3 lacks —
+> evaluate the bump before genesis (see `docs/risks.md` ADR-006).
 > **Security-budget tail** — recirculation tail-reward implemented + tested and
 > bonded-ratio monitoring live (risk 8, ADR-008 — the last remaining gate: closed
 > when the bonded-ratio exporter goes live at launch). Devnet/testnet and closed

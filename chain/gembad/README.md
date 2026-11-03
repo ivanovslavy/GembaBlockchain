@@ -1,7 +1,7 @@
 # chain/gembad — the GembaBlockchain node (evmd + custom modules)
 
 `gembad` is the node binary: the pinned upstream `cosmos/evm` reference app
-(`evmd` v0.7.0) with the Phase 2 custom modules (`x/rewardstreamer`, `x/feesplit`)
+(`evmd` v0.7.3, plus the tracked `gembad-mempool-fixes.patch`) with the Phase 2 custom modules (`x/rewardstreamer`, `x/feesplit`)
 wired into its module manager.
 
 We do **not** vendor evmd into the repo. The build fetches the pinned reference
@@ -14,7 +14,7 @@ the patch (CLAUDE.md §16.6).
 | File | Purpose |
 |---|---|
 | `gembad-wiring.patch` | the only app edits: `evmd/app.go` (store keys, keepers, module manager, begin-blocker order `feesplit → rewardstreamer → distribution`, init-genesis order) + `evmd/config/permissions.go` (module accounts `rewardstreamer`/`feesplit`/`faucet`, all with NO mint/burn permissions) |
-| `build-gembad.sh` | clones cosmos/evm v0.7.0, applies the patch, `go mod replace`s to `chain/`, builds `gembad` |
+| `build-gembad.sh` | clones cosmos/evm v0.7.3, applies the wiring + mempool-fix patches, `go mod replace`s to `chain/`, builds `gembad` |
 | `init-gembad.sh` | single-node devnet; funds the 20M reserve + 30M faucet into the **module accounts** and sets the module genesis params |
 | `init-gembad-multinode.sh` | 4-validator devnet (BFT, §5.3) |
 | `demo-gembad.sh` | live demonstration: a real EVM transfer whose fee splits 60/40, with the supply-invariance check on the running chain |

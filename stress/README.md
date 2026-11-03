@@ -3,7 +3,9 @@
 Load generator + diverse EVM workloads + full logging and analysis. Targets the **live
 testnet directly through a node's EVM RPC** (bypassing Cloudflare/Apache). Txs gossip via
 CometBFT P2P, so **all 4 validators** take part in consensus — submitting through one node
-stresses the whole network. Block time ≈ **5.2s**.
+stresses the whole network. Block time was ≈ **5.2s** when this harness was written (pre-regenesis);
+it is **~2.3 s** today (measured 2026-11-03), so `scripts/analyze.js`'s drift threshold
+(target 5,200 ms) and the latency units in `config/profiles.js` need re-basing before the next run.
 
 > ⚠️ The public testnet hosts live apps (EduChain, GembaPass). This harness includes a
 > **disk guard** (aborts if the node data dir free space drops below `DISK_MIN_FREE_GB`)

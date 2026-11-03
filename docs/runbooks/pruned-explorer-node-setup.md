@@ -66,14 +66,16 @@ Disk size is a non-issue (pruned stays tens of GB). NOT a validator; NOT co-loca
 |---|---|
 | chain-id | `gemba-testnet-1` |
 | evm-chain-id | `821207` |
-| minimum-gas-prices | `1000000000agmb` |
+| minimum-gas-prices | `1000000000agmb` (node-level mempool filter; the consensus floor is 5 gwei) |
 | genesis.json | sha256 starts `d7cdc2c1...`, 22985 bytes — **copy the exact file** |
-| gembad binary | `d8a454f-dirty` (custom build) — **copy the exact binary**, do NOT rebuild |
+| gembad binary | `39daa6e` (since 2026-10-03; `sha256 fd9deac77b0cd97a17d7cea41d7a7f7cf677f5a3e7c0fbbeb2c99a43fbd3b4e0`) — **copy the exact binary** from a live box and compare the hash |
 | persistent_peers | `44935754a7ea7e5ced5528eb39b5b4f6de73d3bb@13.140.139.82:26656,5473057935d09332c6051e7e83902ae226e060d2@13.140.139.83:26656,b7588b7dcd3e90bc0306dce68f7c95c5306d74a6@13.140.139.84:26656` |
 
-> **App-hash safety:** the binary is a `-dirty` local build. A *different* binary caused an
-> app-hash divergence during the 2026-06-06 regenesis. Copy `/usr/local/bin/gembad` and
-> `genesis.json` **byte-for-byte** from an existing node — never `go install` a fresh build.
+> **App-hash safety:** a *different* binary caused an app-hash divergence during the 2026-06-06
+> regenesis. Since 2026-10-03 the live binary is reproducible (`39daa6e`, no `-dirty`, built by
+> `chain/gembad/build-gembad.sh`), but still copy `/usr/local/bin/gembad` and `genesis.json`
+> **byte-for-byte** from an existing node and compare the sha256 — never `go install` a fresh
+> build. If the fleet has moved to a newer binary, use that one (check `coordinated-upgrade.md`).
 
 ## Steps
 
@@ -82,7 +84,7 @@ Disk size is a non-issue (pruned stays tens of GB). NOT a validator; NOT co-loca
 # on the NEW box (as root):
 scp root@13.140.148.137:/usr/local/bin/gembad /usr/local/bin/gembad
 chmod +x /usr/local/bin/gembad
-gembad version                                   # must print d8a454f-dirty
+sha256sum /usr/local/bin/gembad                  # must be fd9deac77b0c… (39daa6e) — or the fleet's current binary
 export HOME_DIR=/root/.gembad-explorer
 gembad init gemba-tn-explorer --chain-id gemba-testnet-1 --home $HOME_DIR
 scp root@13.140.148.137:/root/.gembad-archive/config/genesis.json $HOME_DIR/config/genesis.json

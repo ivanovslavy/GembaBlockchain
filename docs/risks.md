@@ -100,6 +100,7 @@
 ## ADR-006 — Cosmos EVM is pre-v1 (audit pending)
 
 - **Status:** Accepted (owner decision 2026-07-18) — was "Accepted — gated".
+  Pin and residual actions re-checked 2026-11-03 (below).
 - **Context:** `github.com/cosmos/evm` is production-used but its v1 release
   follows an external audit. Building on pre-v1 code carries upstream-change and
   unaudited-code risk.
@@ -108,20 +109,42 @@
   split) so upstream upgrades stay clean.
 - **Acceptance (2026-07-18):** the gate is met and launch is NOT held for a
   further "v1 audit". Rationale: (a) the cosmos/evm codebase **was audited by
-  Sherlock** — final report committed in-repo at
-  `docs/audits/sherlock_2025_07_28_final.pdf` (audited v0.3.0); (b) we pin
-  **v0.7.0**, the latest release, which contains **every published security
-  advisory fix** including the actively-exploited ICS20 precompile issue
-  (ASA-2026-002, patched v0.6.0); (c) our own **multi-phase security audit**
+  Sherlock** (collaborative audit for Interchain Labs, 19 May – 23 June 2025;
+  audited commit `73bc2435`, final commit `c4e5233c` — both first released in
+  **v0.3.0**; 18 High / 27 Medium / 32 Low-Info found, 0 left unfixed and
+  unacknowledged). The report is **not** redistributed in this repo — it is
+  Sherlock's work and carries no licence grant of its own — but it ships in the
+  upstream repo; read it at
+  <https://github.com/cosmos/evm/blob/c3ae9067a7eadcdea55a5192226916deb44c71c4/docs/audits/sherlock_2025_07_28_final.pdf>
+  (tag v0.7.3), `sha256 e977832089495a4a72759f5803682e2b4392ae9074077a374a11b7683235e3cf`,
+  203 pages. The audit covers v0.3.x code, **not** the v0.7.x line we run and **not**
+  our custom modules or patches; (b) at acceptance we pinned **v0.7.0**, then the
+  latest release, which contained every security advisory published at the time,
+  including the actively-exploited ICS20 precompile issue (ASA-2026-002, patched
+  v0.6.0); (c) our own **multi-phase security audit**
   (`docs/audit-findings-2026-07-13.md`, `audit-phase2-results-2026-07-13.md`,
-  `mainnet-launch-hardening.md`) reviewed the integration + custom modules. If a
-  **v0.7.1** tag appears before genesis day (two security-adjacent backports were
-  pending on `release/v0.7.x` on 2026-07-17), bump to it first; otherwise launch
-  on v0.7.0. The formal upstream "v1 + audit" milestone has no published ETA and
-  is no longer a launch blocker.
-- **Consequences:** Public launch proceeds on the pinned, published-fix-complete
-  v0.7.0. Custom-module isolation costs some
-  boilerplate but protects the upgrade path.
+  `mainnet-launch-hardening.md`) reviewed the integration + custom modules.
+  The formal upstream "v1 + audit" milestone has no published ETA and is no
+  longer a launch blocker.
+- **Pin today (2026-11-03):** **v0.7.3** + two tracked local patches
+  (`chain/gembad/gembad-wiring.patch`, `chain/gembad/gembad-mempool-fixes.patch`),
+  live on every testnet box since 2026-10-03 as binary `39daa6e`. The two
+  backports pending on `release/v0.7.x` at acceptance are both in v0.7.3:
+  statedb locked-balance #1187 (backport #1189, already in v0.7.0) and statedb
+  balance/event hardening **#1254** (backport of #1176, absent from v0.7.0) —
+  see `docs/runbooks/validator-binary-refresh-2026-10.md`.
+- **Residual action (open):** upstream tagged **v0.7.4 on 2026-11-02** with six
+  GitHub security advisories that v0.7.3 does **not** carry (GHSA-p8x8-4gg6-prcc,
+  -c6xv-pppp-rjw6, -2m6r-q6x4-4w5g, -wm4f-qpxp-rch4, -7xxp-gq2c-x47x,
+  -9xwc-4fgh-f64f — the last, "avoid node crash from panics in the mempool insert
+  queue", targets the same defect our `gembad-mempool-fixes.patch` carries a
+  `recover()` for; not yet compared line by line). So the pin is
+  **no longer advisory-complete**: evaluate and rebase the patches on v0.7.4 before
+  mainnet genesis, and treat the testnet as exposed to those advisories until its
+  binary is refreshed.
+- **Consequences:** Launch on a pinned, patched, reproducible build whose pin is
+  re-checked against upstream advisories before genesis. Custom-module isolation
+  costs some boilerplate but protects the upgrade path.
 
 ---
 
@@ -425,6 +448,6 @@
 
 | ADR | Blocker | Clears when |
 |---|---|---|
-| ADR-006 | Cosmos EVM pre-v1 / unaudited | **CLEARED (owner 2026-07-18)** — Sherlock-audited codebase (`docs/audits/sherlock_2025_07_28_final.pdf`) + v0.7.0 pins all published advisory fixes + our own multi-phase audit. Bump to v0.7.1 if tagged before genesis. See ADR-006. |
+| ADR-006 | Cosmos EVM pre-v1 / unaudited | **CLEARED (owner 2026-07-18)** — Sherlock-audited upstream codebase (v0.3.x; report linked from ADR-006 with its sha256, not redistributed here) + our own multi-phase audit. Pin is v0.7.3 + tracked patches; **open:** v0.7.4 (2026-11-02) carries six advisories v0.7.3 lacks — evaluate the bump before genesis. See ADR-006. |
 | ADR-009 | MiCA / public-sale gate | **Withdrawn** — no liquidity, no exchange, no public sale by design (ADR-003); not a launch blocker |
 | ADR-008 | Long-term security budget | Tail-reward (recirculation) mechanism implemented + tested; bonded-ratio monitoring in place |

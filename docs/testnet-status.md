@@ -5,8 +5,8 @@
 > the self-hosted block explorer (GembaScan / Blockscout).
 >
 > This is the **valueless test network** — a mainnet dress rehearsal, not the
-> public mainnet. Public launch remains gated by the hard blockers in `CLAUDE.md`
-> §16 (upstream audit, security-budget tail). See also
+> public mainnet. Public-launch gating: see the hard-blocker box in `CLAUDE.md`
+> §16 (the upstream-audit gate was cleared 2026-07-18; ADR-008 closes at launch). See also
 > [`runbooks/testnet-deploy.md`](./runbooks/testnet-deploy.md).
 
 ## Network identity
@@ -17,10 +17,10 @@
 | Cosmos chain-id | `gemba-testnet-1` |
 | EVM chainId | `821207` (EIP-155; distinct from mainnet's `821206`) |
 | Native coin | Gemba (GMB) — **test GMB, no value** |
-| Consensus | CometBFT BFT PoS, ~5 s blocks, instant finality |
+| Consensus | CometBFT BFT PoS, ~2.3 s blocks (2.29 s avg over 10,000 blocks, measured 2026-11-03), instant finality |
 | Explorer (public) | **https://testnet.gembascan.io** (GembaScan / Blockscout) |
-| EVM JSON-RPC (public) | **https://rpc1.gembascan.io** |
-| Active validators | 4 (3 on public cloud hosts + 1 operator node), each 1,000,000 GMB |
+| EVM JSON-RPC (public) | **https://rpc1.gembascan.io** · rpc2 · rpc3 (same chain, separate origins) |
+| Active validators | 4 (3 on public cloud hosts + 1 operator node); voting power 16,218 / 16,063 / 14,887 / 13,026 (2026-11-03 — genesis 10,000 each, grown by compounding) |
 
 ## Listed in public registries
 
@@ -47,7 +47,7 @@ chainlist.org. The ready-to-submit payloads live in [`chain-registry/`](./chain-
 
 The test chain is producing blocks and the full EVM surface is live:
 
-- **Block production** — continuous ~5 s blocks (instant finality, no reorgs).
+- **Block production** — continuous ~2.3 s blocks (instant finality, no reorgs).
 - **EVM JSON-RPC** — the geth-compatible endpoint serves blocks, receipts,
   historical account state, and `debug_trace*` (the data the explorer indexes).
 - **MetaMask** — connects out of the box (chainId `821207`, `0x` addresses,

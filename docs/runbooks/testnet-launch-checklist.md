@@ -33,7 +33,7 @@ up `/monitoring` (Prometheus + Grafana + the bonded-ratio metric) on day 0.
 
 - [ ] Push sustained tx load (transfers + contract calls). Confirm **EIP-1559 base
       fee rises** with block fullness and **decays** when idle (the `demo-feemarket`
-      behaviour) — never below the 1 gwei floor.
+      behaviour) — never below the fee floor (5 gwei since the 2026-06-26 regenesis).
 - [ ] Mempool stays healthy; no runaway pending; gas estimation works for apps.
 - [ ] Deploy the Phase 3–8 contracts (governance, faucet, NFTs, on-ramp with its
       `publicSaleEnabled=false` default, tickets) and exercise the real flows end-to-end.
@@ -84,6 +84,7 @@ up `/monitoring` (Prometheus + Grafana + the bonded-ratio metric) on day 0.
 
 Weeks of stable block production across regions, the bonded ratio held near target,
 zero-inflation confirmed live, the upgrade + halt-recovery drills rehearsed, and the
-remaining **non-code** hard blocker progressing on its own track: the **security audit
-(ADR-006)** — required before any public mainnet launch. (The MiCA / public-sale gate
+upstream-audit gate (**ADR-006**) cleared by the owner on 2026-07-18 — with one open pre-genesis
+action: re-check the cosmos/evm pin against new upstream advisories (v0.7.4, 2026-11-02;
+`docs/risks.md`). (The MiCA / public-sale gate
 ADR-009 was withdrawn — no liquidity, no exchange, no public sale by design.)

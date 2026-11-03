@@ -110,8 +110,10 @@ is the current testnet explorer/RPC. When mainnet launches it gets its own
 > **EXECUTED (2026-06-09):** the 1 gwei floor is now live as a **consensus `x/feemarket`
 > param**, applied by an actual on-chain governance round (proposal **#2**, PASSED). A real
 > transfer pays ~0.000021 GMB (21,000 gas × 1 gwei) — fractions of a cent, but **not zero**.
-> Block time is **~5 s** (not 2 s). All public copy must say "near-zero / ~1 gwei", never
-> "free", and "~5 s blocks", never "2 s".
+> Block time was ~5 s at the time of this note. **Current (since the 2026-06-26 regenesis,
+> re-measured 2026-11-03): ~2.3 s blocks and a 5 gwei floor** (live `baseFeePerGas` =
+> 5,000,000,000). Public copy must say "near-zero / 5 gwei", never "free", and "~2.3 s
+> blocks".
 >
 > **Correction to the earlier (2026-06-08) note:** that note claimed the floor was already
 > live, but only the **node-level** `--minimum-gas-prices 1000000000agmb` start flag had been

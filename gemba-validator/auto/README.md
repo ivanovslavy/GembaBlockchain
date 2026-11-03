@@ -52,7 +52,7 @@ It installs `jq`+`bc`, copies the scripts to `/usr/local/bin`, the config to
 | `CHAIN_ID` | `gemba-testnet-1` | mainnet: `gemba-1` |
 | `REINVEST_PCT` | `50` | % of each run's rewards to re-stake |
 | `MIN_REINVEST_AGMB` | `1e18` (1 GMB) | skip runs below this (don't waste a tx fee) |
-| `GAS_PRICES` | `1000000000agmb` | 1 gwei fee floor |
+| `GAS_PRICES` | `5000000000agmb` (env template) | the chain's 5 gwei fee floor — the scripts' built-in fallback is still 1 gwei, which the chain rejects, so always set it in the env file |
 
 > The operator key must be in the box's keyring under `VAL_KEY`. The first auto-compound
 > run needs a little liquid GMB to pay the withdraw tx fee; after that it funds its own fees

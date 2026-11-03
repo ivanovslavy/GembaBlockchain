@@ -8,7 +8,7 @@ genesis, and our **custom Go modules** live.
 
 - **App wiring** — the Cosmos SDK app assembled with the Cosmos EVM module.
 - **Genesis config** — `gemba-1`, EVM chainId **821206**, `eth_secp256k1` / coin
-  type 60, ~2 s blocks, **mint inflation = 0**, native GMB allocation per
+  type 60, `timeout_commit` 1 s (≈2.3 s blocks measured on the 4-validator testnet), **mint inflation = 0**, native GMB allocation per
   `CLAUDE.md` §4.1. Public genesis *addresses* may be committed; keys/mnemonics
   must NOT (`.gitignore`).
 - **Custom modules (the thin "Gemba layer", `CLAUDE.md` §5.4, §16.8):**
@@ -30,13 +30,13 @@ data. See root `.gitignore`.
 ## Phase
 
 - **Phase 1 — DONE (local devnet).** No Go fork yet: we run the pinned upstream
-  `cosmos/evm` `evmd` **v0.7.0** binary and bake GembaBlockchain's economics into
+  `cosmos/evm` `evmd` **v0.7.0** binary (the pin is v0.7.3 + tracked patches since 2026-10-03) and bake GembaBlockchain's economics into
   genesis. See [`scripts/`](./scripts/) — single-node and 4-validator devnets,
   with every genesis anchor (zero inflation, non-zero fee floor per ADR-008a,
-  chainId 821206, ~2 s blocks, §4.1 allocation) mapped to its spec section.
+  chainId 821206, `timeout_commit` 1 s, §4.1 allocation) mapped to its spec section.
   Verified: MetaMask-connect RPC calls, a GMB transfer, a Solidity deploy, and
   4-validator BFT liveness with 1 validator down (§5.3).
-- **Phase 2 — modules DONE; node wiring pending.** Two isolated, EVM-independent
+- **Phase 2 — modules DONE; node wiring DONE (below).** Two isolated, EVM-independent
   Cosmos SDK modules under [`x/`](./x/) (they depend only on cosmos-sdk, so an
   upstream `cosmos/evm` bump can't break them — §16.6):
   - [`x/rewardstreamer`](./x/rewardstreamer) — streams ~2,000,000 GMB/yr from the

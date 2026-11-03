@@ -45,7 +45,7 @@ implemented once, correctly):
   20k→100/day (cap holds), 1k→10/day (floor), 5k→50/day; reserve depletion → 0; supply invariant.
 - **Deterministic:** only block height / `ctx.BlockTime()`; identical on every node.
 
-### A3 — block ~3s + 5 gwei fee (✅ params set in `gemba.params.sh`)
+### A3 — block ~3s target + 5 gwei fee (✅ params set in `gemba.params.sh`; measured on the live testnet after cutover: ~2.3 s, 2.29 s avg over 10,000 blocks on 2026-11-03)
 ### A4 — faucet 0.1 GMB/day per-acct+per-IP (🔨) — `GembaDripFaucet` already on-chain-cooldown; set
 drip=0.1, cooldown=1day; service keeps the per-IP limit. governance 2-tier (40/51 std, 51/66 crit,
 3-day period) — set Governor quorum/threshold/voting-period + the category map (⏳).

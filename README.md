@@ -36,7 +36,7 @@ community-run open-source chain registries — both pull requests **merged**:
 | Network | GembaBlockchain |
 | Native coin | Gemba (GMB), the staking and gas coin |
 | Framework | Cosmos SDK + Cosmos EVM (`cosmos/evm`, `evmd`) on CometBFT |
-| Consensus | CometBFT BFT PoS, instant finality (~2s), no reorgs |
+| Consensus | CometBFT BFT PoS, instant finality, no reorgs; ~2.3 s blocks (measured on the testnet) |
 | Cosmos chain-id | `gemba-1` |
 | EVM chainId | `821206` (EIP-155; separate from the Cosmos chain-id) |
 | Accounts | `eth_secp256k1`, SLIP-0044 coin type 60, standard `0x` addresses (MetaMask works) |
@@ -70,7 +70,7 @@ The project is built in phases (see `CLAUDE.md` §13, which carries the full
 per-phase record). **All nine technical phases are COMPLETE** (status 2026-07-19):
 
 - **Phase 0-1** — scaffolding + local devnets (single-node and 4-validator BFT)
-  from the pinned upstream `cosmos/evm` (v0.7.0).
+  from the pinned upstream `cosmos/evm` (then v0.7.0; v0.7.3 + two tracked patches since 2026-10-03).
 - **Phase 2** — custom zero-inflation Go modules: `rewardstreamer` (reserve-funded
   validator rewards, incl. the mainnet formula model + gov kill-switch),
   `feesplit` (60/40), wired into the **`gembad`** binary (`chain/gembad`).
@@ -87,7 +87,7 @@ per-phase record). **All nine technical phases are COMPLETE** (status 2026-07-19
   multi-round security audits + pentest, validator auto-ops.
 
 **Live public testnet.** `gemba-testnet-1` (EVM chainId `821207`, valueless) has
-been live for weeks: ~2 s blocks, EVM JSON-RPC, MetaMask, GembaScan indexing,
+been live since June 2026: ~2.3 s blocks (measured), four validators, EVM JSON-RPC, MetaMask, GembaScan indexing,
 drip faucet, swap dApp. Details: [`docs/testnet-status.md`](./docs/testnet-status.md).
 
 **Mainnet (`gemba-1`, chainId 821206) is in final launch preparation** — genesis
@@ -103,8 +103,8 @@ compiler (for CGO), `jq`, and [Foundry](https://book.getfoundry.sh) for the
 transfer/deploy demos.
 
 ```bash
-# 1. Build the wired gembad binary once (fetches pinned cosmos/evm v0.7.0
-#    and applies the Gemba wiring patch — custom modules included).
+# 1. Build the wired gembad binary once (fetches pinned cosmos/evm v0.7.3
+#    and applies the Gemba wiring + mempool-fix patches — custom modules included).
 cd /path/to/GembaBlockchain/chain/gembad
 ./build-gembad.sh
 
@@ -138,10 +138,12 @@ The three original hard launch blockers have all been resolved:
 1. **ADR-009 (MiCA)** — *withdrawn 2026-06-06*: no liquidity, no exchange, no
    public sale by design (ADR-003), so the public-sale MiCA trigger does not
    arise. Revisit only if a fiat-adjacent on-ramp is ever introduced.
-2. **ADR-006 (upstream audit)** — *cleared 2026-07-18*: the pinned v0.7.0 carries
-   every published advisory fix (incl. ASA-2026-002), the codebase was
-   Sherlock-audited upstream, and our own multi-phase audit covered the
-   integration + custom modules.
+2. **ADR-006 (upstream audit)** — *cleared 2026-07-18*: the then-pinned v0.7.0 carried
+   every advisory fix published at the time (incl. ASA-2026-002), the codebase was
+   Sherlock-audited upstream (v0.3.x), and our own multi-phase audit covered the
+   integration + custom modules. The pin is now v0.7.3; upstream v0.7.4
+   (2026-11-02) carries six newer advisories, so the bump is an open pre-genesis
+   action (`docs/risks.md` ADR-006).
 3. **ADR-008 (security budget)** — *done*: the recirculation-funded tail reward
    (`chain/x/tailreward`) is implemented, supply-invariant-tested and live on
    testnet; bonded-ratio monitoring ships in `monitoring/`.
