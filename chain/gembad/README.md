@@ -1,7 +1,7 @@
 # chain/gembad — the GembaBlockchain node (evmd + custom modules)
 
 `gembad` is the node binary: the pinned upstream `cosmos/evm` reference app
-(`evmd` v0.7.3, plus the tracked `gembad-mempool-fixes.patch`) with the Phase 2 custom modules (`x/rewardstreamer`, `x/feesplit`)
+(`evmd` v0.7.4, plus the tracked `gembad-mempool-recheck-guard.patch` and `gembad-blobbasefee.patch`) with the Phase 2 custom modules (`x/rewardstreamer`, `x/feesplit`)
 wired into its module manager.
 
 We do **not** vendor evmd into the repo. The build fetches the pinned reference
@@ -14,7 +14,10 @@ the patch (CLAUDE.md §16.6).
 | File | Purpose |
 |---|---|
 | `gembad-wiring.patch` | the only app edits: `evmd/app.go` (store keys, keepers, module manager, begin-blocker order `feesplit → rewardstreamer → distribution`, init-genesis order) + `evmd/config/permissions.go` (module accounts `rewardstreamer`/`feesplit`/`faucet`, all with NO mint/burn permissions) |
-| `build-gembad.sh` | clones cosmos/evm v0.7.3, applies the wiring + mempool-fix patches, `go mod replace`s to `chain/`, builds `gembad` |
+| `build-gembad.sh` | clones cosmos/evm v0.7.4, applies the wiring, mempool-guard and BLOBBASEFEE patches, `go mod replace`s to `chain/`, builds `gembad` (`EVM_VERSION=v0.7.3` rebuilds the line the live testnet runs, with `gembad-mempool-fixes.patch`) |
+| `gembad-mempool-fixes.patch` | v0.7.0–v0.7.3 only: queue-worker `recover()` + stale-rechecker guard |
+| `gembad-mempool-recheck-guard.patch` | v0.7.4+: the stale-rechecker guard alone (upstream now carries the `recover()`, GHSA-9xwc-4fgh-f64f) |
+| `gembad-blobbasefee.patch` | sets `BlockContext.BlobBaseFee = 0` so the BLOBBASEFEE opcode stops dereferencing nil — **state-machine-breaking**, see `docs/evm-compatibility.md` |
 | `init-gembad.sh` | single-node devnet; funds the 20M reserve + 30M faucet into the **module accounts** and sets the module genesis params |
 | `init-gembad-multinode.sh` | 4-validator devnet (BFT, §5.3) |
 | `demo-gembad.sh` | live demonstration: a real EVM transfer whose fee splits 60/40, with the supply-invariance check on the running chain |

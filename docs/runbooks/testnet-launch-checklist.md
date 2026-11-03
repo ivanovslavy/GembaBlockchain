@@ -85,6 +85,6 @@ up `/monitoring` (Prometheus + Grafana + the bonded-ratio metric) on day 0.
 Weeks of stable block production across regions, the bonded ratio held near target,
 zero-inflation confirmed live, the upgrade + halt-recovery drills rehearsed, and the
 upstream-audit gate (**ADR-006**) cleared by the owner on 2026-07-18 — with one open pre-genesis
-action: re-check the cosmos/evm pin against new upstream advisories (v0.7.4, 2026-11-02;
-`docs/risks.md`). (The MiCA / public-sale gate
+action: the repo pin is v0.7.4 (2026-11-03) — re-check for newer advisories before genesis and
+roll the testnet onto it with the halt-height upgrade (`docs/risks.md`). (The MiCA / public-sale gate
 ADR-009 was withdrawn — no liquidity, no exchange, no public sale by design.)

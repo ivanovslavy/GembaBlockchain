@@ -705,7 +705,7 @@ contradictions.
    inflow (formula + vesting + governance cap), never on tokens after they leave.
 6. **Cosmos EVM is pre-v1 (audit pending).** Pin a known-good version; isolate custom
    modules. Gate cleared 2026-07-18 (Sherlock-audited upstream + our own review, ADR-006);
-   re-check the pin against upstream advisories before genesis (v0.7.4 is open).
+   re-check the pin against upstream advisories before genesis (repo pinned to v0.7.4 on 2026-11-03).
 7. **Censorship is not auto-slashable** — only objectively provable faults are
    (double-sign, downtime). Censorship is handled at the governance/social layer.
 8. **Long-term security budget (after the ~10-yr validator reserve runs out).**
@@ -762,9 +762,9 @@ contradictions.
 > **Hard launch blockers (do not ship a public launch until all clear):**
 > **Upstream audit** — Cosmos EVM pre-v1 (risk 6, ADR-006). **CLEARED 2026-07-18:**
 > owner-accepted — Sherlock-audited upstream codebase (v0.3.x) + our own multi-phase
-> audit. Pin today: **v0.7.3** + two tracked patches (live binary `39daa6e`).
-> **Open:** upstream v0.7.4 (2026-11-02) carries six security advisories v0.7.3 lacks —
-> evaluate the bump before genesis (see `docs/risks.md` ADR-006).
+> audit. Repo pin: **v0.7.4** + three tracked patches (2026-11-03); the live testnet still
+> runs `39daa6e` (v0.7.3) until the halt-height upgrade — v0.7.4 carries six security
+> advisories v0.7.3 lacks (see `docs/risks.md` ADR-006).
 > **Security-budget tail** — recirculation tail-reward implemented + tested and
 > bonded-ratio monitoring live (risk 8, ADR-008 — the last remaining gate: closed
 > when the bonded-ratio exporter goes live at launch). Devnet/testnet and closed

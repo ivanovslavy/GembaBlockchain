@@ -103,8 +103,8 @@ compiler (for CGO), `jq`, and [Foundry](https://book.getfoundry.sh) for the
 transfer/deploy demos.
 
 ```bash
-# 1. Build the wired gembad binary once (fetches pinned cosmos/evm v0.7.3
-#    and applies the Gemba wiring + mempool-fix patches — custom modules included).
+# 1. Build the wired gembad binary once (fetches pinned cosmos/evm v0.7.4 and
+#    applies the Gemba wiring, mempool-guard and BLOBBASEFEE patches — custom modules included).
 cd /path/to/GembaBlockchain/chain/gembad
 ./build-gembad.sh
 
@@ -141,9 +141,9 @@ The three original hard launch blockers have all been resolved:
 2. **ADR-006 (upstream audit)** — *cleared 2026-07-18*: the then-pinned v0.7.0 carried
    every advisory fix published at the time (incl. ASA-2026-002), the codebase was
    Sherlock-audited upstream (v0.3.x), and our own multi-phase audit covered the
-   integration + custom modules. The pin is now v0.7.3; upstream v0.7.4
-   (2026-11-02) carries six newer advisories, so the bump is an open pre-genesis
-   action (`docs/risks.md` ADR-006).
+   integration + custom modules. The repo is pinned to v0.7.4 (2026-11-03, six
+   newer advisories); the live testnet moves to it with the next halt-height
+   upgrade (`docs/risks.md` ADR-006).
 3. **ADR-008 (security budget)** — *done*: the recirculation-funded tail reward
    (`chain/x/tailreward`) is implemented, supply-invariant-tested and live on
    testnet; bonded-ratio monitoring ships in `monitoring/`.

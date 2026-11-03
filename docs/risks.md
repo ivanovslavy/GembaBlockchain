@@ -133,15 +133,19 @@
   statedb locked-balance #1187 (backport #1189, already in v0.7.0) and statedb
   balance/event hardening **#1254** (backport of #1176, absent from v0.7.0) —
   see `docs/runbooks/validator-binary-refresh-2026-10.md`.
-- **Residual action (open):** upstream tagged **v0.7.4 on 2026-11-02** with six
-  GitHub security advisories that v0.7.3 does **not** carry (GHSA-p8x8-4gg6-prcc,
-  -c6xv-pppp-rjw6, -2m6r-q6x4-4w5g, -wm4f-qpxp-rch4, -7xxp-gq2c-x47x,
-  -9xwc-4fgh-f64f — the last, "avoid node crash from panics in the mempool insert
-  queue", targets the same defect our `gembad-mempool-fixes.patch` carries a
-  `recover()` for; not yet compared line by line). So the pin is
-  **no longer advisory-complete**: evaluate and rebase the patches on v0.7.4 before
-  mainnet genesis, and treat the testnet as exposed to those advisories until its
-  binary is refreshed.
+- **Residual action — repo DONE 2026-11-03, live testnet pending:** upstream tagged
+  **v0.7.4 on 2026-11-02** with six GitHub security advisories that v0.7.3 does
+  **not** carry (GHSA-p8x8-4gg6-prcc, -c6xv-pppp-rjw6, -2m6r-q6x4-4w5g,
+  -wm4f-qpxp-rch4, -7xxp-gq2c-x47x, -9xwc-4fgh-f64f). `build-gembad.sh` is now
+  pinned to **v0.7.4**: upstream's GHSA-9xwc fix is the same `recover()` in
+  `insertTxs` that our queue patch carried, so on v0.7.4 only the stale-rechecker
+  guard remains ours (`gembad-mempool-recheck-guard.patch`), plus the new
+  `gembad-blobbasefee.patch` (`docs/evm-compatibility.md`). Upstream unit tests
+  (`go test -tags=test ./mempool/... ./ante/evm/... ./x/vm/keeper/... ./x/vm/statedb/...`)
+  pass on the patched tree, and the full halt-height upgrade was rehearsed on a
+  devnet (`docs/runbooks/validator-binary-refresh-2026-10.md`). **The live testnet
+  still runs `39daa6e` (v0.7.3) and stays exposed to those advisories until that
+  upgrade is executed** — Slavy's call on the time.
 - **Consequences:** Launch on a pinned, patched, reproducible build whose pin is
   re-checked against upstream advisories before genesis. Custom-module isolation
   costs some boilerplate but protects the upgrade path.

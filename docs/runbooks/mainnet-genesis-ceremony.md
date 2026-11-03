@@ -31,9 +31,17 @@ Topology (P1, €0-reuse): 4 validators = Contabo **.82/.83/.84** + the 4th box;
   on 2026-08-19) is absent from v0.7.0 but present in v0.7.3 — so the pin bump picked it up.
   **🔴 Re-opened 2026-11-03:** upstream tagged **v0.7.4 on 2026-11-02** with six security
   advisories (GHSA-p8x8-4gg6-prcc, -c6xv-pppp-rjw6, -2m6r-q6x4-4w5g, -wm4f-qpxp-rch4,
-  -7xxp-gq2c-x47x, -9xwc-4fgh-f64f) that v0.7.3 does not carry. Before genesis: rebase the
-  wiring + mempool patches on v0.7.4 (or the latest v0.7.x then), rebuild, rerun the devnet
-  acceptance, and only then record the binary sha256 below.
+  -7xxp-gq2c-x47x, -9xwc-4fgh-f64f) that v0.7.3 does not carry. **Rebased 2026-11-03:**
+  `build-gembad.sh` pins v0.7.4 with the wiring, stale-rechecker-guard and BLOBBASEFEE patches;
+  upstream unit tests and the devnet upgrade rehearsal pass. Before genesis: re-check for a newer
+  v0.7.x, rebuild, rerun the devnet acceptance (`security/devnet/upgrade-rehearsal.sh` +
+  `security/devnet/evm-compat/prague-suite.sh`), and only then record the binary sha256 below.
+- 🔴 **GATE — EIP-2935 preinstall in the genesis.** Without the history contract at
+  `0x0000F90827F1C53a10cb7A02335B175320002935`, cosmos/evm stores no block hashes and
+  `BLOCKHASH(n)` of every past block is **0** (the live testnet's state today). Add it to
+  `app_state.evm.preinstalls` (code = go-ethereum `params.HistoryStorageCode`, as
+  `PREINSTALL_EIP2935=1 security/devnet/up.sh` does) and confirm prague-suite T6 PASS on the
+  genesis binary. See `docs/evm-compatibility.md`.
 - 🔴 **GATE — the genesis binary must be reproducible, and must carry the mempool fixes.**
   This is not bookkeeping; it is the one gate genesis cannot revisit afterwards. Until 2026-10-03
   the live testnet ran `d8a454f-dirty`, built 2026-06-26 from a tree with uncommitted changes, so

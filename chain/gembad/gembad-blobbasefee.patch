@@ -1,0 +1,20 @@
+diff --git a/x/vm/keeper/state_transition.go b/x/vm/keeper/state_transition.go
+index 0c160b43..2002725f 100644
+--- a/x/vm/keeper/state_transition.go
++++ b/x/vm/keeper/state_transition.go
+@@ -61,6 +61,15 @@ func (k *Keeper) NewEVMWithOverridePrecompiles(
+ 		Difficulty:  big.NewInt(0),                         // unused. Only required in PoW context
+ 		BaseFee:     cfg.BaseFee,
+ 		Random:      &common.MaxHash, // need to be different than nil to signal it is after the merge and pick up the right opcodes
++		// GembaBlockchain: this chain has no blob market (no EIP-4844 blob transactions), but
++		// Cancun's BLOBBASEFEE opcode (0x4a) is active. go-ethereum's opBlobBaseFee pushes
++		// uint256.FromBig(BlobBaseFee), and FromBig(nil) returns a nil *Int, so a nil field here
++		// makes the opcode dereference nil: eth_call fails with a nil-pointer error, and a
++		// transaction that reaches the opcode panics inside the EVM — baseapp recovers it, so the
++		// tx lands in the block as a Cosmos-level failure (code 111222, no EVM receipt). Report a
++		// blob base fee of zero instead, the value eth_feeHistory already reports for every block.
++		// STATE-MACHINE-BREAKING: a transaction executing BLOBBASEFEE changes outcome.
++		BlobBaseFee: big.NewInt(0),
+ 	}
+ 
+ 	ethCfg := types.GetEthChainConfig()

@@ -30,6 +30,13 @@ jq '.app_state.slashing.params.signed_blocks_window="30"
   | .app_state.slashing.params.downtime_jail_duration="60s"
   | .app_state.slashing.params.slash_fraction_downtime="0.010000000000000000"
   | .app_state.slashing.params.slash_fraction_double_sign="0.050000000000000000"' "$GEN" >"$T" && mv "$T" "$GEN"
+# PREINSTALL_EIP2935=1: add the EIP-2935 history contract (go-ethereum params.HistoryStorageCode) as a
+# genesis preinstall. Without it cosmos/evm stores no block hashes and BLOCKHASH(n<current) is 0 —
+# which is the state of the live testnet (docs/evm-compatibility.md). Off by default to match it.
+if [ "${PREINSTALL_EIP2935:-0}" = "1" ]; then
+  jq '.app_state.evm.preinstalls += [{"name":"EIP-2935 history storage","address":"0x0000F90827F1C53a10cb7A02335B175320002935","code":"0x3373fffffffffffffffffffffffffffffffffffffffe14604657602036036042575f35600143038111604257611fff81430311604257611fff9006545f5260205ff35b5f5ffd5b5f35611fff60014303065500"}]' "$GEN" >"$T" && mv "$T" "$GEN"
+  echo "   + EIP-2935 preinstall in genesis"
+fi
 for i in $(seq 1 $((N-1))); do cp "$GEN" "$BASE/node$i/config/genesis.json"; done
 for i in $(seq 0 $((N-1))); do
   C="$BASE/node$i/config/config.toml"
@@ -48,7 +55,7 @@ done
 
 echo ">> wait for block production (node0 :26657)"
 for t in $(seq 1 30); do
-  h=$(curl -s --max-time 3 localhost:26657/status 2>/dev/null | jq -r '.result.sync_info.latest_block_height // 0' 2>/dev/null)
+  h=$(curl -s --max-time 3 localhost:26657/status 2>/dev/null | jq -r '.result.sync_info.latest_block_height // 0' 2>/dev/null) || true   # set -e + pipefail: a refused connection (curl exit 7) used to kill this wait loop
   [ "${h:-0}" -ge 2 ] 2>/dev/null && { echo "  ✓ producing — height $h, $N validators"; exit 0; }
   sleep 2
 done

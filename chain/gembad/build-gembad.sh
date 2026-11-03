@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
 # build-gembad.sh — build the `gembad` node binary = pinned cosmos/evm evmd
-# (v0.7.0) + the GembaBlockchain Phase 2 custom modules wired in.
+# (v0.7.4) + three tracked patches + the GembaBlockchain custom modules wired in.
 #
 # We do NOT vendor evmd into the repo. Instead we fetch the pinned reference app
 # at build time (as in Phase 1) and apply a small, version-pinned wiring patch
@@ -14,7 +14,10 @@
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CHAIN_DIR="$(cd "$HERE/.." && pwd)"          # the chain Go module (has go.mod)
-EVM_VERSION="${EVM_VERSION:-v0.7.3}"          # pinned, known-good (§16.6)
+# Pinned, known-good (§16.6). v0.7.4 (2026-11-02) carries six security advisories v0.7.3 lacks;
+# the live testnet runs v0.7.3 (39daa6e) until the halt-height upgrade in
+# docs/runbooks/validator-binary-refresh-2026-10.md. EVM_VERSION=v0.7.3 still builds the old line.
+EVM_VERSION="${EVM_VERSION:-v0.7.4}"
 BUILD_DIR="${BUILD_DIR:-/tmp/gembad-build}"
 OUT="${OUT:-/tmp/gembad}"
 
@@ -41,8 +44,25 @@ git -C "$BUILD_DIR" apply --recount "$HERE/gembad-wiring.patch"
 #      added today" with the day frozen at its last successful bond — for thirteen days, while
 #      every other node accepted the same transaction. Now it refreshes instead of trusting it.
 # See docs/runbooks/validator-binary-refresh-2026-10.md.
-echo ">> applying gembad mempool fixes (queue recover + stale-rechecker guard)"
-git -C "$BUILD_DIR" apply --recount "$HERE/gembad-mempool-fixes.patch"
+# From v0.7.4 upstream carries defect 1 itself (GHSA-9xwc-4fgh-f64f: recover() in the same
+# insertTxs), so on v0.7.4+ only defect 2, the stale-rechecker guard, is ours to carry.
+case "$EVM_VERSION" in
+  v0.7.0|v0.7.1|v0.7.2|v0.7.3) MEMPOOL_PATCH=gembad-mempool-fixes.patch ;;          # queue recover + guard
+  *)                           MEMPOOL_PATCH=gembad-mempool-recheck-guard.patch ;;  # guard only
+esac
+echo ">> applying gembad mempool fixes ($MEMPOOL_PATCH)"
+git -C "$BUILD_DIR" apply --recount "$HERE/$MEMPOOL_PATCH"
+
+# BLOBBASEFEE (0x4a): cosmos/evm never sets vm.BlockContext.BlobBaseFee, so the Cancun opcode
+# pushes a nil *uint256.Int and dereferences it — eth_call answers with a nil-pointer error, and a
+# transaction that reaches the opcode panics; baseapp recovers it, so the tx is included as a
+# Cosmos-level failure (code 111222, gas_used 0, no EVM receipt — the wallet waits forever). Not fixed upstream through v0.7.4, v1.0.0-rc2 or
+# main (checked 2026-11-03). The patch reports a blob base fee of 0, which is what eth_feeHistory
+# already says for every block. STATE-MACHINE-BREAKING for any transaction that executes the
+# opcode, so it ships only through a coordinated halt-height upgrade (or at genesis).
+# See docs/runbooks/validator-binary-refresh-2026-10.md and docs/evm-compatibility.md.
+echo ">> applying gembad BLOBBASEFEE fix (BlockContext.BlobBaseFee = 0)"
+git -C "$BUILD_DIR" apply --recount "$HERE/gembad-blobbasefee.patch"
 
 echo ">> pointing evmd at the local gemba chain module ($CHAIN_DIR)"
 cd "$BUILD_DIR/evmd"
