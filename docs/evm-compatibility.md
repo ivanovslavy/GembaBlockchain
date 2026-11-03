@@ -3,7 +3,7 @@
 Every row below was measured on a throwaway local 4-validator devnet
 (`security/devnet/up.sh`, chain-id `gemba-1`, EVM 821206) by
 [`security/devnet/evm-compat/prague-suite.sh`](../security/devnet/evm-compat/prague-suite.sh),
-once on the **live testnet's exact binary** (`39daa6e`, sha256 `fd9deac7…b3e0`, copied from
+once on the **then-live testnet binary** (`39daa6e`, live until block 4 838 522, sha256 `fd9deac7…b3e0`, copied from
 node2) and once on the upgrade candidate (`v0.7.4` + the three tracked patches + valgate fix).
 Nothing here was probed against the live chain except two read-only calls noted in the text.
 Re-run it any time: `RPC=… PK=… PK2=… ./prague-suite.sh` — every line prints the raw value

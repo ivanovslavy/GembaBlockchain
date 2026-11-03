@@ -29,49 +29,87 @@ func (d MinSelfBondDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 	if err := checkMsgs(tx.GetMsgs(), p.MinSelfBond, p.MaxSelfBond, 0); err != nil {
 		return ctx, err
 	}
-	// Daily cap: skip in simulate; enforce on real Check/Deliver. Rejecting an over-cap delegation
-	// is a normal tx failure (the chain keeps running) — never a panic.
+	// Daily cap: skip in simulate; CHECK (never record) on real Check/Deliver. Rejecting an
+	// over-cap delegation is a normal tx failure (the chain keeps running) — never a panic.
+	// The charge itself is applied by DailyBondRecorder, the post-handler, which runs only if the
+	// messages succeeded; see posthandler.go for why that split matters.
 	if !simulate {
-		if err := d.enforceDailyBond(ctx, tx.GetMsgs(), 0); err != nil {
+		if err := d.checkDailyBond(ctx, tx.GetMsgs()); err != nil {
 			return ctx, err
 		}
 	}
 	return next(ctx, tx, simulate)
 }
 
-// enforceDailyBond walks the message tree (unwrapping authz MsgExec) and records/enforces the §6
-// per-validator daily bond-increase cap for each delegation to an EXISTING validator (MsgDelegate,
-// and the destination of MsgBeginRedelegate). MsgCreateValidator's initial stake is the ENTRY
-// (1k–10k, handled above), not a daily add.
-func (d MinSelfBondDecorator) enforceDailyBond(ctx sdk.Context, msgs []sdk.Msg, depth int) error {
+// checkDailyBond refuses, early and cheaply, a transaction that would push any validator over the
+// §6 per-validator daily bond-increase cap. It WRITES NOTHING: the charge is applied once, after
+// execution, by DailyBondRecorder (posthandler.go).
+//
+// It sums per validator across the whole transaction, so two 30 GMB delegations to the same
+// validator in one transaction are refused here too, not only by the post-handler.
+func (d MinSelfBondDecorator) checkDailyBond(ctx sdk.Context, msgs []sdk.Msg) error {
+	incs, err := collectBondIncreases(msgs, nil, 0)
+	if err != nil {
+		return err
+	}
+	for _, inc := range incs {
+		if err := d.keeper.CheckDailyBond(ctx, inc.valoper, inc.amount); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// bondIncrease is one validator's total stake increase within a single transaction.
+type bondIncrease struct {
+	valoper sdk.ValAddress
+	amount  math.Int
+}
+
+// collectBondIncreases walks the message tree — unwrapping authz MsgExec, which the router executes
+// AFTER the ante phase (the canonical Cosmos bypass, audit finding #9) — and sums, PER VALIDATOR,
+// how much the transaction would add to that validator's BONDED stake: MsgDelegate, and the
+// destination of MsgBeginRedelegate. MsgCreateValidator's initial stake is the ENTRY (1k–10k,
+// checked separately by checkMsgs), not a daily add.
+//
+// The result is an ordered slice and deliberately NOT a map: this runs inside the state machine,
+// where iterating a map would let two honest nodes walk the same transaction in different orders.
+func collectBondIncreases(msgs []sdk.Msg, acc []bondIncrease, depth int) ([]bondIncrease, error) {
 	if depth > maxAuthzDepth {
-		return fmt.Errorf("authz MsgExec nesting too deep (max %d) — rejected by x/valgate", maxAuthzDepth)
+		return nil, fmt.Errorf("authz MsgExec nesting too deep (max %d) — rejected by x/valgate", maxAuthzDepth)
+	}
+	add := func(addr string, amt math.Int) {
+		va, err := sdk.ValAddressFromBech32(addr)
+		if err != nil || amt.IsNil() {
+			return // an unparseable validator or a nil amount is the staking module's error to report
+		}
+		for i := range acc {
+			if acc[i].valoper.Equals(va) {
+				acc[i].amount = acc[i].amount.Add(amt)
+				return
+			}
+		}
+		acc = append(acc, bondIncrease{valoper: va, amount: amt})
 	}
 	for _, msg := range msgs {
 		switch m := msg.(type) {
 		case *stakingtypes.MsgDelegate:
-			if va, err := sdk.ValAddressFromBech32(m.ValidatorAddress); err == nil {
-				if err := d.keeper.CheckAndRecordDailyBond(ctx, va, m.Amount.Amount); err != nil {
-					return err
-				}
-			}
+			add(m.ValidatorAddress, m.Amount.Amount)
 		case *stakingtypes.MsgBeginRedelegate:
-			if va, err := sdk.ValAddressFromBech32(m.ValidatorDstAddress); err == nil {
-				if err := d.keeper.CheckAndRecordDailyBond(ctx, va, m.Amount.Amount); err != nil {
-					return err
-				}
-			}
+			add(m.ValidatorDstAddress, m.Amount.Amount)
 		case *authz.MsgExec:
 			inner, err := m.GetMessages()
 			if err != nil {
-				return fmt.Errorf("x/valgate: cannot decode authz MsgExec inner messages: %w", err)
+				// fail closed: undecodable inner messages must not slip past the cap
+				return nil, fmt.Errorf("x/valgate: cannot decode authz MsgExec inner messages: %w", err)
 			}
-			if err := d.enforceDailyBond(ctx, inner, depth+1); err != nil {
-				return err
+			acc, err = collectBondIncreases(inner, acc, depth+1)
+			if err != nil {
+				return nil, err
 			}
 		}
 	}
-	return nil
+	return acc, nil
 }
 
 // maxAuthzDepth bounds recursion so a deeply nested MsgExec cannot grief the ante handler.

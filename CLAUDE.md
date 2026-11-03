@@ -762,9 +762,9 @@ contradictions.
 > **Hard launch blockers (do not ship a public launch until all clear):**
 > **Upstream audit** — Cosmos EVM pre-v1 (risk 6, ADR-006). **CLEARED 2026-07-18:**
 > owner-accepted — Sherlock-audited upstream codebase (v0.3.x) + our own multi-phase
-> audit. Repo pin: **v0.7.4** + three tracked patches (2026-11-03); the live testnet still
-> runs `39daa6e` (v0.7.3) until the halt-height upgrade — v0.7.4 carries six security
-> advisories v0.7.3 lacks (see `docs/risks.md` ADR-006).
+> audit. Repo pin: **v0.7.4** + three tracked patches (2026-11-03); the live testnet runs
+> it as `85a9adc` since block 4 838 522 (halt-height upgrade 2026-11-03) — v0.7.4 carries six
+> security advisories v0.7.3 lacked (see `docs/risks.md` ADR-006).
 > **Security-budget tail** — recirculation tail-reward implemented + tested and
 > bonded-ratio monitoring live (risk 8, ADR-008 — the last remaining gate: closed
 > when the bonded-ratio exporter goes live at launch). Devnet/testnet and closed

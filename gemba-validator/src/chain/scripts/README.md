@@ -37,8 +37,8 @@ EVMD=/tmp/gembad BASE=~/.gembad-multinode ../scripts/start-multinode.sh
 | `eth_secp256k1` / coin type 60 → 0x addrs | §1 | `KEYALGO`, evmd default |
 | GMB denom `agmb`, 18 decimals, display GMB | §1, §4 | `patch_economics` (denom + bank metadata) |
 | **Mint inflation = 0** (no minting after genesis) | §3.1, §4.2, ADR-008 | `patch_economics` (mint params → 0) |
-| **Fees low but NON-ZERO, scaling with usage** | §16.8, ADR-008a | `feemarket.min_gas_price` floor + `app.toml minimum-gas-prices` (both 1 gwei) |
-| ~2 s blocks | §1, §11 | `tune_cometbft` (`timeout_commit`) |
+| **Fees low but NON-ZERO, scaling with usage** | §16.8, ADR-008a | `feemarket.min_gas_price` floor + `app.toml minimum-gas-prices` (both 5 gwei since the 2026-06-26 regenesis; `gemba.params.sh`) |
+| `timeout_commit` 1 s (≈2.3 s blocks on the testnet) | §1, §11 | `tune_cometbft` (`TIMEOUT_COMMIT`) |
 | Active-set cap 100 | §5.2 | `staking.max_validators` |
 | Fixed supply 100M GMB, §4.1 buckets | §4.1 | `gemba.params.sh` ALLOC_* + genesis accounts |
 | Reserves non-voting | §3.4, §7 | reserves funded but never staked; only circulation self-bonds |

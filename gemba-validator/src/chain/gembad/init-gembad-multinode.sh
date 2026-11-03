@@ -96,6 +96,10 @@ for i in $(seq 0 $((N-1))); do
   sed -i.bak "s|^persistent_peers = .*|persistent_peers = \"${PEERS#,}\"|" "$C"
   sed -i.bak "s|^minimum-gas-prices = .*|minimum-gas-prices = \"$MIN_GAS_PRICES_NODE\"|;s|^evm-chain-id = .*|evm-chain-id = $EVM_CHAIN_ID|;s|tcp://localhost:9090|tcp://localhost:$GRPC|;s|127.0.0.1:8545|127.0.0.1:$JRPC|;s|127.0.0.1:8546|127.0.0.1:$JWS|" "$A"
   sed -i.bak "/^\[api\]/,/^\[/ s|tcp://localhost:1317|tcp://localhost:$API|;/^\[api\]/,/^\[/ s|^enable = false|enable = true|" "$A"
+  # gRPC and the two EVM metrics listeners default to the SAME port on every node. The loser of
+  # each bind race cancels its server errgroup, which silently stops its API, gRPC and JSON-RPC
+  # servers while consensus keeps running — so a devnet "with JSON-RPC on every node" had it on one.
+  sed -i.bak "s|^address = \"localhost:9090\"|address = \"localhost:$GRPC\"|;s|^geth-metrics-address = \"127.0.0.1:8100\"|geth-metrics-address = \"127.0.0.1:$((8100+i))\"|;s|^metrics-address = \"127.0.0.1:6065\"|metrics-address = \"127.0.0.1:$((6065+i))\"|" "$A"
   [ "$i" -eq 0 ] && sed -i.bak "/^\[json-rpc\]/,/^\[/ s|^enable = false|enable = true|" "$A"
   rm -f "$C.bak" "$A.bak"
 done

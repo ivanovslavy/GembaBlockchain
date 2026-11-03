@@ -100,7 +100,7 @@ patch_economics() {
   ' "$G" >"$T" && mv "$T" "$G"
 }
 
-# tune_cometbft <config.toml> — ~2s blocks (CLAUDE.md §1, §11) + EVM mempool
+# tune_cometbft <config.toml> — timeout_commit from gemba.params.sh (1s ⇒ ~2.3 s blocks; CLAUDE.md §1, §11) + EVM mempool
 tune_cometbft() {
   local C="$1"
   sed -i.bak "s/^timeout_commit = .*/timeout_commit = \"$TIMEOUT_COMMIT\"/" "$C"

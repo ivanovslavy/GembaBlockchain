@@ -70,7 +70,7 @@ The project is built in phases (see `CLAUDE.md` §13, which carries the full
 per-phase record). **All nine technical phases are COMPLETE** (status 2026-07-19):
 
 - **Phase 0-1** — scaffolding + local devnets (single-node and 4-validator BFT)
-  from the pinned upstream `cosmos/evm` (then v0.7.0; v0.7.3 + two tracked patches since 2026-10-03).
+  from the pinned upstream `cosmos/evm` (then v0.7.0; v0.7.3 + two tracked patches 2026-10-03 → 11-03; v0.7.4 + three since block 4 838 522 on 2026-11-03).
 - **Phase 2** — custom zero-inflation Go modules: `rewardstreamer` (reserve-funded
   validator rewards, incl. the mainnet formula model + gov kill-switch),
   `feesplit` (60/40), wired into the **`gembad`** binary (`chain/gembad`).

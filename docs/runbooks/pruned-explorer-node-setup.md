@@ -68,7 +68,7 @@ Disk size is a non-issue (pruned stays tens of GB). NOT a validator; NOT co-loca
 | evm-chain-id | `821207` |
 | minimum-gas-prices | `1000000000agmb` (node-level mempool filter; the consensus floor is 5 gwei) |
 | genesis.json | sha256 starts `d7cdc2c1...`, 22985 bytes — **copy the exact file** |
-| gembad binary | `39daa6e` (since 2026-10-03; `sha256 fd9deac77b0cd97a17d7cea41d7a7f7cf677f5a3e7c0fbbeb2c99a43fbd3b4e0`) — **copy the exact binary** from a live box and compare the hash |
+| gembad binary | `85a9adc` since block 4 838 522 (`sha256 9b2f7c2dbc50c5d5953b6ce8711eabf65d0e3981b60c912157978c3759be5781`); before it `39daa6e` (`sha256 fd9deac77b0cd97a17d7cea41d7a7f7cf677f5a3e7c0fbbeb2c99a43fbd3b4e0`) — **copy the exact binaries** from a live box (`/usr/local/bin/gembad`, `/usr/local/bin/gembad.PROVEN-39daa6e`) and compare the hashes |
 | persistent_peers | `44935754a7ea7e5ced5528eb39b5b4f6de73d3bb@13.140.139.82:26656,5473057935d09332c6051e7e83902ae226e060d2@13.140.139.83:26656,b7588b7dcd3e90bc0306dce68f7c95c5306d74a6@13.140.139.84:26656` |
 
 > **App-hash safety:** a *different* binary caused an app-hash divergence during the 2026-06-06
@@ -76,6 +76,13 @@ Disk size is a non-issue (pruned stays tens of GB). NOT a validator; NOT co-loca
 > `chain/gembad/build-gembad.sh`), but still copy `/usr/local/bin/gembad` and `genesis.json`
 > **byte-for-byte** from an existing node and compare the sha256 — never `go install` a fresh
 > build. If the fleet has moved to a newer binary, use that one (check `coordinated-upgrade.md`).
+>
+> 🔴 **Syncing from genesis crosses an upgrade height.** Blocks ≤ 4 838 521 were executed by
+> `39daa6e`, blocks ≥ 4 838 522 by `85a9adc`, and the two are NOT consensus-compatible. A node
+> that replays from genesis must run `gembad.PROVEN-39daa6e` with `halt-height = 4838522`, then
+> swap to `85a9adc` with `halt-height = 0` — exactly as the fleet did. Running `85a9adc` from
+> genesis (or `39daa6e` past the height) ends in `wrong AppHash`. A state-sync / snapshot from a
+> height above 4 838 522 needs only `85a9adc`.
 
 ## Steps
 
@@ -84,7 +91,7 @@ Disk size is a non-issue (pruned stays tens of GB). NOT a validator; NOT co-loca
 # on the NEW box (as root):
 scp root@13.140.148.137:/usr/local/bin/gembad /usr/local/bin/gembad
 chmod +x /usr/local/bin/gembad
-sha256sum /usr/local/bin/gembad                  # must be fd9deac77b0c… (39daa6e) — or the fleet's current binary
+sha256sum /usr/local/bin/gembad                  # 9b2f7c2dbc50… (85a9adc) — from genesis use 39daa6e first, see the 🔴 note above
 export HOME_DIR=/root/.gembad-explorer
 gembad init gemba-tn-explorer --chain-id gemba-testnet-1 --home $HOME_DIR
 scp root@13.140.148.137:/root/.gembad-archive/config/genesis.json $HOME_DIR/config/genesis.json

@@ -50,11 +50,11 @@ yourself), and nobody is jailed — a coordinated halt produces no missed blocks
 
 ## The October–November 2026 binary refresh
 
-Live testnet binary: **`39daa6e`** (cosmos/evm v0.7.3 + the mempool patch, sha256 `fd9deac7…b3e0`)
-on all five boxes since 2026-10-03, rolled out canary-first because it was measured NOT
-consensus-breaking. The next one — v0.7.4 + the valgate §6 fix + the BLOBBASEFEE fix — IS
-state-machine-breaking and goes out by path C. The ready-to-run plan, with heights, order,
-rollback and the expected sha256, is in
+Live testnet binary: **`85a9adc`** (cosmos/evm v0.7.4 + three tracked patches + valgate fix, sha256 `9b2f7c2d…5781`) since block **4 838 522** (halt-height upgrade 2026-11-03 21:09 UTC).
+Before it: `39daa6e` (cosmos/evm v0.7.3 + the mempool patch, sha256 `fd9deac7…b3e0`) on all five
+boxes 2026-10-03 → height 4 838 521, rolled out canary-first because it was measured NOT
+consensus-breaking. `85a9adc` IS state-machine-breaking and went out by path C — the plan and
+the execution record (heights, order, rollback, sha256, results) are in
 [`validator-binary-refresh-2026-10.md`](validator-binary-refresh-2026-10.md#the-live-upgrade--ready-to-run-plan).
 
 ## Rules

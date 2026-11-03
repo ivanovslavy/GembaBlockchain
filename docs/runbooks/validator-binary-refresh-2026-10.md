@@ -434,7 +434,8 @@ v0.7.4 must be held back, `EVM_VERSION=v0.7.3 ./build-gembad.sh` is the fallback
 
 ## The live upgrade — ready-to-run plan
 
-**NOT EXECUTED. Waits for Slavy to pick the time.** Nothing below has touched a live box.
+**EXECUTED 2026-11-03 — the live testnet runs `85a9adc` since block 4 838 522.** Plan as written
+below; the execution record follows it ("Execution record — 2026-11-03").
 
 **Artefact.** `gembad` `85a9adc` (cosmos/evm v0.7.4 + wiring + recheck guard + BLOBBASEFEE,
 `chain/` = valgate fix), go1.25.9, no `-dirty`, built once on the laptop:
@@ -513,6 +514,39 @@ do the swaps in parallel, not box by box.
 
 Sequencing: not during the 03:19–03:35 CEST compound runs, and not while Contabo is mid-maintenance
 (two validators down = no quorum for the restart either).
+
+## Execution record — 2026-11-03
+
+Slavy's go: 2026-11-03 evening. Operator: Claude, from the laptop over SSH (root on Contabo, `slavy`+sudo on .208).
+
+| step | result |
+|---|---|
+| 1 stage | `gembad.NEW-85a9adc` on all five boxes, sha256 `9b2f7c2d…5781` on each (scp ≈ 5 min, .208 slowest) |
+| 2 rollback | `gembad.PROVEN-39daa6e` (sha256 `fd9deac7…b3e0`) on all five; `priv_validator_state.json` snapshot `*.pre-85a9adc-20261103-2238` on the four validators |
+| 4 H | height 4 837 722 at 20:38 UTC → **H = 4 838 522** |
+| 5 pause | `gemba-auto-unjail.timer` ×4, `gemba-node-watchdog.timer` on .137 |
+| 6 arm | archive → .82 → .84 → node2 → .83, each back and signing (validators) / caught up (archive) before the next |
+| 7 halt | all five: `CONSENSUS FAILURE … halt per configuration height 4838522` at **21:09:04 UTC**, all at 4 838 522 |
+| 8 swap | in parallel 21:10:01–21:10:07 UTC; chain past H at 21:10:19 → **halt ≈ 75 s** |
+| 9 verify | rpc1/2/3 advancing and equal; `gembad version` = `85a9adc` on the four Contabo boxes, sha256 `9b2f7c2d…` on node2; same app hash on all five (`ECA12848…E612` at 4 838 528); 4/4 in the commit; 4 BONDED, none jailed; 0 panic/SIGSEGV/wrong-AppHash lines since the swap (the only "CONSENSUS FAILURE" is the halt itself) |
+| 10 | timers re-enabled ×5; `gemba-validator/src/chain` re-exported from `85a9adc` (`diff -r` against `git archive 85a9adc chain` is empty) |
+| 11 BLOBBASEFEE | `eth_call` `0x4a5f5260205ff3` → `0x00…00` on rpc1, rpc2, rpc3 |
+| 11 valgate | .84 delegating liquid + 50 GMB: refused at **CheckTx** (code 1, `x/valgate §6 … already added 50000000000000000000 today`), never in a block, §6 record unchanged (`day 20760 · 50 GMB`) |
+
+**The `code 5` path was not reproduced live.** It needs an amount within the day's allowance but
+above the liquid balance; every validator holds ≈ 10 700 GMB liquid against a 50 GMB cap, so the
+only way is to drain a validator wallet — not done. It is proven 10/10 on the devnet rehearsal.
+
+**Facts the plan did not have (now known):**
+- archive `.137`: unit `gembad-archive`, home `/root/.gembad-archive`, **RPC on `127.0.0.1:26667`**, watchdog `gemba-node-watchdog.timer` (no auto-unjail there);
+- Contabo validators: unit `gembad-val`, home `/root/.gembad`;
+- node2 `.208`: unit `gembad` (docker `gembad-node2`, bind-mounts `/usr/local/bin/gembad` read-only), home `/home/slavy/.gembad-testnet-node2`; its `data/` is root-owned → snapshot with `sudo`;
+- tx indexing is off on the validators — look transactions up on the archive (`:26667/tx?hash=0x…`);
+- the halt is logged as `ERR CONSENSUS FAILURE!!! … halt per configuration height H` — expected, not a fault;
+- Contabo journals are in CET, .208 in UTC — compare the two by UTC.
+
+**A node that replays from genesis now needs both binaries:** `39daa6e` with `halt-height = 4838522`,
+then `85a9adc` (`docs/runbooks/pruned-explorer-node-setup.md`).
 
 ## Mitigation already in place (does not need the upgrade)
 

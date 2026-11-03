@@ -49,7 +49,7 @@ the box (smaller attack surface).
 ### ARM prerequisite (one-time)
 cax31 is ARM64. gembad's app-hash is **architecture-independent** (deterministic Go state
 machine), so an ARM64 build from the exact deployed source produces the same app-hash. Before
-trusting the cax31 archive: build gembad for arm64 from the commit the fleet runs — `39daa6e` since 2026-10-03 (the earlier
+trusting the cax31 archive: build gembad for arm64 from the commits the fleet ran — `39daa6e` up to block 4 838 521, `85a9adc` from 4 838 522 (the earlier
 `d8a454f-dirty` matched no commit and could not be rebuilt), start it, and **verify it syncs without an app-hash panic**.
 Also confirm the Blockscout backend has an arm64 image (Postgres/Redis/frontend already do;
 Ampere users run Blockscout, so it's likely fine — verify).

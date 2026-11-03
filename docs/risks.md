@@ -126,14 +126,15 @@
   `mainnet-launch-hardening.md`) reviewed the integration + custom modules.
   The formal upstream "v1 + audit" milestone has no published ETA and is no
   longer a launch blocker.
-- **Pin today (2026-11-03):** **v0.7.3** + two tracked local patches
-  (`chain/gembad/gembad-wiring.patch`, `chain/gembad/gembad-mempool-fixes.patch`),
-  live on every testnet box since 2026-10-03 as binary `39daa6e`. The two
+- **Pin today (2026-11-03):** **v0.7.4** + three tracked local patches, live on every testnet
+  box since block 4 838 522 (2026-11-03) as binary `85a9adc`. Until then: **v0.7.3** + two
+  tracked local patches (`chain/gembad/gembad-wiring.patch`, `chain/gembad/gembad-mempool-fixes.patch`),
+  live 2026-10-03 → 2026-11-03 as binary `39daa6e`. The two
   backports pending on `release/v0.7.x` at acceptance are both in v0.7.3:
   statedb locked-balance #1187 (backport #1189, already in v0.7.0) and statedb
   balance/event hardening **#1254** (backport of #1176, absent from v0.7.0) —
   see `docs/runbooks/validator-binary-refresh-2026-10.md`.
-- **Residual action — repo DONE 2026-11-03, live testnet pending:** upstream tagged
+- **Residual action — DONE 2026-11-03 (repo and live testnet):** upstream tagged
   **v0.7.4 on 2026-11-02** with six GitHub security advisories that v0.7.3 does
   **not** carry (GHSA-p8x8-4gg6-prcc, -c6xv-pppp-rjw6, -2m6r-q6x4-4w5g,
   -wm4f-qpxp-rch4, -7xxp-gq2c-x47x, -9xwc-4fgh-f64f). `build-gembad.sh` is now
@@ -143,9 +144,9 @@
   `gembad-blobbasefee.patch` (`docs/evm-compatibility.md`). Upstream unit tests
   (`go test -tags=test ./mempool/... ./ante/evm/... ./x/vm/keeper/... ./x/vm/statedb/...`)
   pass on the patched tree, and the full halt-height upgrade was rehearsed on a
-  devnet (`docs/runbooks/validator-binary-refresh-2026-10.md`). **The live testnet
-  still runs `39daa6e` (v0.7.3) and stays exposed to those advisories until that
-  upgrade is executed** — Slavy's call on the time.
+  devnet (`docs/runbooks/validator-binary-refresh-2026-10.md`). The live testnet
+  was upgraded to `85a9adc` at block 4 838 522 on 2026-11-03 (halt ≈ 75 s, 4/4 signing,
+  same app hash on all five boxes) — the advisories are closed on the live chain too.
 - **Consequences:** Launch on a pinned, patched, reproducible build whose pin is
   re-checked against upstream advisories before genesis. Custom-module isolation
   costs some boilerplate but protects the upgrade path.
