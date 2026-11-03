@@ -117,15 +117,14 @@ if [ "$still" -lt "$HALT_AFTER_SEC" ]; then
   exit 0
 fi
 [ -f "$MARK" ] && exit 1                 # already reported this episode
-mail "[GembaChain] CHAIN HALTED at height $best - no new block for $((still/60)) min" \
-"No source has seen a new block for ${still} s (threshold ${HALT_AFTER_SEC} s).
+mail "[GembaChain] HALTED - no new block since height $best" \
+"The chain has stopped producing blocks.
 
-Height stuck at: $best (unchanged since $(date -u -d "@$prev_t" +'%F %H:%M:%S UTC'))
+Height stuck at: $best (unchanged since $(date -u -d "@$prev_t" +'%F %H:%M:%S UTC'), ${still} s, threshold ${HALT_AFTER_SEC} s)
 Sources:        $seen
 Checked from:    $WHO
 
-Four validators of near-equal weight tolerate ONE outage; two down stops consensus.
-First look: which validators are down (Contabo maintenance shows as Cloudflare 521/522 on the RPCs),
-then docs/runbooks/halt-recovery.md." && echo "$best $now" >"$MARK"
+Four validators of near-equal weight tolerate one outage; two down stops consensus.
+Next: find which validators are down, then follow docs/runbooks/halt-recovery.md." && echo "$best $now" >"$MARK"
 log "CHAIN HALTED — height $best for ${still}s —$seen"
 exit 1
