@@ -152,6 +152,26 @@ What remains before the `gemba-1` genesis is operational, not architectural: the
 key ceremony, final prevalidation battery, and launch-day runbook execution
 (`docs/runbooks/`).
 
+## Known limitations (measured 2026-11-03)
+
+- **EVM:** Cancun and Prague are active — EIP-7702 SetCode transactions, BLS12-381
+  precompiles and the EIP-7623 calldata floor work end to end; Osaka is not scheduled.
+  Two defects, both measured on the live testnet's binary
+  ([`docs/evm-compatibility.md`](./docs/evm-compatibility.md)):
+  - `BLOBBASEFEE` (0x4a) dereferences nil in upstream cosmos/evm: `eth_call` errors and a
+    transaction using it is included without an EVM receipt. Fixed in the repo
+    (`chain/gembad/gembad-blobbasefee.patch`); the live testnet gets it with the next
+    coordinated (halt-height) upgrade, rehearsed and ready in
+    [`docs/runbooks/validator-binary-refresh-2026-10.md`](./docs/runbooks/validator-binary-refresh-2026-10.md).
+  - `BLOCKHASH` of past blocks returns 0, because the EIP-2935 history contract is not in
+    the testnet genesis. Mainnet genesis gate added; the testnet needs a governance
+    preinstall.
+- **Upstream dependency:** cosmos/evm is pre-1.0; we pin v0.7.4 and carry three small,
+  tracked patches (wiring, a stale-mempool-context guard, BLOBBASEFEE) that are not
+  upstream. A move to the v1 line will be a migration, not a bump.
+- **Licence:** `contracts/src/dex/gembaswap/` is a Uniswap V2 fork under GPL-3.0-or-later
+  (see License below); the rest is Apache-2.0.
+
 ## Secret hygiene
 
 This repository is public. Never commit `.env`, private keys, mnemonics, node keys,
