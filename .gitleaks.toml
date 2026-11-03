@@ -53,6 +53,7 @@ regexes = [
   '''\b0x[a-fA-F0-9]{40}\b''',                                    # public EVM addresses (20 bytes) — NOT secrets; the evm-private-key-hex rule still catches 0x+64-hex keys
   '''0x0{64}''',                                                  # zero hash
   '''0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9''', # public Uniswap PERMIT_TYPEHASH
+  '''0xb154cd520d99f29f2d52a8c4b7b5236bd8a368ae9030110bf24a28b28b19d83f''', # public GembaSwapPair init-code hash = keccak256 of PUBLIC bytecode (2026-11-03). EXACT value only
   '''<.*mnemonic.*>''',                                           # angle-bracket placeholders
   '''anvil|hardhat''',                                            # secrets literally labeled as anvil/hardhat fixtures
   '''0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80''', # well-known public anvil key #0

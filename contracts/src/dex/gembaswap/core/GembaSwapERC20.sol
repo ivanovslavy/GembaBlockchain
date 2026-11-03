@@ -1,3 +1,13 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// Derived from Uniswap V2: contracts/UniswapV2ERC20.sol in https://github.com/Uniswap/v2-core
+// Original work Copyright (C) 2020 Uniswap Labs (formerly Uniswap) and the Uniswap V2 authors,
+// licensed under the GNU General Public License, version 3 or (at your option) any later version.
+// Modified 2026 by GEMBA EOOD for GembaBlockchain:
+//   - identifiers renamed UniswapV2* -> GembaSwap* (contracts, interfaces, libraries, revert-string prefixes)
+//   - LP token name/symbol changed from 'Uniswap V2'/'UNI-V2' to 'GembaSwap V2'/'GSWAP-V2'
+// This file is distributed under GPL-3.0-or-later, NOT the Apache-2.0 licence of the rest of the
+// repository. See LICENSE and NOTICE in contracts/src/dex/gembaswap/.
 pragma solidity =0.5.16;
 
 import './interfaces/IGembaSwapERC20.sol';
@@ -6,8 +16,8 @@ import './libraries/SafeMath.sol';
 contract GembaSwapERC20 is IGembaSwapERC20 {
     using SafeMath for uint;
 
-    string public constant name = 'Uniswap V2';
-    string public constant symbol = 'UNI-V2';
+    string public constant name = 'GembaSwap V2';
+    string public constant symbol = 'GSWAP-V2';
     uint8 public constant decimals = 18;
     uint  public totalSupply;
     mapping(address => uint) public balanceOf;

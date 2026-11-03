@@ -200,6 +200,11 @@ directly rather than trusted:
    `0x3f0934d46a91c709987fdcb90849be623789276da3993bdf747548e051eaa689`, the hash hardcoded in
    `GembaSwapLibrary.pairFor`. They MATCH → the router computes the real pair address; no
    fund-misrouting. (Re-verify with `cast keccak $(jq -r .bytecode.object out/GembaSwapPair.sol/GembaSwapPair.json)`.)
+   **Re-verified 2026-11-03** after the licence-hygiene change (GPL SPDX + attribution headers,
+   LP token renamed `GembaSwap V2`/`GSWAP-V2` — both change the pair bytecode via its name
+   constant and metadata hash): the hash is now
+   `0xb154cd520d99f29f2d52a8c4b7b5236bd8a368ae9030110bf24a28b28b19d83f`, matching the updated
+   constant; `test_LpToken_GembaNamed_And_InitCodeHashMatches` now fails the build if they drift.
 3. **End-to-end** — `Dex.t.sol` drives the full router path (add/remove liquidity, every swap
    variant incl. fee-on-transfer), all `pairFor`-dependent, and passes — integration proof the
    renamed core+periphery interoperate correctly.

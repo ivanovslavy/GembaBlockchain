@@ -1,0 +1,47 @@
+GembaSwap (contracts/src/dex/gembaswap/)
+========================================
+
+This directory is a modified copy of Uniswap V2 and is licensed under the
+GNU General Public License, version 3 or (at your option) any later version
+(SPDX: GPL-3.0-or-later). The full licence text is in LICENSE next to this file.
+
+It is NOT covered by the Apache License 2.0 that applies to the rest of the
+GembaBlockchain repository. Files outside this directory that only talk to these
+contracts through their ABI (deploy scripts, tests calling vm.deployCode, the swap
+front end) are separate works and keep their own licence.
+
+Original work
+-------------
+  Uniswap V2 core       https://github.com/Uniswap/v2-core        (contracts/, solc 0.5.16)
+  Uniswap V2 periphery  https://github.com/Uniswap/v2-periphery   (contracts/, solc 0.6.6)
+  Uniswap solidity-lib  https://github.com/Uniswap/solidity-lib   (contracts/libraries/TransferHelper.sol)
+  Copyright (C) 2020 Uniswap Labs (formerly Uniswap) and the Uniswap V2 authors.
+  All three are published under GPL-3.0-or-later (their package.json "license").
+
+Compared line by line on 2026-11-03 against v2-core 6a9e7c9, v2-periphery ed24991
+and solidity-lib c01640b (the contract sources are unchanged there since 2020).
+
+Modifications by GEMBA EOOD (2026) — the complete list
+-------------------------------------------------------
+  1. Every identifier UniswapV2* renamed GembaSwap* (contracts, interfaces,
+     libraries, revert-string prefixes), and file names to match.
+  2. The LP token's ERC-20 name and symbol: 'Uniswap V2' / 'UNI-V2' became
+     'GembaSwap V2' / 'GSWAP-V2' (core/GembaSwapERC20.sol).
+  3. The npm imports (@uniswap/v2-core, @uniswap/lib) replaced by relative imports
+     of the copies in this directory (periphery/GembaSwapRouter02.sol,
+     periphery/libraries/GembaSwapLibrary.sol).
+  4. The pair init-code hash in GembaSwapLibrary.pairFor() recomputed for the
+     GembaSwapPair bytecode compiled from this tree:
+       0xb154cd520d99f29f2d52a8c4b7b5236bd8a368ae9030110bf24a28b28b19d83f
+     (contracts/foundry.toml pins the compiler settings that produce it; the test
+     test_LpToken_GembaNamed_And_InitCodeHashMatches fails if it drifts).
+  5. A GPL-3.0-or-later SPDX line and an attribution header in every file.
+  No logic, arithmetic, fee or access-control change was made.
+
+"Uniswap" is a trademark of Uniswap Labs. GembaSwap is not affiliated with,
+endorsed by or sponsored by Uniswap Labs; the name appears here only to credit
+the original authors as the licence requires.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.

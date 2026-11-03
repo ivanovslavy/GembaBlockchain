@@ -42,7 +42,7 @@ community-run open-source chain registries — both pull requests **merged**:
 | Accounts | `eth_secp256k1`, SLIP-0044 coin type 60, standard `0x` addresses (MetaMask works) |
 | Total supply | Fixed, minted once at genesis, never again (0% inflation) |
 | Fees | Real GMB fees (EIP-1559); low but non-zero, scaling with usage |
-| License | Code: Apache-2.0; docs: CC BY-SA 4.0 |
+| License | Code: Apache-2.0, except `contracts/src/dex/gembaswap/` (a Uniswap V2 fork): GPL-3.0-or-later; docs: CC BY-SA 4.0 |
 
 ## Repository layout
 
@@ -166,3 +166,11 @@ public network (see [`chain/scripts/README.md`](./chain/scripts/README.md)).
 Source code is licensed under the Apache License 2.0; see [`LICENSE`](./LICENSE).
 This matches the upstream `cosmos/evm` license. Documentation is licensed under
 CC BY-SA 4.0.
+
+**One exception:** [`contracts/src/dex/gembaswap/`](./contracts/src/dex/gembaswap/) is a
+modified copy of **Uniswap V2** (© 2020 Uniswap Labs and the Uniswap V2 authors) and is
+distributed under **GPL-3.0-or-later**, the licence of the original — see its
+[`LICENSE`](./contracts/src/dex/gembaswap/LICENSE) and
+[`NOTICE`](./contracts/src/dex/gembaswap/NOTICE). Every file there carries a GPL SPDX
+line and an attribution header. It is optional developer tooling; nothing else in the
+repository links against it.

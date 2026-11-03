@@ -4,16 +4,18 @@ pragma solidity ^0.8.24;
 import {Test} from "forge-std/Test.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import {WGMB} from "../src/dex/WGMB.sol";
 import {GembaNativePool} from "../src/dex/GembaNativePool.sol";
 import {GembaNativePoolFactory} from "../src/dex/GembaNativePoolFactory.sol";
 import {LiquidityLocker} from "../src/dex/LiquidityLocker.sol";
 
-// GembaSwap = a 1:1 rename of the official Uniswap V2 contracts (src/dex/gembaswap,
-// core 0.5.16 / periphery 0.6.6), deployed here via vm.deployCode. Identical logic; only
-// the names "UniswapV2"→"GembaSwap" and the pair init-code-hash in GembaSwapLibrary were
-// changed (standard when deploying on a new chain). WETH = WGMB.
+// GembaSwap = a modified copy of the Uniswap V2 contracts (src/dex/gembaswap, GPL-3.0-or-later,
+// core 0.5.16 / periphery 0.6.6), deployed here via vm.deployCode — this Apache-2.0 test only
+// talks to them through their ABI. Identical logic; the names "UniswapV2"→"GembaSwap", the LP
+// token name/symbol and the pair init-code-hash in GembaSwapLibrary were changed (full list in
+// src/dex/gembaswap/NOTICE). WETH = WGMB.
 interface IUniFactory {
     function getPair(address, address) external view returns (address);
     function createPair(address, address) external returns (address);
@@ -110,6 +112,23 @@ contract DexTest is Test {
     function test_OfficialRouter_Wiring() public view {
         assertEq(router.factory(), address(factory));
         assertEq(router.WETH(), address(wgmb));
+    }
+
+    // The LP token carries the GembaSwap name, not Uniswap's (licence hygiene, 2026-11-03), and the
+    // init-code hash in GembaSwapLibrary matches the pair bytecode this tree compiles: the CREATE2
+    // address the router computes must be the pair the factory actually created.
+    function test_LpToken_GembaNamed_And_InitCodeHashMatches() public {
+        address pair = factory.createPair(address(tokenA), address(tokenB));
+        assertEq(IERC20Metadata(pair).name(), "GembaSwap V2");
+        assertEq(IERC20Metadata(pair).symbol(), "GSWAP-V2");
+        (address t0, address t1) =
+            address(tokenA) < address(tokenB) ? (address(tokenA), address(tokenB)) : (address(tokenB), address(tokenA));
+        bytes32 initHash = keccak256(vm.getCode("GembaSwapPair.sol:GembaSwapPair"));
+        address predicted = address(
+            uint160(uint256(keccak256(abi.encodePacked(hex"ff", address(factory), keccak256(abi.encodePacked(t0, t1)), initHash))))
+        );
+        assertEq(predicted, pair);
+        assertEq(initHash, 0xb154cd520d99f29f2d52a8c4b7b5236bd8a368ae9030110bf24a28b28b19d83f);
     }
 
     // ---------------------------------------------------------------- official router: ERC20/ERC20

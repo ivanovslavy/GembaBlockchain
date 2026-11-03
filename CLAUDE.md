@@ -84,7 +84,7 @@
 | Total supply | **fixed**, minted once at genesis, **never again** → 0% inflation |
 | Gas / fees | real fees in GMB (EIP-1559); **low but non-zero, scaling with usage** — cheap per-tx, but aggregate fees are the long-run security budget (§16.8) |
 | Block explorer | **Blockscout** self-hosted ("GembaScan"); optional Cosmos-side explorer (e.g. ping.pub) |
-| License | code: Apache-2.0 (matches Cosmos EVM); docs: CC BY-SA 4.0 |
+| License | code: Apache-2.0 (matches Cosmos EVM) — **except** `contracts/src/dex/gembaswap/` (Uniswap V2 fork): GPL-3.0-or-later with attribution (`LICENSE` + `NOTICE` there); docs: CC BY-SA 4.0 |
 
 GMB is the **native coin** (like ATOM/ETH), defined in the genesis allocation —
 **not** an ERC-20. Non-fungible things (workplace access, tickets) are separate
