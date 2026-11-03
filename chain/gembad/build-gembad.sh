@@ -82,7 +82,11 @@ echo ">> building gembad -> $OUT"
 # advertising "Version dev ()" — exactly the P-3 leak.
 GEMBAD_VERSION="${GEMBAD_VERSION:-$(git -C "$CHAIN_DIR" describe --tags --always --dirty 2>/dev/null || echo "v0.1.0")}"
 GEMBAD_COMMIT="${GEMBAD_COMMIT:-$(git -C "$CHAIN_DIR" rev-parse --short HEAD 2>/dev/null || echo none)}"
-BUILD_DATE="${BUILD_DATE:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
+# Reproducible by default: the build date is the COMMIT's date (not the wall clock) and -trimpath
+# drops the build directory and module-cache paths from the binary, so the same commit + the same
+# Go toolchain gives the same sha256 on any machine — the sha in the runbook can be re-derived
+# instead of trusted, and a lost artefact can be rebuilt bit for bit.
+BUILD_DATE="${BUILD_DATE:-$(TZ=UTC git -C "$CHAIN_DIR" log -1 --format=%cd --date=format-local:%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u +%Y-%m-%dT%H:%M:%SZ)}"
 SDK_VER="github.com/cosmos/cosmos-sdk/version"
 EVM_VER="github.com/cosmos/evm/version"
 LDFLAGS="-s -w \
@@ -93,6 +97,7 @@ LDFLAGS="-s -w \
   -X ${EVM_VER}.AppVersion=${GEMBAD_VERSION} \
   -X ${EVM_VER}.GitCommit=${GEMBAD_COMMIT} \
   -X ${EVM_VER}.BuildDate=${BUILD_DATE}"
-go build -ldflags "$LDFLAGS" -o "$OUT" ./cmd/evmd
+go build -trimpath -ldflags "$LDFLAGS" -o "$OUT" ./cmd/evmd
+sha256sum "$OUT"
 echo "OK: $OUT (version ${GEMBAD_VERSION}, commit ${GEMBAD_COMMIT})"
 "$OUT" version 2>/dev/null || true
