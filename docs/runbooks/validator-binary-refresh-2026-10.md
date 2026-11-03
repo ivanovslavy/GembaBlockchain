@@ -493,7 +493,8 @@ do the swaps in parallel, not box by box.
 9. Height advancing on rpc1/2/3; every box `gembad version` = `85a9adc` (node2: check by sha256,
    its host glibc cannot run the binary outside the container); same app hash on all at one height;
    4/4 signing; nobody jailed; no `^panic:|SIGSEGV|CONSENSUS FAILURE` in the journals since the swap.
-10. Re-enable the paused timers.
+10. Re-enable the paused timers, and re-export the validator bundle from `85a9adc`
+    (`gemba-validator/src/README.md`) so new validators build the new rules.
 11. Functional proof on the live chain — the same two the devnet ran:
     - one deliberately failing delegation (amount > liquid balance) from one validator → `code 5`,
       and its §6 record (`abci_query /store/valgate/key`, key `0x02 ++ valoper`) does **not** move;
