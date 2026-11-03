@@ -39,12 +39,23 @@ proposal:
 3. Distribute binary + genesis via the agreed channel; verify checksums.
 4. Everyone restarts **together** from the agreed height.
 
-## The October 2026 binary refresh
+## C. Off-chain `halt-height` (what this four-validator testnet actually uses)
 
-The live testnet binary is `d8a454f-dirty` — built 2026-06-26 from a tree with uncommitted changes,
-so it matches no commit — and HEAD carries consensus-affecting module changes on top of it. The
-dated plan, its acceptance tests and the rollout order are in
-[`validator-binary-refresh-2026-10.md`](validator-binary-refresh-2026-10.md).
+Path A without the voting period: every node gets `halt-height = H` in `app.toml`, the chain stops
+at `H` by itself, every box swaps the binary, and the chain resumes once more than ⅔ of the voting
+power is back. Rehearsed end to end on a devnet by `security/devnet/upgrade-rehearsal.sh`; facts it
+measured that matter here: block `H` is **committed but not executed** by the old binary (the new
+one executes it), a halted node **does not exit** (it idles with consensus stopped, so stop it
+yourself), and nobody is jailed — a coordinated halt produces no missed blocks.
+
+## The October–November 2026 binary refresh
+
+Live testnet binary: **`39daa6e`** (cosmos/evm v0.7.3 + the mempool patch, sha256 `fd9deac7…b3e0`)
+on all five boxes since 2026-10-03, rolled out canary-first because it was measured NOT
+consensus-breaking. The next one — v0.7.4 + the valgate §6 fix + the BLOBBASEFEE fix — IS
+state-machine-breaking and goes out by path C. The ready-to-run plan, with heights, order,
+rollback and the expected sha256, is in
+[`validator-binary-refresh-2026-10.md`](validator-binary-refresh-2026-10.md#the-live-upgrade--ready-to-run-plan).
 
 ## Rules
 

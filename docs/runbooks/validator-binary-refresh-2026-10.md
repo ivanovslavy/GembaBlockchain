@@ -1,6 +1,8 @@
 # Plan — refresh the validator binary (October 2026)
 
-**Status: PLANNED, not executed.** Nothing in this document has been applied to a live box.
+**Status:** the 39daa6e refresh was EXECUTED on 2026-10-03 (Phase 2 below). The follow-up halt-height
+upgrade (valgate §6 + BLOBBASEFEE + cosmos/evm v0.7.4) is rehearsed and READY, NOT executed —
+[jump to the plan](#the-live-upgrade--ready-to-run-plan).
 
 ## Why this is needed
 
@@ -97,8 +99,10 @@ balance and event amount handling", the backport of #1176, merged to `release/v0
 closes the ADR-006 residual action in the genesis ceremony in full.
 
 `go test ./mempool/...` on the patched tree: every package ok except
-`TestNewEVMMempoolIterator_BothEmpty`, which **fails identically on a clean v0.7.3 clone** — a
-pre-existing upstream failure, not ours. Don't chase it.
+`TestNewEVMMempoolIterator_BothEmpty`. **Corrected 2026-11-03:** that was not an upstream failure —
+the cosmos/evm tests need `-tags=test` (`EVMConfigurator.ResetTestConfig` panics without it). With
+`go test -tags=test ./mempool/... ./ante/evm/... ./x/vm/keeper/... ./x/vm/statedb/...` every
+package passes, on the patched v0.7.3 and on the patched v0.7.4 tree.
 
 Built artefact (reproducible, from a clean tree): `version: 87c6577`, **no `-dirty`**, go1.25.9,
 `sha256 8b94496c4b92d936cd816420018ab9e191039f47ada7f1fd22a4601e948a8d70`.
@@ -195,9 +199,8 @@ Two notes for whoever runs this next. `query valgate params` prints **only** `mi
 even though the store holds all three values (verified by reading key `0x01` directly on the
 devnet: 1000 / 10000 / 50 GMB) — a display defect in the query response, not a state problem, and
 **not** evidence about which valgate version a chain runs; an earlier draft of this document drew
-exactly that wrong conclusion from the live chain. And `go test ./mempool/...` fails
-`TestNewEVMMempoolIterator_BothEmpty` identically on a clean v0.7.3 clone — pre-existing upstream,
-not ours.
+exactly that wrong conclusion from the live chain. And `go test ./mempool/...` "fails" `TestNewEVMMempoolIterator_BothEmpty` only because it was
+run without `-tags=test` (corrected 2026-11-03 — with the tag it passes).
 
 ### Phase 2 — live rollout (canary, then one validator at a time)
 1. **Backup first:** per box, `cp /usr/local/bin/gembad /usr/local/bin/gembad.PROVEN-d8a454f-dirty`
@@ -368,9 +371,9 @@ coordinated halt instead:
 2. **One box at a time** (never two validators down at once), still on the OLD binary: set
    `halt-height = H` in `~/.gembad*/config/app.toml` and restart the node. Pause each box's
    `gemba-auto-unjail.timer` for the window so the watchdog does not fight the deliberate stop.
-3. **At `H` every node exits by itself.** The chain stops here — that is the point. Note that a
-   node restarted while `halt-height` is still set exits again immediately, so systemd will
-   crash-loop it until step 4; that is expected, not a fault.
+3. **At `H` every node stops by itself.** The chain stops here — that is the point. (Measured on
+   the devnet 2026-11-03: the process does NOT exit — it logs `halt per configuration height H`
+   and idles; stop the unit yourself before swapping.)
 4. **Per box:** swap the binary to `87f161a`, remove `halt-height` (set it back to `0`), start the
    node. Do the archive first (it proves the binary boots and replays without consensus weight),
    then the validators.
@@ -388,6 +391,127 @@ end-to-end proof of the mempool fix (`.83` bonding a full 50 GMB for the first t
 Until the swap, the practical exposure of the §6 defect stays small: `auto-compound.sh` sizes the
 delegation to the real remaining allowance and verifies the stake actually grew, so a burnt
 allowance surfaces as a loud failure the next day rather than as silence.
+
+### Superseded 2026-11-03: the rollout is folded into one upgrade (below)
+
+The 2026-10-04 plan above ("halt-height, not a canary", artefact `87f161a`) was never executed —
+Slavy's decision was to carry the §6 fix on the next restart that happens anyway. Since then two
+more reasons for a coordinated upgrade appeared, so all three ship in ONE halt:
+
+| change | why | consensus |
+|---|---|---|
+| valgate §6: check in the ante, charge in a post-handler (`26a12ab`, `87f161a`) | a delegation that fails after the ante burned the day's allowance | breaking, but only on a *failing* delegation |
+| BLOBBASEFEE: `BlockContext.BlobBaseFee = 0` (`gembad-blobbasefee.patch`) | the opcode dereferenced nil — `eth_call` error, tx included as `code 111222` with no receipt | **breaking** — proven: an old node fed one BLOBBASEFEE tx left consensus (`wrong Block.Header.AppHash`) |
+| cosmos/evm **v0.7.3 → v0.7.4** | six security advisories (GHSA-p8x8-4gg6-prcc, -c6xv-pppp-rjw6, -2m6r-q6x4-4w5g, -wm4f-qpxp-rch4, -7xxp-gq2c-x47x, -9xwc-4fgh-f64f) — gas charging, self-destruct with staking positions, precompile call counter, EIP-712 fields, two mempool panics | breaking (gas and execution changes) |
+
+`v0.7.4` makes our queue `recover()` redundant (GHSA-9xwc is the same fix), so the patch set on
+v0.7.4 is: wiring + `gembad-mempool-recheck-guard.patch` + `gembad-blobbasefee.patch`.
+
+### Rehearsal — RESULT (2026-11-03, 4-node devnet, `security/devnet/upgrade-rehearsal.sh`)
+
+OLD = the live testnet's exact binary (`39daa6e`, sha256 `fd9deac7…b3e0`, copied from node2),
+NEW = `85a9adc` (below). 10/10 rehearsal checks and 13/13 prague-suite checks PASS:
+
+```
+baseline OLD : failing 50 GMB delegation → code 5, §6 counter "day 20760 · 50 GMB"   (the defect)
+             : BLOBBASEFEE eth_call → nil pointer dereference                       (the defect)
+halt         : halt-height armed node by node (one restart at a time, chain never stopped)
+             : all four stop at H=47 by themselves; block 47 committed, NOT executed;
+               the processes keep running ("halt per configuration height 47"), nobody exits
+swap         : cp NEW over the binary, halt-height = 0, start → block 48, 49 …
+             : stall from the halt to the second new block 19.3 s, of which 15 s was the
+               harness deliberately waiting to be sure the chain had stopped; restart → +2 blocks 4.1 s
+verify NEW   : same app hash on all four · nobody jailed · no panic/consensus failure
+             : failing 50 GMB delegation → code 5, §6 counter untouched (NO RECORD)
+             : successful 0.5 GMB delegation charged exactly once
+             : BLOBBASEFEE → 0 in eth_call and status 1 in a tx; EIP-7702 works (docs/evm-compatibility.md)
+divergence   : one node put back on OLD + one BLOBBASEFEE tx → that node CONSENSUS FAILURE, the
+               other three carry on — the change cannot be rolled out one box at a time
+```
+
+The same rehearsal also passed with a v0.7.3-based candidate (valgate + BLOBBASEFEE only), so if
+v0.7.4 must be held back, `EVM_VERSION=v0.7.3 ./build-gembad.sh` is the fallback build.
+
+## The live upgrade — ready-to-run plan
+
+**NOT EXECUTED. Waits for Slavy to pick the time.** Nothing below has touched a live box.
+
+**Artefact.** `gembad` `85a9adc` (cosmos/evm v0.7.4 + wiring + recheck guard + BLOBBASEFEE,
+`chain/` = valgate fix), go1.25.9, no `-dirty`, built once on the laptop:
+
+```
+~/gemba-releases/gembad-85a9adc
+sha256 9b2f7c2dbc50c5d5953b6ce8711eabf65d0e3981b60c912157978c3759be5781
+```
+
+The build is **not** bit-for-bit reproducible yet (see `build-gembad.sh`): ship THIS file, do not
+rebuild per box; if it is lost, rebuild from `85a9adc`, re-run the rehearsal against the new file
+and record its sha256 here instead.
+
+**Quorum arithmetic (2026-11-03):** voting power 16218 / 16063 / 14887 / 13026 = 60194; the chain
+needs > 40129. Any three validators (≥ 43976) restart it; any two cannot. Because the halt is
+coordinated, there are no missed blocks and no jail — but the chain is DOWN from `H` until the
+third validator is back on the new binary.
+
+**Estimated live halt: 3–5 minutes** (devnet mechanics: ~5 s; the rest is the operator — five
+SSH sessions, a `cp`, a `sed`, a start, with the hash check). Prepare the five shells beforehand;
+do the swaps in parallel, not box by box.
+
+#### T−1 day
+1. Copy `gembad-85a9adc` to every gembad box (validators .82, .83, .84, node2 .208, archive .137)
+   as `/usr/local/bin/gembad.NEW-85a9adc` and check `sha256sum` = `9b2f7c2d…5781` on each.
+   **Do not swap yet.** On node2 the container bind-mounts the host's `/usr/local/bin/gembad`.
+2. On each box keep the rollback: `cp /usr/local/bin/gembad /usr/local/bin/gembad.PROVEN-39daa6e`
+   (sha256 `fd9deac7…b3e0`); snapshot `priv_validator_state.json`.
+3. Announce the window (dApps and wallets see no new blocks for a few minutes).
+
+#### T−30 min — arm the halt (chain keeps running)
+4. Read the height from any RPC and set `H = height + 800` (≈ 30 min at 2.29 s/block — enough to
+   arm five boxes one at a time). Write `H` down.
+5. Pause `gemba-auto-unjail.timer` on the four validators (and the node watchdog on the archive)
+   so no watchdog "repairs" the deliberate stop.
+6. **One box at a time**, starting with the archive, then .82 → .84 → node2 → .83: set
+   `halt-height = H` in that node's `config/app.toml` (its `--home`, see `systemctl cat <unit>`),
+   restart the unit (`gembad-val` on Contabo, `gembad` with `sudo` on node2, the archive's unit on
+   .137), and wait until it signs again before the next. Never two validators restarting at once.
+   If `H − height` drops below ~150 before all are armed, clear `halt-height` everywhere and start over.
+
+#### At H — the chain stops by itself
+7. Every node logs `halt per configuration height H` and **stays running**. Confirm all report the
+   same height `H` (block `H` is stored but not yet executed — the new binary executes it).
+8. On every box, in parallel:
+   ```
+   systemctl stop <unit>
+   cp /usr/local/bin/gembad.NEW-85a9adc /usr/local/bin/gembad && sha256sum /usr/local/bin/gembad   # 9b2f7c2d…5781
+   sed -i 's/^halt-height = .*/halt-height = 0/' <home>/config/app.toml
+   systemctl start <unit>
+   ```
+   Start the archive first if you can (it executes block H without consensus weight); the chain
+   moves again as soon as the third validator is up.
+
+#### After — verify (30 min)
+9. Height advancing on rpc1/2/3; every box `gembad version` = `85a9adc` (node2: check by sha256,
+   its host glibc cannot run the binary outside the container); same app hash on all at one height;
+   4/4 signing; nobody jailed; no `^panic:|SIGSEGV|CONSENSUS FAILURE` in the journals since the swap.
+10. Re-enable the paused timers.
+11. Functional proof on the live chain — the same two the devnet ran:
+    - one deliberately failing delegation (amount > liquid balance) from one validator → `code 5`,
+      and its §6 record (`abci_query /store/valgate/key`, key `0x02 ++ valoper`) does **not** move;
+    - `eth_call` with data `0x4a5f5260205ff3` → `0x00…00` instead of the nil-pointer error.
+      (This is the call that must NOT be sent to a live node BEFORE the upgrade.)
+
+#### Rollback
+- **Before H:** set `halt-height = 0` and restart each box as in step 6 — nothing else changed.
+- **After the swap, if the chain does not resume or app hashes differ:** stop every node, `cp
+  /usr/local/bin/gembad.PROVEN-39daa6e /usr/local/bin/gembad`, keep `halt-height = 0`, start —
+  ALL boxes, never a mix. If the new binary never committed a block, the old one simply executes
+  `H` itself and continues. If it did commit blocks, the old binary continues from that state on
+  the old rules, which is consistent only if none of those blocks held a transaction whose outcome
+  differs (a failing delegation, a BLOBBASEFEE call, one of the v0.7.4 advisory paths) — check them
+  first; otherwise it is path B of `coordinated-upgrade.md`. Decide within the first minutes.
+
+Sequencing: not during the 03:19–03:35 CEST compound runs, and not while Contabo is mid-maintenance
+(two validators down = no quorum for the restart either).
 
 ## Mitigation already in place (does not need the upgrade)
 
